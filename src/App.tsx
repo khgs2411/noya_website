@@ -1,4 +1,4 @@
-import { ArrowRight, Instagram, Mail, MapPin, Menu, Moon, Phone, Star, Sun, Users, X } from 'lucide-react'
+import { ArrowRight, Mail, MapPin, Menu, Moon, Phone, Star, Sun, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -222,7 +222,7 @@ export default function App() {
           </div>
           <div className="relative z-10 grid gap-4 text-sm text-foreground/74">
             <ContactLine icon={<Mail />} text="hello@noyadance.com" />
-            <ContactLink href="https://www.instagram.com/noyashlomo?utm_source=qr" icon={<Instagram />} text="Instagram" />
+            <ContactLink href="https://www.instagram.com/noyashlomo?utm_source=qr" icon={<InstagramIcon />} text="Instagram" />
             <ContactLink href="https://www.tiktok.com/@noyalachan?_r=1&_t=ZS-96pJauUzNoO" icon={<TikTokIcon />} text="TikTok" />
             <ContactLine icon={<MapPin />} text={t('contact.studios')} />
           </div>
@@ -279,7 +279,7 @@ export default function App() {
             </nav>
             <div className="mt-auto grid gap-3 border-t border-border pt-6 text-sm text-foreground/70">
               <ContactLine icon={<Mail />} text="hello@noyadance.com" />
-              <ContactLink href="https://www.instagram.com/noyashlomo?utm_source=qr" icon={<Instagram />} text="Instagram" />
+              <ContactLink href="https://www.instagram.com/noyashlomo?utm_source=qr" icon={<InstagramIcon />} text="Instagram" />
               <ContactLink href="https://www.tiktok.com/@noyalachan?_r=1&_t=ZS-96pJauUzNoO" icon={<TikTokIcon />} text="TikTok" />
             </div>
           </aside>
@@ -440,6 +440,16 @@ function TikTokIcon() {
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8">
       <path d="M14 4v10.2a4.2 4.2 0 1 1-4.2-4.2" />
       <path d="M14 4c.7 3.2 2.6 5 6 5.4" />
+    </svg>
+  )
+}
+
+function InstagramIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8">
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <circle cx="12" cy="12" r="3.5" />
+      <path d="M16.8 7.2h.01" />
     </svg>
   )
 }
