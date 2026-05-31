@@ -1,4 +1,4 @@
-import { ArrowRight, AtSign, Mail, MapPin, Menu, Moon, Phone, Star, Sun, Users, X } from 'lucide-react'
+import { ArrowRight, Instagram, Mail, MapPin, Menu, Moon, Phone, Star, Sun, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -33,12 +33,24 @@ const lessonRows = [
   { entry: 'lessons.rows.card.entry', count: '16', price: '800₪', validity: 'lessons.rows.threeMonths' },
 ]
 
+const lessonsPath = '/lessons'
+
 export default function App() {
   const { t } = useTranslation()
   const { theme, toggleTheme } = useTheme()
   const [menuOpen, setMenuOpen] = useState(false)
   const [aboutExpanded, setAboutExpanded] = useState(false)
   const [activeImage, setActiveImage] = useState<string | null>(null)
+  const [path, setPath] = useState(() => window.location.pathname)
+
+  useEffect(() => {
+    function handleNavigation() {
+      setPath(window.location.pathname)
+    }
+
+    window.addEventListener('popstate', handleNavigation)
+    return () => window.removeEventListener('popstate', handleNavigation)
+  }, [])
 
   useEffect(() => {
     document.body.style.overflow = menuOpen || activeImage ? 'hidden' : ''
@@ -46,6 +58,10 @@ export default function App() {
       document.body.style.overflow = ''
     }
   }, [menuOpen, activeImage])
+
+  if (path === lessonsPath) {
+    return <LessonsPage />
+  }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -98,8 +114,8 @@ export default function App() {
             <div className="mt-5 h-1 w-48 rounded-full bg-blush" />
             <p className="mt-6 max-w-md text-lg leading-7 text-foreground/70">{t('hero.body')}</p>
             <div className="mt-8 flex max-w-sm flex-col gap-3">
-              <PillLink href="#lessons">{t('hero.classes')}</PillLink>
-              <PillLink href="#lessons" variant="outline">
+              <PillLink href={lessonsPath}>{t('hero.classes')}</PillLink>
+              <PillLink href={lessonsPath} variant="outline">
                 {t('hero.private')}
               </PillLink>
             </div>
@@ -141,21 +157,21 @@ export default function App() {
       <section id="work" className="mx-auto max-w-6xl px-5 py-4 sm:px-8">
         <SectionTitle>{t('services.title')}</SectionTitle>
         <div className="mt-5 grid gap-8 md:grid-cols-2">
-          <ServiceCard href="#lessons" icon={<Users />} image={images.leap} title={t('services.classes')} body={t('services.classesBody')} />
-          <ServiceCard href="#lessons" icon={<Star />} image={images.private} title={t('services.private')} body={t('services.privateBody')} />
+          <ServiceCard href={lessonsPath} icon={<Users />} image={images.leap} title={t('services.classes')} body={t('services.classesBody')} />
+          <ServiceCard href={lessonsPath} icon={<Star />} image={images.private} title={t('services.private')} body={t('services.privateBody')} />
         </div>
       </section>
 
       <section id="classes" className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
         <div className="mb-5 flex items-end justify-between gap-4">
           <h2 className="font-serif text-4xl sm:text-5xl">{t('classes.title')}</h2>
-          <PillLink href="#lessons" variant="outline" className="hidden min-w-48 sm:flex">
+          <PillLink href={lessonsPath} variant="outline" className="hidden min-w-48 sm:flex">
             {t('classes.viewAll')}
           </PillLink>
         </div>
         <div className="grid gap-5 md:grid-cols-3">
           {classes.map((item) => (
-            <a key={item.date} href="#lessons" className="overflow-hidden rounded-[1.1rem] bg-card shadow-soft transition hover:-translate-y-1 hover:shadow-xl">
+            <a key={item.date} href={lessonsPath} className="overflow-hidden rounded-[1.1rem] bg-card shadow-soft transition hover:-translate-y-1 hover:shadow-xl">
               <div className="relative h-36">
                 <img src={item.image} alt="" className="size-full object-cover" />
                 <div className="absolute start-4 top-4 rounded-sm bg-blush px-5 py-2 text-center text-primary-foreground">
@@ -169,43 +185,6 @@ export default function App() {
               </div>
             </a>
           ))}
-        </div>
-      </section>
-
-      <section id="lessons" className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
-        <div className="rounded-[1.8rem] bg-card/78 p-6 shadow-soft sm:p-8">
-          <div className="grid gap-4 md:grid-cols-[0.75fr_1.25fr] md:items-end">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blush-strong">{t('lessons.eyebrow')}</p>
-              <h2 className="mt-2 font-serif text-4xl sm:text-5xl">{t('lessons.title')}</h2>
-            </div>
-            <div className="grid gap-2 text-base text-foreground/72 md:text-end">
-              <p>{t('lessons.days')}</p>
-              <p>{t('lessons.duration')}</p>
-            </div>
-          </div>
-
-          <div className="mt-8 overflow-hidden rounded-[1.15rem] border border-blush/45">
-            <div className="grid grid-cols-[1.2fr_0.75fr_0.8fr_1.2fr] bg-blush/35 text-sm font-bold md:text-base">
-              <TableCell>{t('lessons.entry')}</TableCell>
-              <TableCell>{t('lessons.count')}</TableCell>
-              <TableCell>{t('lessons.price')}</TableCell>
-              <TableCell>{t('lessons.validity')}</TableCell>
-            </div>
-            {lessonRows.map((row, index) => (
-              <div key={`${row.count}-${row.price}`} className={`grid grid-cols-[1.2fr_0.75fr_0.8fr_1.2fr] ${index % 2 ? 'bg-background/32' : 'bg-card/35'}`}>
-                <TableCell>{t(row.entry)}</TableCell>
-                <TableCell>{row.count}</TableCell>
-                <TableCell>{row.price}</TableCell>
-                <TableCell>{t(row.validity)}</TableCell>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-7 grid gap-4 text-foreground/74 md:grid-cols-2">
-            <ContactLine icon={<MapPin />} text={t('lessons.location')} />
-            <ContactLine icon={<Phone />} text={t('lessons.phone')} />
-          </div>
         </div>
       </section>
 
@@ -243,8 +222,9 @@ export default function App() {
           </div>
           <div className="relative z-10 grid gap-4 text-sm text-foreground/74">
             <ContactLine icon={<Mail />} text="hello@noyadance.com" />
-            <ContactLine icon={<AtSign />} text="@noya.dance" />
-            <ContactLine icon={<MapPin />} text={t('contact.location')} />
+            <ContactLink href="https://www.instagram.com/noyashlomo?utm_source=qr" icon={<Instagram />} text="Instagram" />
+            <ContactLink href="https://www.tiktok.com/@noyalachan?_r=1&_t=ZS-96pJauUzNoO" icon={<TikTokIcon />} text="TikTok" />
+            <ContactLine icon={<MapPin />} text={t('contact.studios')} />
           </div>
         </div>
         <div className="mt-5 rounded-t-md bg-blush px-4 py-3 text-center text-xs text-primary-foreground">{t('footer')}</div>
@@ -290,7 +270,7 @@ export default function App() {
               <SidebarLink href="#classes" onClick={() => setMenuOpen(false)}>
                 {t('nav.classes')}
               </SidebarLink>
-              <SidebarLink href="#lessons" onClick={() => setMenuOpen(false)}>
+              <SidebarLink href={lessonsPath} onClick={() => setMenuOpen(false)}>
                 {t('nav.lessons')}
               </SidebarLink>
               <SidebarLink href="#contact" onClick={() => setMenuOpen(false)}>
@@ -299,7 +279,8 @@ export default function App() {
             </nav>
             <div className="mt-auto grid gap-3 border-t border-border pt-6 text-sm text-foreground/70">
               <ContactLine icon={<Mail />} text="hello@noyadance.com" />
-              <ContactLine icon={<AtSign />} text="@noya.dance" />
+              <ContactLink href="https://www.instagram.com/noyashlomo?utm_source=qr" icon={<Instagram />} text="Instagram" />
+              <ContactLink href="https://www.tiktok.com/@noyalachan?_r=1&_t=ZS-96pJauUzNoO" icon={<TikTokIcon />} text="TikTok" />
             </div>
           </aside>
         </div>
@@ -321,6 +302,55 @@ export default function App() {
           <img src={activeImage} alt="" className="relative max-h-[88vh] max-w-[92vw] rounded-xl object-contain shadow-2xl" />
         </div>
       )}
+    </main>
+  )
+}
+
+function LessonsPage() {
+  const { t } = useTranslation()
+
+  return (
+    <main className="min-h-screen bg-background px-5 py-6 text-foreground sm:px-8">
+      <div className="mx-auto max-w-5xl">
+        <a href="/" className="inline-flex text-sm font-semibold text-blush-strong underline-offset-4 hover:underline">
+          {t('actions.back')}
+        </a>
+
+        <section className="mt-6 rounded-[1.8rem] bg-card/78 p-6 shadow-soft sm:p-8">
+          <div className="grid gap-4 md:grid-cols-[0.75fr_1.25fr] md:items-end">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blush-strong">{t('lessons.eyebrow')}</p>
+              <h1 className="mt-2 font-serif text-4xl sm:text-5xl">{t('lessons.title')}</h1>
+            </div>
+            <div className="grid gap-2 text-base text-foreground/72 md:text-end">
+              <p>{t('lessons.days')}</p>
+              <p>{t('lessons.duration')}</p>
+            </div>
+          </div>
+
+          <div className="mt-8 overflow-hidden rounded-[1.15rem] border border-blush/45">
+            <div className="grid grid-cols-[1.2fr_0.75fr_0.8fr_1.2fr] bg-blush/35 text-sm font-bold md:text-base">
+              <TableCell>{t('lessons.entry')}</TableCell>
+              <TableCell>{t('lessons.count')}</TableCell>
+              <TableCell>{t('lessons.price')}</TableCell>
+              <TableCell>{t('lessons.validity')}</TableCell>
+            </div>
+            {lessonRows.map((row, index) => (
+              <div key={`${row.count}-${row.price}`} className={`grid grid-cols-[1.2fr_0.75fr_0.8fr_1.2fr] ${index % 2 ? 'bg-background/32' : 'bg-card/35'}`}>
+                <TableCell>{t(row.entry)}</TableCell>
+                <TableCell>{row.count}</TableCell>
+                <TableCell>{row.price}</TableCell>
+                <TableCell>{t(row.validity)}</TableCell>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-7 grid gap-4 text-foreground/74 md:grid-cols-2">
+            <ContactLine icon={<MapPin />} text={t('lessons.location')} />
+            <ContactLine icon={<Phone />} text={t('lessons.phone')} />
+          </div>
+        </section>
+      </div>
     </main>
   )
 }
@@ -391,7 +421,25 @@ function ContactLine({ icon, text }: { icon: ReactNode; text: string }) {
   return (
     <p className="flex items-center gap-4">
       <span className="text-blush-strong [&_svg]:size-5">{icon}</span>
-      <span>{text}</span>
+      <span className="whitespace-pre-line">{text}</span>
     </p>
+  )
+}
+
+function ContactLink({ href, icon, text }: { href: string; icon: ReactNode; text: string }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="flex items-center gap-4 transition hover:text-blush-strong">
+      <span className="text-blush-strong [&_svg]:size-5">{icon}</span>
+      <span>{text}</span>
+    </a>
+  )
+}
+
+function TikTokIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8">
+      <path d="M14 4v10.2a4.2 4.2 0 1 1-4.2-4.2" />
+      <path d="M14 4c.7 3.2 2.6 5 6 5.4" />
+    </svg>
   )
 }

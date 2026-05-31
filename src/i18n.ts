@@ -18,7 +18,7 @@ const resources = {
       menu: { toggle: 'Open menu', close: 'Close menu' },
       theme: { toggle: 'Toggle theme', light: 'Light', dark: 'Dark' },
       nav: { about: 'About', work: 'Work', classes: 'Classes', lessons: 'Lessons', contact: 'Contact' },
-      actions: { readMore: 'Read more', readLess: 'Show less', close: 'Close' },
+      actions: { readMore: 'Read more', readLess: 'Show less', close: 'Close', back: 'Go back' },
       hero: {
         eyebrow: 'Move. Express. Inspire.',
         titleTop: 'Noya',
@@ -61,7 +61,7 @@ const resources = {
         count: 'Lessons',
         price: 'Price',
         validity: 'Valid for',
-        location: "Fusion Arts Studio, 1 HaDolev Street, Mazkeret Batya",
+        location: '1 Dolev Street, Mazkeret Batya\n1 Moshe Lehrer Street, Ness Ziona',
         phone: 'Details and registration: Noya Shlomo 0536237331',
         rows: {
           intro: { entry: 'Intro lesson' },
@@ -77,6 +77,7 @@ const resources = {
         body: "Have a question or want to work together? I'd love to hear from you.",
         cta: 'Get in touch',
         location: 'Dubai, UAE',
+        studios: '1 Dolev Street, Mazkeret Batya\n1 Moshe Lehrer Street, Ness Ziona',
       },
       footer: '© 2025 Noya Dance. All rights reserved.',
     },
@@ -88,7 +89,7 @@ const resources = {
       menu: { toggle: 'Открыть меню', close: 'Закрыть меню' },
       theme: { toggle: 'Сменить тему', light: 'Светлая', dark: 'Темная' },
       nav: { about: 'Обо мне', work: 'Работы', classes: 'Занятия', lessons: 'Расписание', contact: 'Контакт' },
-      actions: { readMore: 'Читать дальше', readLess: 'Свернуть', close: 'Закрыть' },
+      actions: { readMore: 'Читать дальше', readLess: 'Свернуть', close: 'Закрыть', back: 'Назад' },
       hero: {
         eyebrow: 'Двигайся. Выражай. Вдохновляй.',
         titleTop: 'Noya',
@@ -131,7 +132,7 @@ const resources = {
         count: 'Занятия',
         price: 'Цена',
         validity: 'Срок',
-        location: 'Студия Fusion Arts, ул. HaDolev 1, Мазкерет-Батья',
+        location: 'ул. Долев 1, Мазкерет-Батья\nул. Моше Лерер 1, Нес-Циона',
         phone: 'Подробности и запись: Ноя Шломо 0536237331',
         rows: {
           intro: { entry: 'Пробное занятие' },
@@ -147,6 +148,7 @@ const resources = {
         body: 'Есть вопрос или хотите работать вместе? Я буду рада услышать вас.',
         cta: 'Связаться',
         location: 'Дубай, ОАЭ',
+        studios: 'ул. Долев 1, Мазкерет-Батья\nул. Моше Лерер 1, Нес-Циона',
       },
       footer: '© 2025 Noya Dance. Все права защищены.',
     },
@@ -158,7 +160,7 @@ const resources = {
       menu: { toggle: 'פתיחת תפריט', close: 'סגירת תפריט' },
       theme: { toggle: 'החלפת מצב תצוגה', light: 'בהיר', dark: 'כהה' },
       nav: { about: 'עליי', work: 'עבודות', classes: 'שיעורים', lessons: 'מערכת שיעורים', contact: 'יצירת קשר' },
-      actions: { readMore: 'קראי עוד', readLess: 'סגירה', close: 'סגירה' },
+      actions: { readMore: 'קראי עוד', readLess: 'סגירה', close: 'סגירה', back: 'חזרה' },
       hero: {
         eyebrow: 'לנוע. לבטא. להשראה.',
         titleTop: 'Noya',
@@ -200,7 +202,7 @@ const resources = {
         count: 'כמות שיעורים',
         price: 'מחיר',
         validity: 'תוקף',
-        location: 'סטודיו פיוז׳ן ארטס, רחוב הדולב 1, מזכרת בתיה',
+        location: 'דולב 1, מזכרת בתיה\nמשה לרר 1, נס ציונה',
         phone: 'לפרטים והרשמה: נויה שלמה 0536237331',
         rows: {
           intro: { entry: 'שיעור היכרות' },
@@ -216,6 +218,7 @@ const resources = {
         body: 'יש לך שאלה או רצון לעבוד יחד? אשמח לשמוע ממך.',
         cta: 'יצירת קשר',
         location: 'דובאי, איחוד האמירויות',
+        studios: 'דולב 1, מזכרת בתיה\nמשה לרר 1, נס ציונה',
       },
       footer: '© 2025 Noya Dance. כל הזכויות שמורות.',
     },
