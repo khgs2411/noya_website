@@ -17,7 +17,7 @@ const resources = {
       language: { label: 'Choose language' },
       menu: { toggle: 'Open menu', close: 'Close menu' },
       theme: { toggle: 'Toggle theme', light: 'Light', dark: 'Dark' },
-      nav: { about: 'About', work: 'Work', classes: 'Classes', contact: 'Contact' },
+      nav: { about: 'About', work: 'Work', classes: 'Classes', lessons: 'Lessons', contact: 'Contact' },
       actions: { readMore: 'Read more', readLess: 'Show less', close: 'Close' },
       hero: {
         eyebrow: 'Move. Express. Inspire.',
@@ -29,6 +29,8 @@ const resources = {
       },
       about: {
         title: 'About',
+        mobilePreview:
+          'Nice to meet you, I am Noya Shlomo HaCohen.\nI am 31, mother to Lachen, a dancer, choreographer, and dance teacher for more than 13 years.',
         body: 'Nice to meet you, I am Noya Shlomo HaCohen.\nI am 31, mother to Lachen, a dancer, choreographer, and dance teacher for more than 13 years.\n\nI began my professional path with Nadine Bommer in Rishon LeZion, and from there continued into the world of stage and performance. Over the years I have danced and taken part in a wide range of productions, including musicals at the Cameri Theatre and Tel Aviv Theatre, alongside professional work in dance and stage performance.\n\nDance has always been much more than movement for me. It was the place where I learned to express myself, connect inward, and feel free.\n\nAfter the birth of my daughter, Lachen, another world opened for me. I began studying mat Pilates and later equipment Pilates, and discovered the deep connection between body, breath, movement, and inner strength. From my own personal journey came my love for guiding women through a process that connects strength, posture, confidence, and joy in the body.\n\nOver the years I have taught ballet, jazz, musicals, and lyrical dance. In the last two years, I chose to focus mainly on working with women and adults, from the understanding that movement can be much more than a workout. It can be a place of healing, expression, and connection to yourself.\n\nWhat moves me more than anything is seeing a woman enter my studio and allow herself to meet the girl within her again. The one who always dreamed of dancing, the one who may have put herself aside over the years, and the one who wants to feel alive, strong, and free again, this time from a more mature, whole, and connected place.\n\nI believe every woman deserves a place where she can grow stronger, release, move, breathe, and feel at home in her body.\n\nI do not teach only movement. I create a space where women return to themselves through the body.',
         cta: 'My story',
       },
@@ -50,6 +52,25 @@ const resources = {
         jazz: 'Jazz & Expression',
         jazzTime: 'Thu, May 29 - 6:30 PM',
       },
+      lessons: {
+        eyebrow: 'Readonly schedule',
+        title: "Women's Jazz Lyrical Classes",
+        days: 'Tuesdays at 9:00 / Thursdays at 9:00',
+        duration: 'Lesson duration: 75 minutes',
+        entry: 'Entry',
+        count: 'Lessons',
+        price: 'Price',
+        validity: 'Valid for',
+        location: "Fusion Arts Studio, 1 HaDolev Street, Mazkeret Batya",
+        phone: 'Details and registration: Noya Shlomo 0536237331',
+        rows: {
+          intro: { entry: 'Intro lesson' },
+          single: { entry: 'Single lesson' },
+          card: { entry: 'Class card' },
+          once: 'One time',
+          threeMonths: 'Three months',
+        },
+      },
       gallery: { title: 'Photo Moments' },
       contact: {
         title: "Let's Connect",
@@ -66,7 +87,7 @@ const resources = {
       language: { label: 'Выбрать язык' },
       menu: { toggle: 'Открыть меню', close: 'Закрыть меню' },
       theme: { toggle: 'Сменить тему', light: 'Светлая', dark: 'Темная' },
-      nav: { about: 'Обо мне', work: 'Работы', classes: 'Занятия', contact: 'Контакт' },
+      nav: { about: 'Обо мне', work: 'Работы', classes: 'Занятия', lessons: 'Расписание', contact: 'Контакт' },
       actions: { readMore: 'Читать дальше', readLess: 'Свернуть', close: 'Закрыть' },
       hero: {
         eyebrow: 'Двигайся. Выражай. Вдохновляй.',
@@ -78,6 +99,8 @@ const resources = {
       },
       about: {
         title: 'О',
+        mobilePreview:
+          'Приятно познакомиться, я Ноя Шломо ха-Коэн.\nМне 31 год, я мама Лахен, танцовщица, хореограф и преподаватель танца уже более 13 лет.',
         body: 'Приятно познакомиться, я Ноя Шломо ха-Коэн.\nМне 31 год, я мама Лахен, танцовщица, хореограф и преподаватель танца уже более 13 лет.\n\nСвой профессиональный путь я начала у Надин Боммер в Ришон-ле-Ционе, а затем продолжила в мире сцены и выступлений. За эти годы я танцевала и участвовала в разных постановках, среди них мюзиклы в театре Камери и Театре Тель-Авива, а также профессиональная работа в мире танца и сцены.\n\nТанец всегда был для меня намного больше, чем движение. Это было место, где я научилась выражать себя, соединяться с собой и чувствовать свободу.\n\nПосле рождения моей дочери Лахен для меня открылся еще один мир. Я начала изучать пилатес на мате, а позже пилатес на оборудовании, и открыла глубокую связь между телом, дыханием, движением и внутренней силой. Из моего личного пути родилась и любовь к сопровождению женщин через процесс, который соединяет силу, осанку, уверенность и удовольствие от собственного тела.\n\nЗа эти годы я преподавала балет, джаз, мюзиклы и лирический танец. В последние два года я выбрала сосредоточиться в основном на работе с женщинами и взрослыми, понимая, что движение может быть намного больше, чем тренировка. Оно может стать местом исцеления, выражения и соединения с собой.\n\nБольше всего меня трогает видеть женщину, которая входит в мою студию и позволяет себе снова встретить девочку внутри себя. Ту, которая всегда мечтала танцевать, ту, которая, возможно, годами отодвигала себя в сторону, и ту, которая хочет снова почувствовать себя живой, сильной и свободной, но теперь из более зрелого, цельного и связанного места.\n\nЯ верю, что каждая женщина заслуживает место, где она может укрепиться, отпустить напряжение, двигаться, дышать и чувствовать себя дома в своем теле.\n\nЯ не преподаю только движение. Я создаю пространство, где женщины возвращаются к себе через тело.',
         cta: 'Моя история',
       },
@@ -99,6 +122,25 @@ const resources = {
         jazz: 'Jazz & Expression',
         jazzTime: 'Чт, 29 мая - 18:30',
       },
+      lessons: {
+        eyebrow: 'Только для чтения',
+        title: 'Женские занятия Jazz Lyrical',
+        days: 'Вторник 9:00 / четверг 9:00',
+        duration: 'Длительность занятия: 75 минут',
+        entry: 'Вход',
+        count: 'Занятия',
+        price: 'Цена',
+        validity: 'Срок',
+        location: 'Студия Fusion Arts, ул. HaDolev 1, Мазкерет-Батья',
+        phone: 'Подробности и запись: Ноя Шломо 0536237331',
+        rows: {
+          intro: { entry: 'Пробное занятие' },
+          single: { entry: 'Разовое занятие' },
+          card: { entry: 'Абонемент' },
+          once: 'Одноразово',
+          threeMonths: '3 месяца',
+        },
+      },
       gallery: { title: 'Фото моменты' },
       contact: {
         title: 'Свяжемся',
@@ -115,7 +157,7 @@ const resources = {
       language: { label: 'בחירת שפה' },
       menu: { toggle: 'פתיחת תפריט', close: 'סגירת תפריט' },
       theme: { toggle: 'החלפת מצב תצוגה', light: 'בהיר', dark: 'כהה' },
-      nav: { about: 'עליי', work: 'עבודות', classes: 'שיעורים', contact: 'יצירת קשר' },
+      nav: { about: 'עליי', work: 'עבודות', classes: 'שיעורים', lessons: 'מערכת שיעורים', contact: 'יצירת קשר' },
       actions: { readMore: 'קראי עוד', readLess: 'סגירה', close: 'סגירה' },
       hero: {
         eyebrow: 'לנוע. לבטא. להשראה.',
@@ -127,6 +169,7 @@ const resources = {
       },
       about: {
         title: 'על',
+        mobilePreview: 'נעים להכיר, אני נויה שלמה הכהן\nבת 31, אמא ללחן, רקדנית, כוריאוגרפית ומורה למחול כבר למעלה מ־13 שנים.',
         body: 'נעים להכיר, אני נויה שלמה הכהן\nבת 31, אמא ללחן, רקדנית, כוריאוגרפית ומורה למחול כבר למעלה מ־13 שנים.\n\nאת דרכי המקצועית התחלתי אצל נדין בומר בראשון לציון, ומשם המשכתי לעולם הבמה וההופעות. לאורך השנים רקדתי והשתתפתי בהפקות מגוונות, ביניהן מחזות זמר בתיאטרון הקאמרי ובתיאטרון תל אביב, לצד עבודה מקצועית בעולם המחול והבמה.\n\nהריקוד תמיד היה עבורי הרבה יותר מתנועה. הוא היה המקום שבו למדתי לבטא את עצמי, להתחבר פנימה ולהרגיש חופש.\n\nאחרי לידת בתי, לחן, נפתח עבורי עולם נוסף. התחלתי ללמוד פילאטיס מזרן ובהמשך פילאטיס מכשירים, וגיליתי את החיבור העמוק בין גוף, נשימה, תנועה וחיזוק פנימי. מתוך המסע האישי שלי נולדה גם האהבה לליווי נשים - דרך תהליך שמחבר בין כוח, יציבה, ביטחון והנאה מהגוף.\n\nלאורך השנים לימדתי בלט, ג׳אז, מחזות זמר ומחול לירי. בשנתיים האחרונות בחרתי להתמקד בעיקר בעבודה עם נשים ובוגרות, מתוך הבנה שהתנועה יכולה להיות הרבה יותר מאימון - היא יכולה להיות מקום של ריפוי, ביטוי וחיבור לעצמך.\n\nהדבר שמרגש אותי יותר מכל הוא לראות אישה שנכנסת לסטודיו שלי ומרשה לעצמה לפגוש מחדש את הילדה שבה. זו שתמיד חלמה לרקוד, זו שאולי הניחה את עצמה בצד לאורך השנים, וזו שרוצה לחזור להרגיש חיה, חזקה ומשוחררת - אבל הפעם ממקום בוגר, שלם ומחובר יותר.\n\nאני מאמינה שלכל אישה מגיע מקום שבו היא יכולה להתחזק, להשתחרר, לזוז, לנשום ולהרגיש בבית בתוך הגוף שלה.\n\nאני לא מלמדת רק תנועה. אני יוצרת מרחב שבו נשים חוזרות לעצמן דרך הגוף.',
         cta: 'הסיפור שלי',
       },
@@ -147,6 +190,25 @@ const resources = {
         linesTime: 'שלישי, 27 במאי - 19:00',
         jazz: 'Jazz & Expression',
         jazzTime: 'חמישי, 29 במאי - 18:30',
+      },
+      lessons: {
+        eyebrow: 'מערכת קריאה בלבד',
+        title: "שיעורי נשים ג'אז לירי",
+        days: 'ימי שלישי 9:00 / ימי חמישי 9:00',
+        duration: 'משך השיעור: 75 דקות',
+        entry: 'כניסה',
+        count: 'כמות שיעורים',
+        price: 'מחיר',
+        validity: 'תוקף',
+        location: 'סטודיו פיוז׳ן ארטס, רחוב הדולב 1, מזכרת בתיה',
+        phone: 'לפרטים והרשמה: נויה שלמה 0536237331',
+        rows: {
+          intro: { entry: 'שיעור היכרות' },
+          single: { entry: 'שיעור בודד' },
+          card: { entry: 'כרטיסייה' },
+          once: 'חד פעמי',
+          threeMonths: 'תקף לשלושה חודשים',
+        },
       },
       gallery: { title: 'רגעים בתמונה' },
       contact: {

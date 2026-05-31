@@ -1,4 +1,4 @@
-import { ArrowRight, AtSign, Mail, MapPin, Menu, Moon, Star, Sun, Users, X } from 'lucide-react'
+import { ArrowRight, AtSign, Mail, MapPin, Menu, Moon, Phone, Star, Sun, Users, X } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -24,6 +24,14 @@ const classes = [
 ]
 
 const gallery = [images.hero, images.portrait, images.leap, images.private, images.group, images.rehearsal, images.ballet]
+
+const lessonRows = [
+  { entry: 'lessons.rows.intro.entry', count: '1', price: '60₪', validity: 'lessons.rows.once' },
+  { entry: 'lessons.rows.single.entry', count: '1', price: '70₪', validity: 'lessons.rows.once' },
+  { entry: 'lessons.rows.card.entry', count: '8', price: '480₪', validity: 'lessons.rows.threeMonths' },
+  { entry: 'lessons.rows.card.entry', count: '12', price: '660₪', validity: 'lessons.rows.threeMonths' },
+  { entry: 'lessons.rows.card.entry', count: '16', price: '800₪', validity: 'lessons.rows.threeMonths' },
+]
 
 export default function App() {
   const { t } = useTranslation()
@@ -90,8 +98,8 @@ export default function App() {
             <div className="mt-5 h-1 w-48 rounded-full bg-blush" />
             <p className="mt-6 max-w-md text-lg leading-7 text-foreground/70">{t('hero.body')}</p>
             <div className="mt-8 flex max-w-sm flex-col gap-3">
-              <PillLink href="#classes">{t('hero.classes')}</PillLink>
-              <PillLink href="#contact" variant="outline">
+              <PillLink href="#lessons">{t('hero.classes')}</PillLink>
+              <PillLink href="#lessons" variant="outline">
                 {t('hero.private')}
               </PillLink>
             </div>
@@ -109,14 +117,10 @@ export default function App() {
           </h2>
           <div className="mt-4 h-0.5 w-28 bg-blush" />
           <div className="relative">
-            <p
-              className={`mt-6 max-w-2xl whitespace-pre-line text-base leading-7 text-foreground/72 ${
-                aboutExpanded ? '' : 'max-md:max-h-[30rem] max-md:overflow-hidden'
-              }`}
-            >
-              {t('about.body')}
+            <p className="mt-6 max-w-2xl whitespace-pre-line text-base leading-7 text-foreground/72">
+              <span className="md:hidden">{aboutExpanded ? t('about.body') : t('about.mobilePreview')}</span>
+              <span className="hidden md:inline">{t('about.body')}</span>
             </p>
-            {!aboutExpanded && <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-card to-transparent md:hidden" />}
           </div>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Button
@@ -137,21 +141,21 @@ export default function App() {
       <section id="work" className="mx-auto max-w-6xl px-5 py-4 sm:px-8">
         <SectionTitle>{t('services.title')}</SectionTitle>
         <div className="mt-5 grid gap-8 md:grid-cols-2">
-          <ServiceCard icon={<Users />} image={images.leap} title={t('services.classes')} body={t('services.classesBody')} />
-          <ServiceCard icon={<Star />} image={images.private} title={t('services.private')} body={t('services.privateBody')} />
+          <ServiceCard href="#lessons" icon={<Users />} image={images.leap} title={t('services.classes')} body={t('services.classesBody')} />
+          <ServiceCard href="#lessons" icon={<Star />} image={images.private} title={t('services.private')} body={t('services.privateBody')} />
         </div>
       </section>
 
       <section id="classes" className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
         <div className="mb-5 flex items-end justify-between gap-4">
           <h2 className="font-serif text-4xl sm:text-5xl">{t('classes.title')}</h2>
-          <PillLink href="#contact" variant="outline" className="hidden min-w-48 sm:flex">
+          <PillLink href="#lessons" variant="outline" className="hidden min-w-48 sm:flex">
             {t('classes.viewAll')}
           </PillLink>
         </div>
         <div className="grid gap-5 md:grid-cols-3">
           {classes.map((item) => (
-            <article key={item.date} className="overflow-hidden rounded-[1.1rem] bg-card shadow-soft">
+            <a key={item.date} href="#lessons" className="overflow-hidden rounded-[1.1rem] bg-card shadow-soft transition hover:-translate-y-1 hover:shadow-xl">
               <div className="relative h-36">
                 <img src={item.image} alt="" className="size-full object-cover" />
                 <div className="absolute start-4 top-4 rounded-sm bg-blush px-5 py-2 text-center text-primary-foreground">
@@ -163,8 +167,45 @@ export default function App() {
                 <h3 className="text-lg font-medium">{t(item.title)}</h3>
                 <p className="mt-1 text-sm text-foreground/62">{t(item.time)}</p>
               </div>
-            </article>
+            </a>
           ))}
+        </div>
+      </section>
+
+      <section id="lessons" className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
+        <div className="rounded-[1.8rem] bg-card/78 p-6 shadow-soft sm:p-8">
+          <div className="grid gap-4 md:grid-cols-[0.75fr_1.25fr] md:items-end">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blush-strong">{t('lessons.eyebrow')}</p>
+              <h2 className="mt-2 font-serif text-4xl sm:text-5xl">{t('lessons.title')}</h2>
+            </div>
+            <div className="grid gap-2 text-base text-foreground/72 md:text-end">
+              <p>{t('lessons.days')}</p>
+              <p>{t('lessons.duration')}</p>
+            </div>
+          </div>
+
+          <div className="mt-8 overflow-hidden rounded-[1.15rem] border border-blush/45">
+            <div className="grid grid-cols-[1.2fr_0.75fr_0.8fr_1.2fr] bg-blush/35 text-sm font-bold md:text-base">
+              <TableCell>{t('lessons.entry')}</TableCell>
+              <TableCell>{t('lessons.count')}</TableCell>
+              <TableCell>{t('lessons.price')}</TableCell>
+              <TableCell>{t('lessons.validity')}</TableCell>
+            </div>
+            {lessonRows.map((row, index) => (
+              <div key={`${row.count}-${row.price}`} className={`grid grid-cols-[1.2fr_0.75fr_0.8fr_1.2fr] ${index % 2 ? 'bg-background/32' : 'bg-card/35'}`}>
+                <TableCell>{t(row.entry)}</TableCell>
+                <TableCell>{row.count}</TableCell>
+                <TableCell>{row.price}</TableCell>
+                <TableCell>{t(row.validity)}</TableCell>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-7 grid gap-4 text-foreground/74 md:grid-cols-2">
+            <ContactLine icon={<MapPin />} text={t('lessons.location')} />
+            <ContactLine icon={<Phone />} text={t('lessons.phone')} />
+          </div>
         </div>
       </section>
 
@@ -249,6 +290,9 @@ export default function App() {
               <SidebarLink href="#classes" onClick={() => setMenuOpen(false)}>
                 {t('nav.classes')}
               </SidebarLink>
+              <SidebarLink href="#lessons" onClick={() => setMenuOpen(false)}>
+                {t('nav.lessons')}
+              </SidebarLink>
               <SidebarLink href="#contact" onClick={() => setMenuOpen(false)}>
                 {t('nav.contact')}
               </SidebarLink>
@@ -324,9 +368,9 @@ function SectionTitle({ children }: { children: ReactNode }) {
   )
 }
 
-function ServiceCard({ image, title, body, icon }: { image: string; title: string; body: string; icon: ReactNode }) {
+function ServiceCard({ href, image, title, body, icon }: { href: string; image: string; title: string; body: string; icon: ReactNode }) {
   return (
-    <article className="overflow-hidden rounded-[1.3rem] bg-card shadow-soft">
+    <a href={href} className="block overflow-hidden rounded-[1.3rem] bg-card shadow-soft transition hover:-translate-y-1 hover:shadow-xl">
       <img src={image} alt="" className="h-64 w-full object-cover" />
       <div className="relative px-10 pb-8 pt-8">
         <div className="absolute -top-8 start-12 grid size-16 place-items-center rounded-full border-2 border-card bg-blush text-primary-foreground">
@@ -335,8 +379,12 @@ function ServiceCard({ image, title, body, icon }: { image: string; title: strin
         <h3 className="text-xl font-medium uppercase tracking-[0.08em]">{title}</h3>
         <p className="mt-2 max-w-xs text-sm leading-6 text-foreground/62">{body}</p>
       </div>
-    </article>
+    </a>
   )
+}
+
+function TableCell({ children }: { children: ReactNode }) {
+  return <div className="border-e border-t border-blush/45 px-3 py-3 text-center text-sm sm:px-4 sm:text-base">{children}</div>
 }
 
 function ContactLine({ icon, text }: { icon: ReactNode; text: string }) {
