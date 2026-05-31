@@ -5,7 +5,11 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { languages, type LanguageCode } from '@/i18n'
 
-export function LanguageMenu() {
+type LanguageMenuProps = {
+  buttonClassName?: string
+}
+
+export function LanguageMenu({ buttonClassName = '' }: LanguageMenuProps) {
   const { t, i18n } = useTranslation()
   const [open, setOpen] = useState(false)
   const currentLanguage = (i18n.resolvedLanguage ?? i18n.language ?? 'en').split('-')[0] as LanguageCode
@@ -21,7 +25,7 @@ export function LanguageMenu() {
         type="button"
         variant="ghost"
         size="icon"
-        className="size-10 rounded-full"
+        className={`rounded-full bg-blush/58 text-foreground hover:bg-blush/80 ${buttonClassName}`}
         aria-label={t('language.label')}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}

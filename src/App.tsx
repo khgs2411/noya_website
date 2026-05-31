@@ -1,5 +1,5 @@
-import { ArrowRight, AtSign, Mail, MapPin, Menu, Moon, Star, Sun, Users } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { ArrowRight, AtSign, Mail, MapPin, Menu, Moon, Star, Sun, Users, X } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { LanguageMenu } from '@/components/layout/language-menu'
@@ -28,6 +28,16 @@ const gallery = [images.hero, images.portrait, images.leap, images.private, imag
 export default function App() {
   const { t } = useTranslation()
   const { theme, toggleTheme } = useTheme()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [aboutExpanded, setAboutExpanded] = useState(false)
+  const [activeImage, setActiveImage] = useState<string | null>(null)
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen || activeImage ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [menuOpen, activeImage])
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -38,31 +48,33 @@ export default function App() {
           <div className="absolute inset-y-0 start-0 w-28 bg-gradient-to-r from-background to-transparent" />
         </div>
 
-        <header className="relative z-10 mx-auto flex max-w-6xl items-start justify-between px-5 py-5 sm:px-8">
+        <header className="relative z-10 mx-auto flex max-w-6xl items-start justify-between gap-5 px-5 py-5 sm:px-8">
           <a href="#top" className="leading-none">
             <span className="font-script block text-5xl text-foreground sm:text-6xl">{t('brand.first')}</span>
             <span className="ms-10 block text-xs font-semibold tracking-[0.58em] text-foreground/70">{t('brand.second')}</span>
           </a>
-          <div className="flex items-center gap-2">
-            <LanguageMenu />
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="size-11 rounded-full bg-blush/70 text-foreground hover:bg-blush"
+              className="size-12 rounded-full bg-blush/58 text-foreground shadow-sm hover:bg-blush/80 sm:size-14 [&_svg]:!size-6"
               aria-label={t('theme.toggle')}
               onClick={toggleTheme}
             >
               {theme === 'dark' ? <Moon /> : <Sun />}
             </Button>
+            <LanguageMenu buttonClassName="size-12 shadow-sm sm:size-14 [&_svg]:!size-6" />
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="size-14 rounded-full bg-blush text-foreground hover:bg-blush/80"
+              className="size-16 rounded-full bg-blush text-foreground shadow-sm ring-4 ring-blush/18 hover:bg-blush/85 sm:size-20 [&_svg]:!size-8"
               aria-label={t('menu.toggle')}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen(true)}
             >
-              <Menu className="size-7" />
+              <Menu />
             </Button>
           </div>
         </header>
@@ -88,7 +100,7 @@ export default function App() {
       </section>
 
       <section id="about" className="relative mx-auto grid max-w-6xl gap-8 px-5 py-8 sm:px-8 md:grid-cols-[0.8fr_1.2fr] md:items-start">
-        <img src={images.portrait} alt="" className="h-80 w-full rounded-[1.65rem] object-cover grayscale md:sticky md:top-8 md:h-[32rem]" />
+        <img src={images.portrait} alt="" className="h-80 w-full rounded-[1.65rem] object-cover object-top grayscale md:sticky md:top-8 md:h-[32rem]" />
         <div className="relative rounded-[1.8rem] bg-card/62 p-7 shadow-soft sm:p-8">
           <div className="floral-mark" aria-hidden="true" />
           <h2 className="font-serif text-5xl leading-none">
@@ -96,10 +108,29 @@ export default function App() {
             <span className="font-script text-6xl font-normal text-blush-strong">{t('brand.first')}</span>
           </h2>
           <div className="mt-4 h-0.5 w-28 bg-blush" />
-          <p className="mt-6 max-w-2xl whitespace-pre-line text-base leading-7 text-foreground/72">{t('about.body')}</p>
-          <PillLink href="#work" className="mt-7 max-w-56">
-            {t('about.cta')}
-          </PillLink>
+          <div className="relative">
+            <p
+              className={`mt-6 max-w-2xl whitespace-pre-line text-base leading-7 text-foreground/72 ${
+                aboutExpanded ? '' : 'max-md:max-h-[30rem] max-md:overflow-hidden'
+              }`}
+            >
+              {t('about.body')}
+            </p>
+            {!aboutExpanded && <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-card to-transparent md:hidden" />}
+          </div>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 rounded-full border-blush px-8 text-sm font-semibold uppercase tracking-[0.18em] text-blush-strong md:hidden"
+              onClick={() => setAboutExpanded((current) => !current)}
+            >
+              {aboutExpanded ? t('actions.readLess') : t('actions.readMore')}
+            </Button>
+            <PillLink href="#work" className="max-w-56">
+              {t('about.cta')}
+            </PillLink>
+          </div>
         </div>
       </section>
 
@@ -142,7 +173,18 @@ export default function App() {
           <h2 className="font-serif text-4xl sm:text-5xl">{t('gallery.title')}</h2>
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
             {gallery.map((image, index) => (
-              <img key={`${image}-${index}`} src={image} alt="" className="h-28 w-full rounded-xl object-cover grayscale" />
+              <button
+                key={`${image}-${index}`}
+                type="button"
+                className="group overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => setActiveImage(image)}
+              >
+                <img
+                  src={image}
+                  alt=""
+                  className="h-28 w-full object-cover grayscale transition duration-300 group-hover:scale-105 group-hover:grayscale-0"
+                />
+              </button>
             ))}
           </div>
         </div>
@@ -166,7 +208,84 @@ export default function App() {
         </div>
         <div className="mt-5 rounded-t-md bg-blush px-4 py-3 text-center text-xs text-primary-foreground">{t('footer')}</div>
       </footer>
+
+      {menuOpen && (
+        <div className="fixed inset-0 z-50">
+          <button
+            type="button"
+            className="absolute inset-0 bg-foreground/28 backdrop-blur-sm"
+            aria-label={t('menu.close')}
+            onClick={() => setMenuOpen(false)}
+          />
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('menu.toggle')}
+            className="absolute inset-y-0 end-0 flex w-[min(22rem,86vw)] flex-col bg-card px-7 py-6 shadow-2xl"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <a href="#top" className="leading-none" onClick={() => setMenuOpen(false)}>
+                <span className="font-script block text-5xl text-blush-strong">{t('brand.first')}</span>
+                <span className="ms-8 block text-xs font-semibold tracking-[0.5em] text-foreground/62">{t('brand.second')}</span>
+              </a>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-12 rounded-full bg-blush/50 hover:bg-blush/75 [&_svg]:!size-6"
+                aria-label={t('menu.close')}
+                onClick={() => setMenuOpen(false)}
+              >
+                <X />
+              </Button>
+            </div>
+            <nav className="mt-12 grid gap-5 text-3xl font-serif">
+              <SidebarLink href="#about" onClick={() => setMenuOpen(false)}>
+                {t('nav.about')}
+              </SidebarLink>
+              <SidebarLink href="#work" onClick={() => setMenuOpen(false)}>
+                {t('nav.work')}
+              </SidebarLink>
+              <SidebarLink href="#classes" onClick={() => setMenuOpen(false)}>
+                {t('nav.classes')}
+              </SidebarLink>
+              <SidebarLink href="#contact" onClick={() => setMenuOpen(false)}>
+                {t('nav.contact')}
+              </SidebarLink>
+            </nav>
+            <div className="mt-auto grid gap-3 border-t border-border pt-6 text-sm text-foreground/70">
+              <ContactLine icon={<Mail />} text="hello@noyadance.com" />
+              <ContactLine icon={<AtSign />} text="@noya.dance" />
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {activeImage && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/86 p-4 backdrop-blur-sm">
+          <button type="button" className="absolute inset-0" aria-label={t('actions.close')} onClick={() => setActiveImage(null)} />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute end-4 top-4 z-10 size-12 rounded-full bg-background/86 text-foreground hover:bg-background [&_svg]:!size-6"
+            aria-label={t('actions.close')}
+            onClick={() => setActiveImage(null)}
+          >
+            <X />
+          </Button>
+          <img src={activeImage} alt="" className="relative max-h-[88vh] max-w-[92vw] rounded-xl object-contain shadow-2xl" />
+        </div>
+      )}
     </main>
+  )
+}
+
+function SidebarLink({ href, onClick, children }: { href: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <a href={href} className="border-b border-border/70 pb-4 text-foreground transition hover:text-blush-strong" onClick={onClick}>
+      {children}
+    </a>
   )
 }
 

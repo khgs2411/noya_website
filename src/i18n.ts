@@ -15,9 +15,10 @@ const resources = {
     translation: {
       brand: { first: 'Noya', second: 'Dance' },
       language: { label: 'Choose language' },
-      menu: { toggle: 'Open menu' },
+      menu: { toggle: 'Open menu', close: 'Close menu' },
       theme: { toggle: 'Toggle theme', light: 'Light', dark: 'Dark' },
       nav: { about: 'About', work: 'Work', classes: 'Classes', contact: 'Contact' },
+      actions: { readMore: 'Read more', readLess: 'Show less', close: 'Close' },
       hero: {
         eyebrow: 'Move. Express. Inspire.',
         titleTop: 'Noya',
@@ -63,9 +64,10 @@ const resources = {
     translation: {
       brand: { first: 'Noya', second: 'Dance' },
       language: { label: 'Выбрать язык' },
-      menu: { toggle: 'Открыть меню' },
+      menu: { toggle: 'Открыть меню', close: 'Закрыть меню' },
       theme: { toggle: 'Сменить тему', light: 'Светлая', dark: 'Темная' },
       nav: { about: 'Обо мне', work: 'Работы', classes: 'Занятия', contact: 'Контакт' },
+      actions: { readMore: 'Читать дальше', readLess: 'Свернуть', close: 'Закрыть' },
       hero: {
         eyebrow: 'Двигайся. Выражай. Вдохновляй.',
         titleTop: 'Noya',
@@ -111,9 +113,10 @@ const resources = {
     translation: {
       brand: { first: 'Noya', second: 'Dance' },
       language: { label: 'בחירת שפה' },
-      menu: { toggle: 'פתיחת תפריט' },
+      menu: { toggle: 'פתיחת תפריט', close: 'סגירת תפריט' },
       theme: { toggle: 'החלפת מצב תצוגה', light: 'בהיר', dark: 'כהה' },
       nav: { about: 'עליי', work: 'עבודות', classes: 'שיעורים', contact: 'יצירת קשר' },
+      actions: { readMore: 'קראי עוד', readLess: 'סגירה', close: 'סגירה' },
       hero: {
         eyebrow: 'לנוע. לבטא. להשראה.',
         titleTop: 'Noya',
