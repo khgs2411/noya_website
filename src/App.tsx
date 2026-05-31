@@ -216,12 +216,12 @@ export default function App() {
           <div>
             <h2 className="font-serif text-4xl">{t('contact.title')}</h2>
             <p className="mt-2 max-w-sm text-sm leading-5 text-foreground/62">{t('contact.body')}</p>
-            <PillLink href="mailto:hello@noyadance.com" className="mt-4 max-w-52">
+            <PillLink href="mailto:noyas2703@gmail.com" className="mt-4 max-w-52">
               {t('contact.cta')}
             </PillLink>
           </div>
           <div className="relative z-10 grid gap-4 text-sm text-foreground/74">
-            <ContactLine icon={<Mail />} text="hello@noyadance.com" />
+            <ContactLine icon={<Mail />} text="noyas2703@gmail.com" />
             <ContactLink href="https://www.instagram.com/noyashlomo?utm_source=qr" icon={<InstagramIcon />} text="Instagram" />
             <ContactLink href="https://www.tiktok.com/@noyalachan?_r=1&_t=ZS-96pJauUzNoO" icon={<TikTokIcon />} text="TikTok" />
             <ContactLine icon={<MapPin />} text={t('contact.studios')} />
@@ -291,7 +291,7 @@ export default function App() {
               </SidebarLink>
             </nav>
             <div className="mt-8 grid gap-3 border-t border-border pt-6 text-sm text-foreground/70">
-              <ContactLine icon={<Mail />} text="hello@noyadance.com" />
+              <ContactLine icon={<Mail />} text="noyas2703@gmail.com" />
               <ContactLink href="https://www.instagram.com/noyashlomo?utm_source=qr" icon={<InstagramIcon />} text="Instagram" />
               <ContactLink href="https://www.tiktok.com/@noyalachan?_r=1&_t=ZS-96pJauUzNoO" icon={<TikTokIcon />} text="TikTok" />
             </div>
