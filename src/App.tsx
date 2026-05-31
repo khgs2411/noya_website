@@ -29,7 +29,7 @@ export default function App() {
   const { theme, toggleTheme } = useTheme()
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen overflow-x-hidden bg-background pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground">
       <section id="top" className="hero-shell relative overflow-hidden">
         <div className="absolute end-0 top-0 h-[48rem] w-[52%] max-w-[46rem] overflow-hidden max-md:opacity-28">
           <img src={images.hero} alt="" className="size-full object-cover object-[52%_18%] grayscale" />
@@ -147,8 +147,8 @@ export default function App() {
         </div>
       </section>
 
-      <footer id="contact" className="mx-auto max-w-6xl px-5 pb-0 pt-5 sm:px-8">
-        <div className="relative grid gap-6 overflow-hidden rounded-[1.35rem] border border-blush/55 bg-card/80 p-6 md:grid-cols-[1fr_1fr]">
+      <footer id="contact" className="mx-auto max-w-6xl px-5 pb-8 pt-5 sm:px-8">
+        <div className="relative grid gap-8 rounded-[1.35rem] border border-blush/55 bg-card/80 p-6 pb-8 md:grid-cols-[1fr_1fr] md:overflow-hidden">
           <div className="floral-mark floral-mark-start" aria-hidden="true" />
           <div>
             <h2 className="font-serif text-4xl">{t('contact.title')}</h2>
@@ -157,13 +157,13 @@ export default function App() {
               {t('contact.cta')}
             </PillLink>
           </div>
-          <div className="grid gap-3 text-sm text-foreground/74">
+          <div className="relative z-10 grid gap-4 text-sm text-foreground/74">
             <ContactLine icon={<Mail />} text="hello@noyadance.com" />
             <ContactLine icon={<AtSign />} text="@noya.dance" />
             <ContactLine icon={<MapPin />} text={t('contact.location')} />
           </div>
         </div>
-        <div className="mt-5 bg-blush px-4 py-2 text-center text-xs text-primary-foreground">{t('footer')}</div>
+        <div className="mt-5 rounded-t-md bg-blush px-4 py-3 text-center text-xs text-primary-foreground">{t('footer')}</div>
       </footer>
     </main>
   )
