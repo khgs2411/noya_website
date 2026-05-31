@@ -12,15 +12,17 @@ const images = {
   leap: '/images/IMG_2109.jpeg',
   leapWide: '/images/IMG_2101.jpeg',
   private: '/images/IMG_2105.jpeg',
+  rehearsal: '/images/3f126190-c261-48b2-9c94-d6c20c94365b.jpeg',
+  group: '/images/750f785f-80db-4158-825b-c5f7ff958837.jpeg',
 }
 
 const classes = [
   { date: '24', title: 'classes.flow', time: 'classes.flowTime', image: images.leap },
-  { date: '27', title: 'classes.lines', time: 'classes.linesTime', image: images.leapWide },
-  { date: '29', title: 'classes.jazz', time: 'classes.jazzTime', image: images.leap },
+  { date: '27', title: 'classes.lines', time: 'classes.linesTime', image: images.rehearsal },
+  { date: '29', title: 'classes.jazz', time: 'classes.jazzTime', image: images.group },
 ]
 
-const gallery = [images.hero, images.portrait, images.leap, images.private, images.leapWide]
+const gallery = [images.hero, images.portrait, images.leap, images.private, images.rehearsal, images.group]
 
 export default function App() {
   const { t } = useTranslation()
