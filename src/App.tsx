@@ -75,7 +75,6 @@ export default function App() {
         <header className="relative z-40 mx-auto flex max-w-6xl items-start justify-between gap-5 px-5 py-5 sm:px-8">
           <a href="#top" className="leading-none">
             <span className="font-script block text-5xl text-foreground sm:text-6xl">{t('brand.name')}</span>
-            <span className="ms-2 block text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-foreground/70">{t('brand.subtitle')}</span>
           </a>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Button
@@ -105,7 +104,7 @@ export default function App() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl gap-8 px-5 pb-8 pt-8 sm:px-8 md:grid-cols-[0.9fr_1.1fr] md:pb-0 md:pt-8">
           <div className="max-w-xl">
-            <p className="mb-6 text-sm font-medium uppercase tracking-[0.24em] text-foreground/70">{t('hero.eyebrow')}</p>
+            <p className="mb-6 text-sm font-semibold uppercase tracking-[0.26em] text-foreground/70">{t('hero.eyebrow')}</p>
             <h1 className="font-serif text-[4.7rem] font-semibold leading-[0.76] tracking-normal text-foreground sm:text-[7.6rem]">
               {t('hero.titleTop')}
               <br />
@@ -247,7 +246,6 @@ export default function App() {
             <div className="flex items-start justify-between gap-4">
               <a href="#top" className="leading-none" onClick={() => setMenuOpen(false)}>
                 <span className="font-script block text-5xl text-blush-strong">{t('brand.name')}</span>
-                <span className="ms-2 block text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-foreground/62">{t('brand.subtitle')}</span>
               </a>
               <Button
                 type="button"
