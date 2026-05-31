@@ -19,7 +19,7 @@ export default function App() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/82 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-border/70 bg-background/88 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
           <a href="#top" className="text-sm font-semibold tracking-[0.24em] uppercase">
             {t('brand')}
@@ -52,9 +52,23 @@ export default function App() {
             </Button>
           </div>
         </div>
+        <nav className="mx-auto flex max-w-5xl items-center gap-5 overflow-x-auto border-t border-border/60 px-4 py-3 text-sm text-muted-foreground sm:px-6 md:hidden">
+          <a href="#about" className="shrink-0 hover:text-foreground">
+            {t('nav.about')}
+          </a>
+          <a href="#work" className="shrink-0 hover:text-foreground">
+            {t('nav.work')}
+          </a>
+          <a href="#classes" className="shrink-0 hover:text-foreground">
+            {t('nav.classes')}
+          </a>
+          <a href="#contact" className="shrink-0 hover:text-foreground">
+            {t('nav.contact')}
+          </a>
+        </nav>
       </header>
 
-      <section id="top" className="mx-auto grid max-w-5xl gap-10 px-4 pb-16 pt-8 sm:px-6 md:grid-cols-[1fr_0.88fr] md:items-end md:pt-12">
+      <section id="top" className="mx-auto grid max-w-5xl gap-10 px-4 pb-16 pt-6 sm:px-6 md:grid-cols-[1fr_0.88fr] md:items-end md:pt-12">
         <div className="relative min-h-[72vh] overflow-hidden rounded-md border border-border bg-muted md:min-h-[760px]">
           <img
             src="/dancer-hero.png"
@@ -75,14 +89,14 @@ export default function App() {
 
         <div className="space-y-8 md:pb-10">
           <p className="max-w-md text-lg leading-8 text-muted-foreground">{t('hero.body')}</p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button size="lg" asChild>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button size="lg" className="w-full sm:w-auto sm:min-w-40" asChild>
               <a href="#contact">
                 {t('hero.primary')}
                 <ArrowUpRight />
               </a>
             </Button>
-            <Button size="lg" variant="outline" asChild>
+            <Button size="lg" variant="outline" className="w-full sm:w-auto sm:min-w-36" asChild>
               <a href="#work">{t('hero.secondary')}</a>
             </Button>
           </div>
@@ -107,9 +121,9 @@ export default function App() {
       <section id="work" className="mx-auto max-w-5xl px-4 py-14 sm:px-6">
         <h2 className="mb-6 text-3xl font-semibold">{t('work.title')}</h2>
         <div className="grid gap-3 md:grid-cols-3">
-          {workCards.map((card) => (
+          {workCards.map((card, index) => (
             <article key={card.title} className="rounded-md border border-border bg-card p-5">
-              <p className="mb-8 text-xs font-semibold uppercase tracking-[0.22em] text-accent-foreground">0{workCards.indexOf(card) + 1}</p>
+              <p className="mb-8 text-xs font-semibold uppercase tracking-[0.22em] text-accent-foreground">0{index + 1}</p>
               <h3 className="text-xl font-semibold">{t(card.title)}</h3>
               <p className="mt-3 leading-7 text-muted-foreground">{t(card.body)}</p>
             </article>
