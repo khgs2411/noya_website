@@ -13,7 +13,7 @@ export type LanguageCode = (typeof languages)[number]['code']
 const resources = {
   en: {
     translation: {
-      brand: { first: 'Noya', second: 'Dance' },
+      brand: { name: "Noya's flow", subtitle: 'Body * Dance * Movement', first: 'Noya', second: 'Dance' },
       language: { label: 'Choose language' },
       menu: { toggle: 'Open menu', close: 'Close menu' },
       theme: { toggle: 'Toggle theme', light: 'Light', dark: 'Dark' },
@@ -79,12 +79,12 @@ const resources = {
         location: 'Dubai, UAE',
         studios: '1 Dolev Street, Mazkeret Batya\n1 Moshe Lehrer Street, Ness Ziona',
       },
-      footer: '© 2025 Noya Dance. All rights reserved.',
+      footer: "© 2025 Noya's flow. All rights reserved.",
     },
   },
   ru: {
     translation: {
-      brand: { first: 'Noya', second: 'Dance' },
+      brand: { name: "Noya's flow", subtitle: 'Body * Dance * Movement', first: 'Noya', second: 'Dance' },
       language: { label: 'Выбрать язык' },
       menu: { toggle: 'Открыть меню', close: 'Закрыть меню' },
       theme: { toggle: 'Сменить тему', light: 'Светлая', dark: 'Темная' },
@@ -150,12 +150,12 @@ const resources = {
         location: 'Дубай, ОАЭ',
         studios: 'ул. Долев 1, Мазкерет-Батья\nул. Моше Лерер 1, Нес-Циона',
       },
-      footer: '© 2025 Noya Dance. Все права защищены.',
+      footer: "© 2025 Noya's flow. Все права защищены.",
     },
   },
   he: {
     translation: {
-      brand: { first: 'Noya', second: 'Dance' },
+      brand: { name: "Noya's flow", subtitle: 'Body * Dance * Movement', first: 'Noya', second: 'Dance' },
       language: { label: 'בחירת שפה' },
       menu: { toggle: 'פתיחת תפריט', close: 'סגירת תפריט' },
       theme: { toggle: 'החלפת מצב תצוגה', light: 'בהיר', dark: 'כהה' },
@@ -220,7 +220,7 @@ const resources = {
         location: 'דובאי, איחוד האמירויות',
         studios: 'דולב 1, מזכרת בתיה\nמשה לרר 1, נס ציונה',
       },
-      footer: '© 2025 Noya Dance. כל הזכויות שמורות.',
+      footer: "© 2025 Noya's flow. כל הזכויות שמורות.",
     },
   },
 } as const

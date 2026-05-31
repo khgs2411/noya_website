@@ -74,8 +74,8 @@ export default function App() {
 
         <header className="relative z-40 mx-auto flex max-w-6xl items-start justify-between gap-5 px-5 py-5 sm:px-8">
           <a href="#top" className="leading-none">
-            <span className="font-script block text-5xl text-foreground sm:text-6xl">{t('brand.first')}</span>
-            <span className="ms-10 block text-xs font-semibold tracking-[0.58em] text-foreground/70">{t('brand.second')}</span>
+            <span className="font-script block text-5xl text-foreground sm:text-6xl">{t('brand.name')}</span>
+            <span className="ms-2 block text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-foreground/70">{t('brand.subtitle')}</span>
           </a>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Button
@@ -246,8 +246,8 @@ export default function App() {
           >
             <div className="flex items-start justify-between gap-4">
               <a href="#top" className="leading-none" onClick={() => setMenuOpen(false)}>
-                <span className="font-script block text-5xl text-blush-strong">{t('brand.first')}</span>
-                <span className="ms-8 block text-xs font-semibold tracking-[0.5em] text-foreground/62">{t('brand.second')}</span>
+                <span className="font-script block text-5xl text-blush-strong">{t('brand.name')}</span>
+                <span className="ms-2 block text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-foreground/62">{t('brand.subtitle')}</span>
               </a>
               <Button
                 type="button"
