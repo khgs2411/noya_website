@@ -1,46 +1,59 @@
+@import "@fontsource/cormorant-garamond/latin-400.css";
+@import "@fontsource/cormorant-garamond/latin-600.css";
+@import "@fontsource/montserrat/latin-400.css";
+@import "@fontsource/montserrat/latin-500.css";
+@import "@fontsource/montserrat/latin-600.css";
+@import "@fontsource/montserrat/cyrillic-400.css";
+@import "@fontsource/montserrat/cyrillic-500.css";
+@import "@fontsource/montserrat/cyrillic-600.css";
+@import "@fontsource/allura/latin-400.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Montserrat", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color-scheme: light;
-  --background: oklch(0.985 0.004 75);
-  --foreground: oklch(0.17 0.018 48);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.17 0.018 48);
-  --primary: oklch(0.21 0.022 42);
-  --primary-foreground: oklch(0.985 0.004 75);
-  --secondary: oklch(0.93 0.013 72);
-  --secondary-foreground: oklch(0.21 0.022 42);
-  --muted: oklch(0.91 0.01 70);
-  --muted-foreground: oklch(0.45 0.02 52);
-  --accent: oklch(0.88 0.08 80);
-  --accent-foreground: oklch(0.42 0.08 52);
-  --border: oklch(0.84 0.012 70);
-  --input: oklch(0.84 0.012 70);
-  --ring: oklch(0.56 0.055 58);
-  --radius: 0.5rem;
+  --background: oklch(0.975 0.016 74);
+  --foreground: oklch(0.31 0.025 44);
+  --card: oklch(0.988 0.011 72);
+  --card-foreground: oklch(0.31 0.025 44);
+  --primary: oklch(0.31 0.025 44);
+  --primary-foreground: oklch(0.985 0.01 75);
+  --secondary: oklch(0.94 0.018 72);
+  --secondary-foreground: oklch(0.31 0.025 44);
+  --muted: oklch(0.92 0.018 64);
+  --muted-foreground: oklch(0.52 0.018 48);
+  --accent: oklch(0.78 0.065 29);
+  --accent-foreground: oklch(0.45 0.052 28);
+  --border: oklch(0.84 0.034 34);
+  --input: oklch(0.84 0.034 34);
+  --ring: oklch(0.67 0.07 29);
+  --blush: oklch(0.72 0.07 28);
+  --blush-strong: oklch(0.55 0.078 28);
+  --radius: 0.75rem;
 }
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.145 0.012 250);
-  --foreground: oklch(0.96 0.006 80);
-  --card: oklch(0.19 0.014 250);
-  --card-foreground: oklch(0.96 0.006 80);
-  --primary: oklch(0.92 0.018 76);
-  --primary-foreground: oklch(0.17 0.018 250);
-  --secondary: oklch(0.23 0.016 250);
-  --secondary-foreground: oklch(0.96 0.006 80);
-  --muted: oklch(0.25 0.014 250);
-  --muted-foreground: oklch(0.72 0.012 82);
-  --accent: oklch(0.36 0.08 30);
-  --accent-foreground: oklch(0.82 0.12 72);
-  --border: oklch(0.31 0.016 250);
-  --input: oklch(0.31 0.016 250);
-  --ring: oklch(0.7 0.06 70);
+  --background: oklch(0.18 0.012 40);
+  --foreground: oklch(0.94 0.014 74);
+  --card: oklch(0.23 0.014 40);
+  --card-foreground: oklch(0.94 0.014 74);
+  --primary: oklch(0.88 0.035 34);
+  --primary-foreground: oklch(0.18 0.012 40);
+  --secondary: oklch(0.27 0.018 38);
+  --secondary-foreground: oklch(0.94 0.014 74);
+  --muted: oklch(0.29 0.016 38);
+  --muted-foreground: oklch(0.74 0.026 58);
+  --accent: oklch(0.49 0.078 28);
+  --accent-foreground: oklch(0.82 0.055 32);
+  --border: oklch(0.38 0.034 34);
+  --input: oklch(0.38 0.034 34);
+  --ring: oklch(0.72 0.07 31);
+  --blush: oklch(0.56 0.075 28);
+  --blush-strong: oklch(0.76 0.058 29);
 }
 
 @theme inline {
@@ -59,6 +72,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-blush: var(--blush);
+  --color-blush-strong: var(--blush-strong);
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-script: "Allura", cursive;
+  --shadow-soft: 0 1.25rem 3rem color-mix(in oklab, var(--foreground) 10%, transparent);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -75,13 +93,62 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--background);
+  background:
+    radial-gradient(circle at 18% 0%, color-mix(in oklab, var(--blush) 14%, transparent) 0 16rem, transparent 32rem),
+    linear-gradient(180deg, var(--background), color-mix(in oklab, var(--background) 84%, var(--muted)));
 }
 
 a {
+  color: inherit;
   text-decoration: none;
 }
 
 button {
   font: inherit;
+}
+
+.hero-shell {
+  min-height: auto;
+}
+
+.floral-mark {
+  position: absolute;
+  inset-inline-end: -2rem;
+  bottom: -2rem;
+  width: 13rem;
+  height: 13rem;
+  opacity: 0.22;
+  border: 1px solid var(--blush);
+  border-radius: 42% 58% 52% 48%;
+  transform: rotate(-24deg);
+}
+
+.floral-mark::before,
+.floral-mark::after {
+  content: "";
+  position: absolute;
+  border: 1px solid var(--blush);
+  border-radius: 50%;
+}
+
+.floral-mark::before {
+  inset: 2.3rem 4rem 5rem 1.8rem;
+  transform: rotate(28deg);
+}
+
+.floral-mark::after {
+  inset: 5.3rem 1.7rem 2.6rem 5.2rem;
+  transform: rotate(-22deg);
+}
+
+.floral-mark-start {
+  inset-inline-end: auto;
+  inset-inline-start: -3.5rem;
+  bottom: -5rem;
+}
+
+@media (min-width: 768px) {
+  .hero-shell {
+    min-height: 42rem;
+  }
 }
