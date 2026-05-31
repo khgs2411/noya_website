@@ -3,9 +3,9 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
 
 export const languages = [
+  { code: 'he', label: 'עברית', dir: 'rtl' },
   { code: 'en', label: 'English', dir: 'ltr' },
   { code: 'ru', label: 'Русский', dir: 'ltr' },
-  { code: 'he', label: 'עברית', dir: 'rtl' },
 ] as const
 
 export type LanguageCode = (typeof languages)[number]['code']
@@ -28,7 +28,7 @@ const resources = {
       },
       about: {
         title: 'About',
-        body: 'Dance has been my language\nfor as long as I can remember.\nThrough movement, I found\nfreedom, confidence, and\nconnection - and now I am here\nto help you find that too.',
+        body: 'Nice to meet you, I am Noya Shlomo HaCohen.\nI am 31, mother to Lachen, a dancer, choreographer, and dance teacher for more than 13 years.\n\nI began my professional path with Nadine Bommer in Rishon LeZion, and from there continued into the world of stage and performance. Over the years I have danced and taken part in a wide range of productions, including musicals at the Cameri Theatre and Tel Aviv Theatre, alongside professional work in dance and stage performance.\n\nDance has always been much more than movement for me. It was the place where I learned to express myself, connect inward, and feel free.\n\nAfter the birth of my daughter, Lachen, another world opened for me. I began studying mat Pilates and later equipment Pilates, and discovered the deep connection between body, breath, movement, and inner strength. From my own personal journey came my love for guiding women through a process that connects strength, posture, confidence, and joy in the body.\n\nOver the years I have taught ballet, jazz, musicals, and lyrical dance. In the last two years, I chose to focus mainly on working with women and adults, from the understanding that movement can be much more than a workout. It can be a place of healing, expression, and connection to yourself.\n\nWhat moves me more than anything is seeing a woman enter my studio and allow herself to meet the girl within her again. The one who always dreamed of dancing, the one who may have put herself aside over the years, and the one who wants to feel alive, strong, and free again, this time from a more mature, whole, and connected place.\n\nI believe every woman deserves a place where she can grow stronger, release, move, breathe, and feel at home in her body.\n\nI do not teach only movement. I create a space where women return to themselves through the body.',
         cta: 'My story',
       },
       services: {
@@ -76,7 +76,7 @@ const resources = {
       },
       about: {
         title: 'О',
-        body: 'Танец был моим языком\nстолько, сколько я себя помню.\nЧерез движение я нашла\nсвободу, уверенность и связь -\nи теперь хочу помочь вам\nнайти это тоже.',
+        body: 'Приятно познакомиться, я Ноя Шломо ха-Коэн.\nМне 31 год, я мама Лахен, танцовщица, хореограф и преподаватель танца уже более 13 лет.\n\nСвой профессиональный путь я начала у Надин Боммер в Ришон-ле-Ционе, а затем продолжила в мире сцены и выступлений. За эти годы я танцевала и участвовала в разных постановках, среди них мюзиклы в театре Камери и Театре Тель-Авива, а также профессиональная работа в мире танца и сцены.\n\nТанец всегда был для меня намного больше, чем движение. Это было место, где я научилась выражать себя, соединяться с собой и чувствовать свободу.\n\nПосле рождения моей дочери Лахен для меня открылся еще один мир. Я начала изучать пилатес на мате, а позже пилатес на оборудовании, и открыла глубокую связь между телом, дыханием, движением и внутренней силой. Из моего личного пути родилась и любовь к сопровождению женщин через процесс, который соединяет силу, осанку, уверенность и удовольствие от собственного тела.\n\nЗа эти годы я преподавала балет, джаз, мюзиклы и лирический танец. В последние два года я выбрала сосредоточиться в основном на работе с женщинами и взрослыми, понимая, что движение может быть намного больше, чем тренировка. Оно может стать местом исцеления, выражения и соединения с собой.\n\nБольше всего меня трогает видеть женщину, которая входит в мою студию и позволяет себе снова встретить девочку внутри себя. Ту, которая всегда мечтала танцевать, ту, которая, возможно, годами отодвигала себя в сторону, и ту, которая хочет снова почувствовать себя живой, сильной и свободной, но теперь из более зрелого, цельного и связанного места.\n\nЯ верю, что каждая женщина заслуживает место, где она может укрепиться, отпустить напряжение, двигаться, дышать и чувствовать себя дома в своем теле.\n\nЯ не преподаю только движение. Я создаю пространство, где женщины возвращаются к себе через тело.',
         cta: 'Моя история',
       },
       services: {
@@ -124,7 +124,7 @@ const resources = {
       },
       about: {
         title: 'על',
-        body: 'ריקוד הוא השפה שלי\nמאז שאני זוכרת את עצמי.\nדרך תנועה מצאתי חופש,\nביטחון וחיבור - ועכשיו אני כאן\nכדי לעזור גם לך למצוא את זה.',
+        body: 'נעים להכיר, אני נויה שלמה הכהן\nבת 31, אמא ללחן, רקדנית, כוריאוגרפית ומורה למחול כבר למעלה מ־13 שנים.\n\nאת דרכי המקצועית התחלתי אצל נדין בומר בראשון לציון, ומשם המשכתי לעולם הבמה וההופעות. לאורך השנים רקדתי והשתתפתי בהפקות מגוונות, ביניהן מחזות זמר בתיאטרון הקאמרי ובתיאטרון תל אביב, לצד עבודה מקצועית בעולם המחול והבמה.\n\nהריקוד תמיד היה עבורי הרבה יותר מתנועה. הוא היה המקום שבו למדתי לבטא את עצמי, להתחבר פנימה ולהרגיש חופש.\n\nאחרי לידת בתי, לחן, נפתח עבורי עולם נוסף. התחלתי ללמוד פילאטיס מזרן ובהמשך פילאטיס מכשירים, וגיליתי את החיבור העמוק בין גוף, נשימה, תנועה וחיזוק פנימי. מתוך המסע האישי שלי נולדה גם האהבה לליווי נשים - דרך תהליך שמחבר בין כוח, יציבה, ביטחון והנאה מהגוף.\n\nלאורך השנים לימדתי בלט, ג׳אז, מחזות זמר ומחול לירי. בשנתיים האחרונות בחרתי להתמקד בעיקר בעבודה עם נשים ובוגרות, מתוך הבנה שהתנועה יכולה להיות הרבה יותר מאימון - היא יכולה להיות מקום של ריפוי, ביטוי וחיבור לעצמך.\n\nהדבר שמרגש אותי יותר מכל הוא לראות אישה שנכנסת לסטודיו שלי ומרשה לעצמה לפגוש מחדש את הילדה שבה. זו שתמיד חלמה לרקוד, זו שאולי הניחה את עצמה בצד לאורך השנים, וזו שרוצה לחזור להרגיש חיה, חזקה ומשוחררת - אבל הפעם ממקום בוגר, שלם ומחובר יותר.\n\nאני מאמינה שלכל אישה מגיע מקום שבו היא יכולה להתחזק, להשתחרר, לזוז, לנשום ולהרגיש בבית בתוך הגוף שלה.\n\nאני לא מלמדת רק תנועה. אני יוצרת מרחב שבו נשים חוזרות לעצמן דרך הגוף.',
         cta: 'הסיפור שלי',
       },
       services: {
@@ -174,7 +174,7 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'en',
+    fallbackLng: 'he',
     supportedLngs: languages.map((language) => language.code),
     load: 'languageOnly',
     detection: {
@@ -191,6 +191,6 @@ i18n
   })
 
 i18n.on('languageChanged', syncDocumentLanguage)
-syncDocumentLanguage(i18n.resolvedLanguage ?? i18n.language ?? 'en')
+syncDocumentLanguage(i18n.resolvedLanguage ?? i18n.language ?? 'he')
 
 export default i18n

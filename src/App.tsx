@@ -32,7 +32,7 @@ export default function App() {
   return (
     <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
       <section id="top" className="hero-shell relative overflow-hidden">
-        <div className="absolute end-0 top-0 h-[48rem] w-[52%] max-w-[46rem] overflow-hidden max-md:opacity-28">
+        <div className="absolute inset-x-0 top-0 h-[48rem] w-full overflow-hidden opacity-24 md:inset-x-auto md:end-0 md:w-[52%] md:max-w-[46rem] md:opacity-100">
           <img src={images.hero} alt="" className="size-full object-cover object-[52%_18%] grayscale" />
           <div className="absolute inset-0 bg-gradient-to-r from-background via-background/18 to-transparent" />
           <div className="absolute inset-y-0 start-0 w-28 bg-gradient-to-r from-background to-transparent" />
@@ -87,16 +87,16 @@ export default function App() {
         </div>
       </section>
 
-      <section id="about" className="relative mx-auto grid max-w-6xl gap-8 px-5 py-8 sm:px-8 md:grid-cols-[0.9fr_1.1fr] md:items-center">
-        <img src={images.portrait} alt="" className="h-80 w-full rounded-[1.65rem] object-cover grayscale md:h-[21rem]" />
-        <div className="relative overflow-hidden rounded-[1.8rem] bg-card/62 p-8 shadow-soft">
+      <section id="about" className="relative mx-auto grid max-w-6xl gap-8 px-5 py-8 sm:px-8 md:grid-cols-[0.8fr_1.2fr] md:items-start">
+        <img src={images.portrait} alt="" className="h-80 w-full rounded-[1.65rem] object-cover grayscale md:sticky md:top-8 md:h-[32rem]" />
+        <div className="relative rounded-[1.8rem] bg-card/62 p-7 shadow-soft sm:p-8">
           <div className="floral-mark" aria-hidden="true" />
           <h2 className="font-serif text-5xl leading-none">
             {t('about.title')}{' '}
             <span className="font-script text-6xl font-normal text-blush-strong">{t('brand.first')}</span>
           </h2>
           <div className="mt-4 h-0.5 w-28 bg-blush" />
-          <p className="mt-6 max-w-sm whitespace-pre-line text-base leading-6 text-foreground/72">{t('about.body')}</p>
+          <p className="mt-6 max-w-2xl whitespace-pre-line text-base leading-7 text-foreground/72">{t('about.body')}</p>
           <PillLink href="#work" className="mt-7 max-w-56">
             {t('about.cta')}
           </PillLink>
