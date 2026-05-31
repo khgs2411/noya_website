@@ -17,15 +17,17 @@ import { LanguageMenu } from "@/components/layout/language-menu";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
 
+const assetBase = import.meta.env.BASE_URL;
+
 const images = {
-  hero: "/images/9D661F78-FE6E-4ECF-960D-8FE8C888CB91.jpg",
-  portrait: "/images/976EFAC9-76C5-4B1A-AD92-F6A051E7CC31.jpg",
-  leap: "/images/IMG_2109.jpg",
-  leapWide: "/images/IMG_2101.jpg",
-  private: "/images/נולדהלרקוד.jpg",
-  rehearsal: "/images/3f126190-c261-48b2-9c94-d6c20c94365b.jpg",
-  group: "/images/750f785f-80db-4158-825b-c5f7ff958837.jpg",
-  ballet: "/images/IMG_2105.jpg",
+  hero: `${assetBase}images/9D661F78-FE6E-4ECF-960D-8FE8C888CB91.jpg`,
+  portrait: `${assetBase}images/976EFAC9-76C5-4B1A-AD92-F6A051E7CC31.jpg`,
+  leap: `${assetBase}images/IMG_2109.jpg`,
+  leapWide: `${assetBase}images/IMG_2101.jpg`,
+  private: `${assetBase}images/נולדהלרקוד.jpg`,
+  rehearsal: `${assetBase}images/3f126190-c261-48b2-9c94-d6c20c94365b.jpg`,
+  group: `${assetBase}images/750f785f-80db-4158-825b-c5f7ff958837.jpg`,
+  ballet: `${assetBase}images/IMG_2105.jpg`,
 };
 
 const classes = [
@@ -379,7 +381,7 @@ export default function App() {
                 className="relative z-10 block leading-none"
                 onClick={() => setMenuOpen(false)}
               >
-                <span className="font-script block text-4xl text-blush-strong">
+                <span className="font-display block text-4xl text-blush-strong">
                   {t("brand.name")}
                 </span>
                 <span className="font-display mt-0.5 block text-lg leading-none text-foreground/58">
@@ -390,7 +392,7 @@ export default function App() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute start-2.5 top-2.5 z-20 size-8 rounded-full bg-blush/42 hover:bg-blush/70 [&_svg]:!size-4"
+                className="absolute end-2.5 top-2.5 z-20 size-8 rounded-full bg-blush/42 hover:bg-blush/70 [&_svg]:!size-4"
                 aria-label={t("menu.close")}
                 onClick={() => setMenuOpen(false)}
               >
