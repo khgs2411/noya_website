@@ -72,7 +72,7 @@ export default function App() {
           <div className="absolute inset-y-0 start-0 w-28 bg-gradient-to-r from-background to-transparent" />
         </div>
 
-        <header className="relative z-10 mx-auto flex max-w-6xl items-start justify-between gap-5 px-5 py-5 sm:px-8">
+        <header className="relative z-40 mx-auto flex max-w-6xl items-start justify-between gap-5 px-5 py-5 sm:px-8">
           <a href="#top" className="leading-none">
             <span className="font-script block text-5xl text-foreground sm:text-6xl">{t('brand.first')}</span>
             <span className="ms-10 block text-xs font-semibold tracking-[0.58em] text-foreground/70">{t('brand.second')}</span>
@@ -242,7 +242,7 @@ export default function App() {
             role="dialog"
             aria-modal="true"
             aria-label={t('menu.toggle')}
-            className="absolute inset-y-0 end-0 flex w-[min(22rem,86vw)] flex-col bg-card px-7 py-6 shadow-2xl"
+            className="absolute inset-y-0 end-0 flex w-[min(22rem,86vw)] flex-col overflow-y-auto bg-card px-7 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-6 shadow-2xl"
           >
             <div className="flex items-start justify-between gap-4">
               <a href="#top" className="leading-none" onClick={() => setMenuOpen(false)}>
@@ -261,6 +261,19 @@ export default function App() {
               </Button>
             </div>
             <nav className="mt-12 grid gap-5 text-3xl font-serif">
+              <div className="mb-2 grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-14 w-full rounded-2xl bg-blush/25 text-foreground hover:bg-blush/40 [&_svg]:!size-6"
+                  aria-label={t('theme.toggle')}
+                  onClick={toggleTheme}
+                >
+                  {theme === 'dark' ? <Moon /> : <Sun />}
+                </Button>
+                <LanguageMenu buttonClassName="h-14 w-full rounded-2xl bg-blush/25 hover:bg-blush/40 [&_svg]:!size-6" panelClassName="end-0 top-16" />
+              </div>
               <SidebarLink href="#about" onClick={() => setMenuOpen(false)}>
                 {t('nav.about')}
               </SidebarLink>
@@ -277,7 +290,7 @@ export default function App() {
                 {t('nav.contact')}
               </SidebarLink>
             </nav>
-            <div className="mt-auto grid gap-3 border-t border-border pt-6 text-sm text-foreground/70">
+            <div className="mt-8 grid gap-3 border-t border-border pt-6 text-sm text-foreground/70">
               <ContactLine icon={<Mail />} text="hello@noyadance.com" />
               <ContactLink href="https://www.instagram.com/noyashlomo?utm_source=qr" icon={<InstagramIcon />} text="Instagram" />
               <ContactLink href="https://www.tiktok.com/@noyalachan?_r=1&_t=ZS-96pJauUzNoO" icon={<TikTokIcon />} text="TikTok" />

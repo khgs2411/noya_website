@@ -7,9 +7,10 @@ import { languages, type LanguageCode } from '@/i18n'
 
 type LanguageMenuProps = {
   buttonClassName?: string
+  panelClassName?: string
 }
 
-export function LanguageMenu({ buttonClassName = '' }: LanguageMenuProps) {
+export function LanguageMenu({ buttonClassName = '', panelClassName = '' }: LanguageMenuProps) {
   const { t, i18n } = useTranslation()
   const [open, setOpen] = useState(false)
   const currentLanguage = (i18n.resolvedLanguage ?? i18n.language ?? 'en').split('-')[0] as LanguageCode
@@ -33,12 +34,12 @@ export function LanguageMenu({ buttonClassName = '' }: LanguageMenuProps) {
         <Globe2 />
       </Button>
       {open && (
-        <div className="absolute end-0 top-12 z-50 min-w-36 rounded-md border border-border bg-card p-1 shadow-xl">
+        <div className={`absolute end-0 top-14 z-[90] min-w-40 rounded-2xl border border-blush/40 bg-card/96 p-2 shadow-xl backdrop-blur ${panelClassName}`}>
           {languages.map((language) => (
             <button
               key={language.code}
               type="button"
-              className="flex w-full items-center justify-between rounded-sm px-3 py-2 text-sm text-card-foreground hover:bg-accent hover:text-accent-foreground"
+              className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-base text-card-foreground transition hover:bg-blush/18 hover:text-blush-strong"
               onClick={() => handleLanguageChange(language.code)}
             >
               <span>{language.label}</span>
