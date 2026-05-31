@@ -92,7 +92,11 @@ const lessonRows = [
   },
 ];
 
-const lessonsPath = "/lessons";
+const lessonsPath = "lessons";
+
+function isLessonsPath(pathname: string) {
+  return pathname.replace(/\/+$/, "").endsWith("/lessons");
+}
 
 export default function App() {
   const { t } = useTranslation();
@@ -118,7 +122,7 @@ export default function App() {
     };
   }, [menuOpen, activeImage]);
 
-  if (path === lessonsPath) {
+  if (isLessonsPath(path)) {
     return <LessonsPage />;
   }
 
@@ -135,13 +139,8 @@ export default function App() {
           <div className="absolute inset-y-0 start-0 w-28 bg-gradient-to-r from-background to-transparent" />
         </div>
 
-        <header className="relative z-40 mx-auto flex max-w-6xl items-start justify-between gap-5 px-5 py-5 sm:px-8">
-          <a href="#top" className="leading-none">
-            <span className="font-script block text-5xl text-foreground sm:text-6xl">
-              {t("brand.name")}
-            </span>
-          </a>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <header className="relative z-40 mx-auto flex max-w-6xl items-start px-5 py-5 sm:px-8">
+          <div className="ms-auto flex shrink-0 items-center gap-2 sm:gap-3">
             <Button
               type="button"
               variant="ghost"
@@ -169,10 +168,10 @@ export default function App() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl gap-8 px-5 pb-8 pt-8 sm:px-8 md:grid-cols-[0.9fr_1.1fr] md:pb-0 md:pt-8">
           <div className="max-w-xl">
-            <p className="mb-6 text-sm font-semibold uppercase tracking-[0.26em] text-foreground/70">
+            <p className="font-display mb-5 text-2xl leading-none text-foreground/70 sm:text-3xl">
               {t("hero.eyebrow")}
             </p>
-            <h1 className="font-serif text-[4.7rem] font-semibold leading-[0.76] tracking-normal text-foreground sm:text-[7.6rem]">
+            <h1 className="font-display text-[4.75rem] font-medium leading-[0.78] tracking-normal text-foreground sm:text-[7.45rem]">
               {t("hero.titleTop")}
               <br />
               {t("hero.titleBottom")}
@@ -204,7 +203,7 @@ export default function App() {
           <div className="floral-mark" aria-hidden="true" />
           <h2 className="font-serif text-5xl leading-none">
             {t("about.title")}{" "}
-            <span className="font-script text-6xl font-normal text-blush-strong">
+            <span className="font-display text-6xl font-normal text-blush-strong">
               {t("brand.first")}
             </span>
           </h2>
@@ -383,7 +382,7 @@ export default function App() {
                 <span className="font-script block text-4xl text-blush-strong">
                   {t("brand.name")}
                 </span>
-                <span className="mt-1 block text-[0.5rem] font-semibold uppercase tracking-[0.2em] text-foreground/58">
+                <span className="font-display mt-0.5 block text-lg leading-none text-foreground/58">
                   {t("brand.subtitle")}
                 </span>
               </a>
@@ -490,7 +489,7 @@ function LessonsPage() {
     <main className="min-h-screen bg-background px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 text-foreground sm:px-8 md:pb-10">
       <div className="mx-auto max-w-5xl">
         <a
-          href="/"
+          href="./"
           className="inline-flex text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
         >
           {t("actions.back")}
