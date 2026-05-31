@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button'
 import { useTheme } from '@/hooks/use-theme'
 
 const images = {
-  hero: '/images/9D661F78-FE6E-4ECF-960D-8FE8C888CB91.jpeg',
-  portrait: '/images/976EFAC9-76C5-4B1A-AD92-F6A051E7CC31.jpeg',
-  leap: '/images/IMG_2109.jpeg',
-  leapWide: '/images/IMG_2101.jpeg',
-  private: '/images/IMG_2105.jpeg',
-  rehearsal: '/images/3f126190-c261-48b2-9c94-d6c20c94365b.jpeg',
-  group: '/images/750f785f-80db-4158-825b-c5f7ff958837.jpeg',
+  hero: '/images/9D661F78-FE6E-4ECF-960D-8FE8C888CB91.jpg',
+  portrait: '/images/976EFAC9-76C5-4B1A-AD92-F6A051E7CC31.jpg',
+  leap: '/images/IMG_2109.jpg',
+  leapWide: '/images/IMG_2101.jpg',
+  private: '/images/IMG_2105.jpg',
+  rehearsal: '/images/3f126190-c261-48b2-9c94-d6c20c94365b.jpg',
+  group: '/images/750f785f-80db-4158-825b-c5f7ff958837.jpg',
+  ballet: '/images/נולדהלרקוד.jpg',
 }
 
 const classes = [
@@ -22,14 +23,14 @@ const classes = [
   { date: '29', title: 'classes.jazz', time: 'classes.jazzTime', image: images.group },
 ]
 
-const gallery = [images.hero, images.portrait, images.leap, images.private, images.rehearsal, images.group]
+const gallery = [images.hero, images.portrait, images.leap, images.private, images.group, images.rehearsal, images.ballet]
 
 export default function App() {
   const { t } = useTranslation()
   const { theme, toggleTheme } = useTheme()
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-background pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground">
+    <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
       <section id="top" className="hero-shell relative overflow-hidden">
         <div className="absolute end-0 top-0 h-[48rem] w-[52%] max-w-[46rem] overflow-hidden max-md:opacity-28">
           <img src={images.hero} alt="" className="size-full object-cover object-[52%_18%] grayscale" />
@@ -147,7 +148,7 @@ export default function App() {
         </div>
       </section>
 
-      <footer id="contact" className="mx-auto max-w-6xl px-5 pb-8 pt-5 sm:px-8">
+      <footer id="contact" className="mx-auto max-w-6xl px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-5 sm:px-8 md:pb-8">
         <div className="relative grid gap-8 rounded-[1.35rem] border border-blush/55 bg-card/80 p-6 pb-8 md:grid-cols-[1fr_1fr] md:overflow-hidden">
           <div className="floral-mark floral-mark-start" aria-hidden="true" />
           <div>
