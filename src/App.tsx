@@ -176,13 +176,13 @@ export default function App() {
               <button
                 key={`${image}-${index}`}
                 type="button"
-                className="group overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group relative overflow-hidden rounded-xl transition duration-300 hover:z-10 hover:-translate-y-1 hover:scale-[1.04] hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onClick={() => setActiveImage(image)}
               >
                 <img
                   src={image}
                   alt=""
-                  className="h-28 w-full object-cover grayscale transition duration-300 group-hover:scale-105 group-hover:grayscale-0"
+                  className="h-28 w-full object-cover grayscale transition duration-300 group-hover:scale-[1.03] group-hover:grayscale-0"
                 />
               </button>
             ))}
