@@ -1,6 +1,8 @@
 const assetBase = import.meta.env.BASE_URL;
 
 export const lessonsPath = "lessons";
+export const authPath = "auth";
+export const profilePath = "profile";
 
 export const images = {
   hero: `${assetBase}images/9D661F78-FE6E-4ECF-960D-8FE8C888CB91.jpg`,
@@ -79,4 +81,12 @@ export const lessonRows = [
 
 export function isLessonsPath(pathname: string) {
   return pathname.replace(/\/+$/, "").endsWith("/lessons");
+}
+
+export function isAuthPath(pathname: string) {
+  return pathname.replace(/\/+$/, "").endsWith("/auth");
+}
+
+export function isProfilePath(pathname: string) {
+  return pathname.replace(/\/+$/, "").endsWith("/profile");
 }

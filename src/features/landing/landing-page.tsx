@@ -5,6 +5,7 @@ import { GallerySection } from "./gallery-section";
 import { HeroSection } from "./hero-section";
 import { ImageLightbox } from "./image-lightbox";
 import { MobileMenu } from "./mobile-menu";
+import { ReadonlyScheduleSection } from "./readonly-schedule-section";
 import { ServicesSection } from "./services-section";
 
 export function LandingPage({
@@ -13,6 +14,7 @@ export function LandingPage({
   aboutExpanded,
   activeImage,
   onToggleTheme,
+  onOpenAccount,
   onOpenMenu,
   onCloseMenu,
   onToggleAbout,
@@ -24,6 +26,7 @@ export function LandingPage({
   aboutExpanded: boolean;
   activeImage: string | null;
   onToggleTheme: () => void;
+  onOpenAccount: () => void;
   onOpenMenu: () => void;
   onCloseMenu: () => void;
   onToggleAbout: () => void;
@@ -36,18 +39,21 @@ export function LandingPage({
         theme={theme}
         menuOpen={menuOpen}
         onToggleTheme={onToggleTheme}
+        onOpenAccount={onOpenAccount}
         onOpenMenu={onOpenMenu}
       />
       <AboutSection expanded={aboutExpanded} onToggleExpanded={onToggleAbout} />
       <ServicesSection />
       <FeaturedClassesSection />
       <GallerySection onSelectImage={onSelectImage} />
+      <ReadonlyScheduleSection />
       <ContactSection />
 
       {menuOpen && (
         <MobileMenu
           theme={theme}
           onToggleTheme={onToggleTheme}
+          onOpenAccount={onOpenAccount}
           onClose={onCloseMenu}
         />
       )}

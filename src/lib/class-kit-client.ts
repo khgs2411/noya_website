@@ -17,5 +17,7 @@ export const classKitClient = createClassKitClient({
   supabaseUrl,
   supabasePublishableKey,
   authStorageKey: "noya-flow-class-kit-auth",
-  authRedirectUrl: import.meta.env.VITE_AUTH_REDIRECT_URL || undefined,
+  productKey: import.meta.env.DEV
+    ? import.meta.env.VITE_CLASS_KIT_LOCAL_PRODUCT_KEY
+    : undefined,
 });

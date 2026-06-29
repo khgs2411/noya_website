@@ -1,4 +1,4 @@
-import { Menu, Moon, Sun } from "lucide-react";
+import { Menu, Moon, Sun, UserCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { LanguageMenu } from "@/components/layout/language-menu";
@@ -11,11 +11,13 @@ export function HeroSection({
   theme,
   menuOpen,
   onToggleTheme,
+  onOpenAccount,
   onOpenMenu,
 }: {
   theme: string;
   menuOpen: boolean;
   onToggleTheme: () => void;
+  onOpenAccount: () => void;
   onOpenMenu: () => void;
 }) {
   const { t } = useTranslation();
@@ -45,6 +47,16 @@ export function HeroSection({
             {theme === "dark" ? <Moon /> : <Sun />}
           </Button>
           <LanguageMenu buttonClassName="size-12 shadow-sm sm:size-14 [&_svg]:!size-6" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={`size-12 sm:size-14 [&_svg]:!size-6 ${siteDesign.iconButton}`}
+            aria-label={t("account.open")}
+            onClick={onOpenAccount}
+          >
+            <UserCircle />
+          </Button>
           <Button
             type="button"
             variant="ghost"

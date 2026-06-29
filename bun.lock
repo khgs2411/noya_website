@@ -5,6 +5,7 @@
     "": {
       "name": "noya_website",
       "dependencies": {
+        "@class-kit/react": "git+ssh://git@github.com:khgs2411/class-kit-sdk.git#v0.1.9",
         "@fontsource/allura": "^5.2.8",
         "@fontsource/cormorant-garamond": "^5.2.11",
         "@fontsource/montserrat": "^5.2.8",
@@ -13,7 +14,6 @@
         "@tailwindcss/vite": "^4.3.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
-        "@class-kit/react": "git+ssh://git@github.com:khgs2411/class-kit-sdk.git#v0.1.4",
         "i18next": "^26.2.0",
         "i18next-browser-languagedetector": "^8.2.1",
         "lucide-react": "^1.16.0",
@@ -75,7 +75,7 @@
 
     "@babel/types": ["@babel/types@7.29.7", "", { "dependencies": { "@babel/helper-string-parser": "^7.29.7", "@babel/helper-validator-identifier": "^7.29.7" } }, "sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA=="],
 
-    "@class-kit/react": ["@class-kit/react@git+ssh://git@github.com:khgs2411/class-kit-sdk.git#8d626ec8d5d2fbbbbc5f82ce3b718a58a6b2bd34", { "peerDependencies": { "@supabase/supabase-js": "^2.106.1", "react": "^19.2.6", "react-dom": "^19.2.6" } }, "8d626ec8d5d2fbbbbc5f82ce3b718a58a6b2bd34"],
+    "@class-kit/react": ["@class-kit/react@git+ssh://git@github.com:khgs2411/class-kit-sdk.git#a4e12b237a378861ce8dd3039b6b300d8bed7a8d", { "peerDependencies": { "@supabase/supabase-js": "^2.106.1", "react": "^19.2.6", "react-dom": "^19.2.6" } }, "a4e12b237a378861ce8dd3039b6b300d8bed7a8d"],
 
     "@emnapi/core": ["@emnapi/core@1.10.0", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.1", "tslib": "^2.4.0" } }, "sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw=="],
 

@@ -1,4 +1,4 @@
-import { Mail, Moon, Sun, X } from "lucide-react";
+import { Mail, Moon, Sun, UserCircle, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { LanguageMenu } from "@/components/layout/language-menu";
@@ -12,10 +12,12 @@ import { lessonsPath } from "@/content/site-content";
 export function MobileMenu({
   theme,
   onToggleTheme,
+  onOpenAccount,
   onClose,
 }: {
   theme: string;
   onToggleTheme: () => void;
+  onOpenAccount: () => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -74,6 +76,14 @@ export function MobileMenu({
         </div>
 
         <nav className="mt-4 grid gap-2">
+          <button
+            type="button"
+            className="group flex items-center justify-between rounded-[0.95rem] border border-blush/24 bg-background/52 px-3.5 py-2.5 text-lg font-serif text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-blush/45 hover:bg-background/78 hover:text-blush-strong hover:shadow-soft"
+            onClick={onOpenAccount}
+          >
+            <span>{t("account.title")}</span>
+            <UserCircle className="size-4 opacity-55 transition group-hover:opacity-90" />
+          </button>
           <SidebarLink href="#about" onClick={onClose}>
             {t("nav.about")}
           </SidebarLink>
