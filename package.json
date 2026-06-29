@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@class-kit/react": "git+ssh://git@github.com:khgs2411/class-kit-sdk.git#v0.1.4",
     "@fontsource/allura": "^5.2.8",
     "@fontsource/cormorant-garamond": "^5.2.11",
     "@fontsource/montserrat": "^5.2.8",

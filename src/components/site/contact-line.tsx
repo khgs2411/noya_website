@@ -1,0 +1,32 @@
+import type { ReactNode } from "react";
+
+export function ContactLine({ icon, text }: { icon: ReactNode; text: string }) {
+  return (
+    <p className="flex items-center gap-4">
+      <span className="text-blush-strong [&_svg]:size-5">{icon}</span>
+      <span className="whitespace-pre-line">{text}</span>
+    </p>
+  );
+}
+
+export function ContactLink({
+  href,
+  icon,
+  text,
+}: {
+  href: string;
+  icon: ReactNode;
+  text: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-4 transition hover:text-blush-strong"
+    >
+      <span className="text-blush-strong [&_svg]:size-5">{icon}</span>
+      <span>{text}</span>
+    </a>
+  );
+}
