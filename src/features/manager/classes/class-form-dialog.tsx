@@ -1,4 +1,5 @@
 import type {
+  ClassTemplate,
   CreateManagedClassInput,
   ManagedClass,
   UpdateManagedClassInput,
@@ -15,6 +16,7 @@ type ClassFormDialogProps = {
   open: boolean;
   mode: ClassFormMode;
   managedClass: ManagedClass | null;
+  templates: ClassTemplate[];
   submitting: boolean;
   errorMessage: string | null;
   onClose: () => void;
@@ -26,6 +28,7 @@ type ClassFormDialogProps = {
 };
 
 type ClassFormFields = {
+  templateId: string;
   name: string;
   description: string;
   category: string;
@@ -44,6 +47,7 @@ type ClassFormFields = {
 };
 
 const createDefaults: ClassFormFields = {
+  templateId: "",
   name: "",
   description: "",
   category: "",
@@ -86,6 +90,7 @@ function fieldsFromClass(managedClass: ManagedClass | null): ClassFormFields {
   if (!managedClass) return createDefaults;
 
   return {
+    templateId: "",
     name: managedClass.name,
     description: managedClass.description ?? "",
     category: managedClass.category ?? "",
@@ -101,9 +106,27 @@ function fieldsFromClass(managedClass: ManagedClass | null): ClassFormFields {
   };
 }
 
-function toClassInput(fields: ClassFormFields): CreateManagedClassInput {
+function fieldsFromTemplate(
+  template: ClassTemplate,
+  current: ClassFormFields,
+): ClassFormFields {
   return {
-    templateId: null,
+    ...current,
+    templateId: template.id,
+    name: template.name,
+    description: template.description ?? "",
+    category: template.category ?? "",
+    capacity: String(template.default_capacity),
+    location: template.default_location ?? "",
+    visibility: template.default_visibility,
+    registrationPolicy: template.default_registration_policy,
+    membershipRequirement: template.default_membership_requirement,
+    notes: template.default_notes ?? "",
+  };
+}
+
+function toClassInput(fields: ClassFormFields): CreateManagedClassInput {
+  const input: CreateManagedClassInput = {
     name: fields.name.trim(),
     description: emptyToNull(fields.description),
     category: emptyToNull(fields.category),
@@ -117,6 +140,10 @@ function toClassInput(fields: ClassFormFields): CreateManagedClassInput {
     membershipRequirement: fields.membershipRequirement,
     notes: emptyToNull(fields.notes),
   };
+
+  if (fields.templateId) input.templateId = fields.templateId;
+
+  return input;
 }
 
 function validateClassForm(fields: ClassFormFields, t: (key: string) => string) {
@@ -216,6 +243,7 @@ export function ClassFormDialog({
 function ClassFormDialogContent({
   mode,
   managedClass,
+  templates,
   submitting,
   errorMessage,
   onClose,
@@ -233,6 +261,14 @@ function ClassFormDialogContent({
     value: ClassFormFields[K],
   ) => {
     setFields((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateTemplateId = (templateId: string) => {
+    setFields((current) => {
+      const template = templates.find((item) => item.id === templateId);
+      if (!template) return { ...current, templateId: "" };
+      return fieldsFromTemplate(template, current);
+    });
   };
 
   const updateStartsLocal = (value: string) => {
@@ -295,6 +331,25 @@ function ClassFormDialogContent({
 
         <form className="flex-1 overflow-y-auto p-5" onSubmit={submit}>
           <div className="grid gap-4 sm:grid-cols-2">
+            {mode === "create" && templates.length > 0 && (
+              <div className="sm:col-span-2">
+                <SelectField
+                  label={t("manager.form.template")}
+                  value={fields.templateId}
+                  onChange={updateTemplateId}
+                  options={[
+                    { value: "", label: t("manager.form.noTemplate") },
+                    ...templates.map((template) => ({
+                      value: template.id,
+                      label: template.name,
+                    })),
+                  ]}
+                />
+                <p className="mt-2 text-xs leading-5 text-foreground/56">
+                  {t("manager.form.templateHint")}
+                </p>
+              </div>
+            )}
             <div className="sm:col-span-2">
               <TextField
                 label={t("manager.form.name")}

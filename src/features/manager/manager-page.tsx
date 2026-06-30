@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { ClassManagementTab } from "@/features/manager/classes/class-management-tab";
 import { ManagerTabs, type ManagerTab } from "@/features/manager/manager-tabs";
+import { TemplateManagementTab } from "@/features/manager/templates/template-management-tab";
 
 function ComingNextPanel({ kind }: { kind: "templates" | "schedules" }) {
   const { t } = useTranslation();
@@ -59,7 +60,9 @@ export function ManagerPage({ loading = false }: { loading?: boolean }) {
             {activeTab === "classes" && (
               <ClassManagementTab canManageClasses={canManageClasses} />
             )}
-            {activeTab === "templates" && <ComingNextPanel kind="templates" />}
+            {activeTab === "templates" && (
+              <TemplateManagementTab canManageTemplates={canManageClasses} />
+            )}
             {activeTab === "schedules" && <ComingNextPanel kind="schedules" />}
           </section>
         )}

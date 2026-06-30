@@ -11,6 +11,7 @@ import { ClassFormDialog } from "@/features/manager/classes/class-form-dialog";
 import { ClassListView } from "@/features/manager/classes/class-list-view";
 import { ClassRangeToolbar } from "@/features/manager/classes/class-range-toolbar";
 import { useManagedClasses } from "@/features/manager/classes/use-managed-classes";
+import { useManagedTemplates } from "@/features/manager/templates/use-managed-templates";
 
 type ClassManagementTabProps = {
   canManageClasses: boolean;
@@ -29,6 +30,10 @@ export function ClassManagementTab({
   const [cancelOpen, setCancelOpen] = useState(false);
   const { client } = useProductContext();
   const managedClasses = useManagedClasses({ client, canManageClasses });
+  const managedTemplates = useManagedTemplates({
+    client,
+    canManageTemplates: canManageClasses,
+  });
   const { state, actions } = managedClasses;
   const formClass =
     formSurface?.mode === "edit"
@@ -211,6 +216,7 @@ export function ClassManagementTab({
             open={formSurface !== null}
             mode={formSurface?.mode ?? "create"}
             managedClass={formClass}
+            templates={managedTemplates.state.activeTemplates}
             submitting={
               state.mutationStatus === "creating" ||
               state.mutationStatus === "updating"

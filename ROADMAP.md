@@ -75,10 +75,11 @@ Goal: Give the product owner the protected workspace needed to create and manage
   - ~~Shape: Non-manager users should see a clear denied or unavailable state rather than partial manager controls.~~
   - ~~Progress: Manager access now lives in a dedicated manager route and menu entry, gated by ClassKit dashboard capability, while the profile page remains account-focused.~~
 
-- [ ] `next` Add class management
+- [x] `done` Add class management
   - Description: Let the manager create, edit, publish, draft, cancel, and inspect classes through the ClassKit management facade.
+  - Progress: The manager workspace now supports one-off class inventory management with mobile-first list browsing, desktop calendar/list controls, quick publish/draft actions, create/edit/cancel surfaces, and item details presented through a mobile drawer or desktop dialog overlay instead of expanding inline.
 
-- [ ] `open` Add template-backed class setup
+- [ ] `next` Add template-backed class setup
   - Description: Let the manager define reusable class templates that make repeated class creation consistent enough for public discovery.
 
 - [ ] `open` Add initial schedule-backed class generation

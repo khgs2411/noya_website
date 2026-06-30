@@ -32,11 +32,16 @@ with the existing brand.
 
 ## Verification
 
-- Do not run `npm run build` after every small change.
+- Do not use `npm run build` as default verification.
+- Do not run `npm run build` after routine UI edits, copy changes, focused
+  component changes, or every small change.
 - Prefer focused inspection, `rg`, and browser smoke checks on the existing dev
   server for narrow UI fixes.
 - Run heavier checks only when TypeScript risk, dependency changes, or broader
   behavior changes justify it, or when explicitly requested.
+- If a plan includes `npm run build`, apply judgment before running it. Treat it
+  as optional unless the current change actually warrants a full build or the
+  user explicitly asks for it.
 - Report exactly what was checked and what was skipped.
 
 ## Git
