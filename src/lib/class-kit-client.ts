@@ -1,6 +1,6 @@
 import { createClassKitClient } from "@class-kit/react";
 
-const supabaseTarget =
+/* const supabaseTarget =
   import.meta.env.VITE_SUPABASE_TARGET === "remote" ? "remote" : "local";
 
 const supabaseUrl =
@@ -20,4 +20,8 @@ export const classKitClient = createClassKitClient({
   productKey: import.meta.env.DEV
     ? import.meta.env.VITE_CLASS_KIT_LOCAL_PRODUCT_KEY
     : undefined,
+}); */
+
+export const classKitClient = createClassKitClient(import.meta.env, {
+  authStorageKey: "noya-flow-class-kit-auth",
 });

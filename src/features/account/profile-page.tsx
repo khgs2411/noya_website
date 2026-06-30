@@ -1,16 +1,19 @@
 import { useProductContext } from "@class-kit/react";
-import { ArrowLeft, Loader2, LogOut, RefreshCw } from "lucide-react";
+import { ArrowLeft, LogOut } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { images } from "@/content/site-content";
 
 function StatusRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-blush/20 bg-background/42 p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground/48">
+    <div className="min-w-0 rounded-xl border border-blush/20 bg-background/42 p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
         {label}
       </p>
-      <p className="mt-1 text-base font-semibold text-foreground">{value}</p>
+      <p className="mt-1 text-base font-semibold leading-6 text-foreground [overflow-wrap:anywhere]">
+        {value}
+      </p>
     </div>
   );
 }
@@ -18,13 +21,8 @@ function StatusRow({ label, value }: { label: string; value: string }) {
 export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void }) {
   const { t } = useTranslation();
   const {
-    product,
     productUser,
-    capabilities,
     session,
-    loading,
-    error,
-    refreshProductContext,
     signOut,
   } = useProductContext();
 
@@ -33,18 +31,13 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     onNavigate("auth");
   }
 
-  const dashboard = capabilities.dashboard;
-  const enabledCapabilities = [
-    dashboard.can_enter && t("profile.capabilities.dashboard"),
-    dashboard.can_manage_classes && t("profile.capabilities.classes"),
-    dashboard.can_manage_roles && t("profile.capabilities.roles"),
-    dashboard.can_manage_users && t("profile.capabilities.users"),
-    dashboard.can_manage_auth_mode && t("profile.capabilities.authMode"),
-  ].filter((capability): capability is string => Boolean(capability));
+  const classAccess = productUser
+    ? t(`profile.statuses.${productUser.status}`)
+    : t("profile.noProductUser");
 
   return (
     <main className="min-h-screen bg-background px-5 pb-12 pt-6 text-foreground sm:px-8">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-5xl">
         <a
           href="./"
           className="inline-flex items-center gap-2 text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
@@ -53,120 +46,86 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
           {t("actions.back")}
         </a>
 
-        <section className="mt-7 rounded-[1.4rem] border border-blush/28 bg-card/78 p-6 shadow-soft sm:p-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blush-strong">
-                {t("account.eyebrow")}
+        <div className="mt-7 grid gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-stretch">
+          <section className="relative min-h-80 overflow-hidden rounded-[1.4rem] border border-blush/24 shadow-soft lg:min-h-[34rem]">
+            <img
+              src={images.portrait}
+              alt=""
+              className="absolute inset-0 size-full object-cover object-[50%_20%] grayscale"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/42 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
+              <p className="font-display text-4xl leading-none text-foreground sm:text-5xl">
+                {t("profile.welcome")}
               </p>
-              <h1 className="mt-2 font-serif text-4xl">{t("profile.title")}</h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-foreground/68">
-                {t("profile.body")}
+              <p className="mt-3 max-w-sm text-sm leading-6 text-foreground/72 sm:text-base">
+                {t("profile.brandNote")}
               </p>
             </div>
-            {session && (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 rounded-full border-blush/38 bg-background/42 px-5 text-foreground hover:bg-blush/10"
-                onClick={handleSignOut}
-              >
-                <LogOut />
-                {t("profile.signOut")}
-              </Button>
-            )}
-          </div>
+          </section>
 
-          {!session ? (
-            <div className="mt-8 rounded-xl border border-blush/24 bg-background/46 p-5">
-              <p className="text-sm leading-6 text-foreground/72">
-                {t("profile.signedOut")}
-              </p>
-              <Button
-                type="button"
-                className="mt-4 h-11 rounded-full bg-blush px-6 text-primary-foreground hover:bg-blush-strong"
-                onClick={() => onNavigate("auth")}
-              >
-                {t("profile.signIn")}
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className="mt-8 grid gap-3 sm:grid-cols-2">
-                <StatusRow
-                  label={t("profile.email")}
-                  value={session.user.email ?? t("profile.unknown")}
-                />
-                <StatusRow
-                  label={t("profile.product")}
-                  value={product?.name ?? t("profile.loading")}
-                />
-                <StatusRow
-                  label={t("profile.accessStatus")}
-                  value={
-                    productUser
-                      ? t(`profile.statuses.${productUser.status}`)
-                      : t("profile.noProductUser")
-                  }
-                />
-                <StatusRow
-                  label={t("profile.role")}
-                  value={
-                    productUser
-                      ? t(`profile.roles.${productUser.role}`, {
-                          defaultValue: productUser.role,
-                        })
-                      : t("profile.none")
-                  }
-                />
-              </div>
-
-              {!productUser && (
-                <div className="mt-6 rounded-xl border border-blush/30 bg-background/55 p-4 text-sm leading-6 text-foreground/72">
-                  {t("profile.inviteRequired")}
-                </div>
-              )}
-
-              <div className="mt-6 rounded-xl border border-blush/24 bg-background/46 p-5">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/50">
-                  {t("profile.capabilities.title")}
+          <section className="min-w-0 rounded-[1.4rem] border border-blush/28 bg-card/78 p-5 shadow-soft sm:p-8">
+            <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-start">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-blush-strong">
+                  {t("account.eyebrow")}
                 </p>
-                {enabledCapabilities.length ? (
-                  <ul className="mt-3 grid gap-2 text-sm text-foreground/76">
-                    {enabledCapabilities.map((capability) => (
-                      <li key={capability} className="rounded-lg bg-card/52 px-3 py-2">
-                        {capability}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-sm leading-6 text-foreground/68">
-                    {t("profile.capabilities.none")}
-                  </p>
-                )}
-                {dashboard.can_enter && (
-                  <p className="mt-4 rounded-lg border border-blush/24 bg-card/52 px-3 py-2 text-sm leading-6 text-foreground/70">
-                    {t("profile.managerPending")}
-                  </p>
-                )}
+                <h1 className="mt-2 font-serif text-4xl">{t("profile.title")}</h1>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-foreground/68">
+                  {t("profile.body")}
+                </p>
               </div>
-
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              {session && (
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-11 rounded-full border-blush/38 bg-background/42 px-5 text-foreground hover:bg-blush/10"
-                  disabled={loading}
-                  onClick={() => void refreshProductContext()}
+                  className="h-11 w-fit rounded-full border-blush/38 bg-background/42 px-5 text-foreground hover:bg-blush/10"
+                  onClick={handleSignOut}
                 >
-                  {loading ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                  {t("profile.refresh")}
+                  <LogOut />
+                  {t("profile.signOut")}
                 </Button>
-                {error && <p className="text-sm text-red-700 dark:text-red-200">{error}</p>}
+              )}
+            </div>
+
+            {!session ? (
+              <div className="mt-8 rounded-xl border border-blush/24 bg-background/46 p-5">
+                <p className="text-sm leading-6 text-foreground/72">
+                  {t("profile.signedOut")}
+                </p>
+                <Button
+                  type="button"
+                  className="mt-4 h-11 rounded-full bg-blush px-6 text-primary-foreground hover:bg-blush-strong"
+                  onClick={() => onNavigate("auth")}
+                >
+                  {t("profile.signIn")}
+                </Button>
               </div>
-            </>
-          )}
-        </section>
+            ) : (
+              <>
+                <div className="mt-8 grid gap-3">
+                  <StatusRow
+                    label={t("profile.email")}
+                    value={session.user.email ?? t("profile.unknown")}
+                  />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <StatusRow label={t("profile.classAccess")} value={classAccess} />
+                    <StatusRow
+                      label={t("profile.studio")}
+                      value={t("brand.name")}
+                    />
+                  </div>
+                </div>
+
+                {!productUser && (
+                  <div className="mt-6 rounded-xl border border-blush/30 bg-background/55 p-4 text-sm leading-6 text-foreground/72">
+                    {t("profile.inviteRequired")}
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        </div>
       </div>
     </main>
   );

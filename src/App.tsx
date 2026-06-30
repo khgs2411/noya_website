@@ -5,13 +5,16 @@ import {
   authPath,
   isAuthPath,
   isLessonsPath,
+  isManagerPath,
   isProfilePath,
+  managerPath,
   profilePath,
 } from "@/content/site-content";
 import { AuthPage } from "@/features/account/auth-page";
 import { ProfilePage } from "@/features/account/profile-page";
 import { LandingPage } from "@/features/landing/landing-page";
 import { LessonsPage } from "@/features/lessons/lessons-page";
+import { ManagerPage } from "@/features/manager/manager-page";
 import { useTheme } from "@/hooks/use-theme";
 
 function getCurrentRoute() {
@@ -22,7 +25,7 @@ function getCurrentRoute() {
 }
 
 export default function App() {
-  const { session } = useProductContext();
+  const { capabilities, loading, session } = useProductContext();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [aboutExpanded, setAboutExpanded] = useState(false);
@@ -45,10 +48,24 @@ export default function App() {
     };
   }, [menuOpen, activeImage]);
 
+  const canEnterManager = capabilities.dashboard.can_enter;
+
+  useEffect(() => {
+    if (!isManagerPath(route.pathname) || loading || canEnterManager) return;
+
+    window.history.replaceState({}, "", "./");
+    setRoute(getCurrentRoute());
+    setMenuOpen(false);
+  }, [canEnterManager, loading, route.pathname]);
+
   function navigateTo(path: string) {
     window.history.pushState({}, "", path);
     setRoute(getCurrentRoute());
     setMenuOpen(false);
+  }
+
+  function openManager() {
+    navigateTo(managerPath);
   }
 
   function openAccount() {
@@ -68,6 +85,16 @@ export default function App() {
     return <ProfilePage onNavigate={navigateTo} />;
   }
 
+  if (isManagerPath(route.pathname)) {
+    if (loading) {
+      return <ManagerPage loading />;
+    }
+
+    if (canEnterManager) {
+      return <ManagerPage />;
+    }
+  }
+
   if (isLessonsPath(route.pathname)) {
     return <LessonsPage />;
   }
@@ -80,6 +107,8 @@ export default function App() {
       activeImage={activeImage}
       onToggleTheme={toggleTheme}
       onOpenAccount={openAccount}
+      onOpenManager={openManager}
+      canEnterManager={canEnterManager}
       onOpenMenu={() => setMenuOpen(true)}
       onCloseMenu={() => setMenuOpen(false)}
       onToggleAbout={() => setAboutExpanded((current) => !current)}

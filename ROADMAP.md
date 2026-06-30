@@ -27,7 +27,7 @@ Status labels:
 ## Always-On Guardrails
 
 - Product websites consume ClassKit through `@class-kit/react`; this app should not own ClassKit database access, RPC calls, Edge Function action names, or authorization policy.
-- Product identity is backend-owned. The frontend should not pass a ClassKit product key as part of normal integration.
+- Product identity is backend-owned in deployed product contexts. Local development may pass a product key only as a development convenience when ClassKit requires it.
 - Preserve the existing Noya brand and landing-page feel while turning the booking and management surfaces into real product workflows.
 - Public class discovery, customer registration, profile/auth, and manager operations should be distinct product areas rather than one overloaded page.
 - The current read-only lessons/schedule content is external client information, not the ClassKit-managed schedule system; keep it until Noya chooses to remove or reposition it.
@@ -36,42 +36,46 @@ Status labels:
 
 Goal: Establish the application boundary that lets the website consume ClassKit without collapsing product SDK concerns into the visual layer.
 
-- [x] `done` Split the landing-page monolith into domain components
-  - Description: `App.tsx` has been reduced to route and interaction composition, with landing sections, lessons, shared site primitives, content constants, and design guide concerns separated by domain.
-  - Why: This creates the structural boundary needed before replacing mock class content with live ClassKit data.
+- ~~[x] `done` Split the landing-page monolith into domain components~~
+  - ~~Description: `App.tsx` has been reduced to route and interaction composition, with landing sections, lessons, shared site primitives, content constants, and design guide concerns separated by domain.~~
+  - ~~Why: This creates the structural boundary needed before replacing mock class content with live ClassKit data.~~
 
-- [x] `done` Add the ClassKit client/provider shell
-  - Description: Introduce the website's ClassKit client setup and provider boundary so customer, auth, and manager pages can read product context and call the SDK facade.
-  - Shape: Use environment-driven Supabase URL, publishable key, auth redirect URL, and an app-specific auth storage key. Do not pass product identity from the website.
+- ~~[x] `done` Add the ClassKit client/provider shell~~
+  - ~~Description: Introduce the website's ClassKit client setup and provider boundary so customer, auth, and manager pages can read product context and call the SDK facade.~~
+  - ~~Shape: Use environment-driven Supabase URL, publishable key, auth redirect URL, and an app-specific auth storage key. Do not pass product identity from the website.~~
 
-- [x] `done` Define the platform route model
-  - Description: The app direction is named product areas for classes, focused class detail, profile/auth, and manager access, while the existing read-only lessons content moves into the homepage instead of remaining the main class destination.
-  - Shape: Append the existing read-only lessons/schedule content below Photo Moments and before contact. Public classes and manager pages become separate ClassKit-backed product areas.
+- ~~[x] `done` Define the platform route model~~
+  - ~~Description: The app direction is named product areas for classes, focused class detail, profile/auth, and manager access, while the existing read-only lessons content moves into the homepage instead of remaining the main class destination.~~
+  - ~~Shape: Append the existing read-only lessons/schedule content below Photo Moments and before contact. Public classes and manager pages become separate ClassKit-backed product areas.~~
 
 ## Roadmap Step 1: Account, Authentication, And Profile
 
 Goal: Give students and managers a coherent identity surface backed by ClassKit product context.
 
-- [ ] `open` Add sign-in and sign-up flows
-  - Description: Add website-owned auth UI that uses ClassKit/Supabase session state and product policy to show the right email/password and OAuth options.
-  - Shape: Product policy should control whether sign-up is available, whether email/password is shown, and whether Google sign-in is shown.
+- ~~[x] `done` Add sign-in and sign-up flows~~
+  - ~~Description: Add website-owned auth UI that uses ClassKit/Supabase session state and product policy to show the right email/password and OAuth options.~~
+  - ~~Shape: Product policy should control whether sign-up is available, whether email/password is shown, and whether Google sign-in is shown.~~
+  - ~~Progress: Sign-in supports the configured password and Google providers, while sign-up is implemented but hidden when the product is invite-only.~~
 
-- [ ] `open` Add profile and session controls
-  - Description: Add a profile surface for signed-in users to understand their current product access, registration status, and sign-out option.
-  - Shape: Unauthorized or inactive product users need a clear state that explains why they cannot register or manage classes.
+- ~~[x] `done` Add profile and session controls~~
+  - ~~Description: Add a profile surface for signed-in users to understand their current product access, registration status, and sign-out option.~~
+  - ~~Shape: Unauthorized or inactive product users need a clear state that explains why they cannot register or manage classes.~~
+  - ~~Progress: The account/profile surface is branded, mobile-first, student-facing, and avoids exposing raw ClassKit permissions or backend product language.~~
 
-- [ ] `open` Separate customer and manager navigation
-  - Description: Use ClassKit capabilities to reveal manager access only to users who can manage the product while keeping student booking workflows focused.
+- ~~[x] `done` Gate manager affordance from the profile surface~~
+  - ~~Description: Use ClassKit capabilities only to reveal a future manager workspace affordance for users who can manage the product, while keeping student account and booking language focused.~~
+  - ~~Shape: Raw permission lists and internal authorization details should not be shown to students or managers on the profile page.~~
 
 ## Roadmap Step 2: Manager Workspace
 
 Goal: Give the product owner the protected workspace needed to create and manage the ClassKit class inventory before exposing it to customers.
 
-- [ ] `open` Add manager entry and access states
-  - Description: Add a manager page that is visible and useful only when ClassKit capabilities allow management.
-  - Shape: Non-manager users should see a clear denied or unavailable state rather than partial manager controls.
+- ~~[x] `done` Add manager entry and access states~~
+  - ~~Description: Add a manager page that is visible and useful only when ClassKit capabilities allow management.~~
+  - ~~Shape: Non-manager users should see a clear denied or unavailable state rather than partial manager controls.~~
+  - ~~Progress: Manager access now lives in a dedicated manager route and menu entry, gated by ClassKit dashboard capability, while the profile page remains account-focused.~~
 
-- [ ] `open` Add class management
+- [ ] `next` Add class management
   - Description: Let the manager create, edit, publish, draft, cancel, and inspect classes through the ClassKit management facade.
 
 - [ ] `open` Add template-backed class setup
@@ -126,12 +130,13 @@ Goal: Expand manager-owned schedule operations after the core manager class work
 
 Goal: Preserve the current read-only lessons/schedule content as client-owned information while the ClassKit platform takes over managed classes.
 
-- [ ] `open` Append the current read-only lessons content after Photo Moments
+- [x] `done` Append the current read-only lessons content after Photo Moments
   - Description: Move the existing pricing/logistics/read-only schedule content into the homepage below the Photo Moments section and before contact.
   - Why: This content describes Noya's external client schedule and offer structure, not the classes managed inside ClassKit, so it should live as supporting homepage content rather than a ClassKit route.
 
-- [ ] `open` Keep static content visually aligned with the platform
+- [x] `done` Keep static content visually aligned with the platform
   - Description: Make the retained static lessons content feel like part of the same product without confusing it with ClassKit-managed classes or manager-owned schedules.
+  - Progress: The static schedule now shares a reusable card between the homepage section and the legacy read-only route.
 
 ## Roadmap Step 7: Platform Polish
 

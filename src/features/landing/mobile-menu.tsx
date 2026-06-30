@@ -1,4 +1,4 @@
-import { Mail, Moon, Sun, UserCircle, X } from "lucide-react";
+import { Mail, Moon, Settings, Sun, UserCircle, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { LanguageMenu } from "@/components/layout/language-menu";
@@ -7,17 +7,20 @@ import { siteDesign } from "@/components/site/design-guide";
 import { SidebarLink } from "@/components/site/sidebar-link";
 import { InstagramIcon, TikTokIcon } from "@/components/site/social-icons";
 import { Button } from "@/components/ui/button";
-import { lessonsPath } from "@/content/site-content";
 
 export function MobileMenu({
   theme,
   onToggleTheme,
   onOpenAccount,
+  onOpenManager,
+  canEnterManager,
   onClose,
 }: {
   theme: string;
   onToggleTheme: () => void;
   onOpenAccount: () => void;
+  onOpenManager: () => void;
+  canEnterManager: boolean;
   onClose: () => void;
 }) {
   const { t } = useTranslation();
@@ -81,9 +84,19 @@ export function MobileMenu({
             className="group flex items-center justify-between rounded-[0.95rem] border border-blush/24 bg-background/52 px-3.5 py-2.5 text-lg font-serif text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-blush/45 hover:bg-background/78 hover:text-blush-strong hover:shadow-soft"
             onClick={onOpenAccount}
           >
-            <span>{t("account.title")}</span>
+            <span className="font-serif text-lg">{t("account.title")}</span>
             <UserCircle className="size-4 opacity-55 transition group-hover:opacity-90" />
           </button>
+          {canEnterManager && (
+            <button
+              type="button"
+              className="group flex items-center justify-between rounded-[0.95rem] border border-blush/24 bg-background/52 px-3.5 py-2.5 text-lg font-serif text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-blush/45 hover:bg-background/78 hover:text-blush-strong hover:shadow-soft"
+              onClick={onOpenManager}
+            >
+              <span className="font-serif text-lg">{t("manager.menu")}</span>
+              <Settings className="size-4 opacity-55 transition group-hover:opacity-90" />
+            </button>
+          )}
           <SidebarLink href="#about" onClick={onClose}>
             {t("nav.about")}
           </SidebarLink>
@@ -92,9 +105,6 @@ export function MobileMenu({
           </SidebarLink>
           <SidebarLink href="#classes" onClick={onClose}>
             {t("nav.classes")}
-          </SidebarLink>
-          <SidebarLink href={lessonsPath} onClick={onClose}>
-            {t("nav.lessons")}
           </SidebarLink>
           <SidebarLink href="#contact" onClick={onClose}>
             {t("nav.contact")}

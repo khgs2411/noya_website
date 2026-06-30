@@ -15,6 +15,8 @@ export function LandingPage({
   activeImage,
   onToggleTheme,
   onOpenAccount,
+  onOpenManager,
+  canEnterManager,
   onOpenMenu,
   onCloseMenu,
   onToggleAbout,
@@ -27,6 +29,8 @@ export function LandingPage({
   activeImage: string | null;
   onToggleTheme: () => void;
   onOpenAccount: () => void;
+  onOpenManager: () => void;
+  canEnterManager: boolean;
   onOpenMenu: () => void;
   onCloseMenu: () => void;
   onToggleAbout: () => void;
@@ -54,6 +58,8 @@ export function LandingPage({
           theme={theme}
           onToggleTheme={onToggleTheme}
           onOpenAccount={onOpenAccount}
+          onOpenManager={onOpenManager}
+          canEnterManager={canEnterManager}
           onClose={onCloseMenu}
         />
       )}
