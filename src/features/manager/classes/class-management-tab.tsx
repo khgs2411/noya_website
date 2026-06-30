@@ -198,9 +198,11 @@ export function ClassManagementTab({
           <ClassDetailPanel
             managedClass={state.selectedClass}
             canManageClasses={state.canManageClasses}
+            onClose={actions.clearSelection}
             onEdit={() => {
               if (!state.selectedClass) return;
               setFormSurface({ mode: "edit", classId: state.selectedClass.id });
+              actions.clearSelection();
             }}
             onCancel={() => setCancelOpen(true)}
           />

@@ -92,6 +92,12 @@ like part of Noya's Flow, not like a generic SaaS dashboard.
 - Manager access is gated by `capabilities.dashboard.can_enter`.
 - Manager UI should start from the same branded shell before adding operational
   class, template, and schedule tools.
+- Manager list and calendar surfaces should stay focused on browsing and quick
+  actions. Item details should open in an overlay surface instead of expanding
+  inline into the main view.
+- Use a mobile bottom drawer for item details and a compact dialog-style surface
+  on wider screens. The surrounding backdrop should close the surface on blur;
+  clicks inside the drawer/dialog must not close it.
 
 ## Internationalization
 
