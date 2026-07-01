@@ -7,18 +7,19 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type {
   CustomRangeValue,
   RangeScope,
   ViewMode,
-} from "@/features/manager/classes/class-range";
+} from "@/features/classes/class-range";
+import { cn } from "@/lib/utils";
 
 type ClassRangeToolbarProps = {
   rangeScope: RangeScope;
   customRange: CustomRangeValue | null;
   visibleRangeLabel: string;
   viewMode: ViewMode;
+  labelPrefix?: string;
   onScopeChange: (scope: RangeScope) => void;
   onCustomRangeChange: (startDate: string, endDate: string) => void;
   onPrevious: () => void;
@@ -34,6 +35,7 @@ export function ClassRangeToolbar({
   customRange,
   visibleRangeLabel,
   viewMode,
+  labelPrefix = "classes",
   onScopeChange,
   onCustomRangeChange,
   onPrevious,
@@ -59,7 +61,7 @@ export function ClassRangeToolbar({
             )}
             onClick={() => onScopeChange(scope)}
           >
-            <span className="truncate">{t(`manager.range.${scope}`)}</span>
+            <span className="truncate">{t(`${labelPrefix}.range.${scope}`)}</span>
           </Button>
         ))}
       </div>
@@ -67,7 +69,7 @@ export function ClassRangeToolbar({
       {rangeScope === "custom" && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <label className="min-w-0 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-            {t("manager.range.startDate")}
+            {t(`${labelPrefix}.range.startDate`)}
             <input
               className="mt-2 min-h-11 w-full rounded-xl border border-blush/24 bg-background/70 px-3 text-sm font-normal normal-case tracking-normal text-foreground"
               type="date"
@@ -81,7 +83,7 @@ export function ClassRangeToolbar({
             />
           </label>
           <label className="min-w-0 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-            {t("manager.range.endDate")}
+            {t(`${labelPrefix}.range.endDate`)}
             <input
               className="mt-2 min-h-11 w-full rounded-xl border border-blush/24 bg-background/70 px-3 text-sm font-normal normal-case tracking-normal text-foreground"
               type="date"
@@ -103,7 +105,7 @@ export function ClassRangeToolbar({
           variant="outline"
           size="icon"
           onClick={onPrevious}
-          aria-label={t("manager.range.previous")}
+          aria-label={t(`${labelPrefix}.range.previous`)}
         >
           <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
         </Button>
@@ -113,14 +115,14 @@ export function ClassRangeToolbar({
           className="min-w-0 flex-1 font-serif text-sm"
           onClick={onToday}
         >
-          <span className="truncate">{t("manager.range.todayButton")}</span>
+          <span className="truncate">{t(`${labelPrefix}.range.todayButton`)}</span>
         </Button>
         <Button
           type="button"
           variant="outline"
           size="icon"
           onClick={onNext}
-          aria-label={t("manager.range.next")}
+          aria-label={t(`${labelPrefix}.range.next`)}
         >
           <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />
         </Button>
@@ -143,7 +145,7 @@ export function ClassRangeToolbar({
             onClick={() => onViewModeChange("list")}
           >
             <List className="size-4" aria-hidden="true" />
-            {t("manager.view.list")}
+            {t(`${labelPrefix}.view.list`)}
           </Button>
           <Button
             type="button"
@@ -160,7 +162,7 @@ export function ClassRangeToolbar({
             }}
           >
             <CalendarDays className="size-4" aria-hidden="true" />
-            {t("manager.view.calendar")}
+            {t(`${labelPrefix}.view.calendar`)}
           </Button>
         </div>
       </div>

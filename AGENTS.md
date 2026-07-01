@@ -37,6 +37,10 @@ with the existing brand.
   component changes, or every small change.
 - Prefer focused inspection, `rg`, and browser smoke checks on the existing dev
   server for narrow UI fixes.
+- Never start or host a dev server without explicit user approval.
+- Before browser smoke checks, first check whether a localhost dev server
+  already exists and use it when available; otherwise ask the user to provide or
+  approve a server.
 - Run heavier checks only when TypeScript risk, dependency changes, or broader
   behavior changes justify it, or when explicitly requested.
 - If a plan includes `npm run build`, apply judgment before running it. Treat it

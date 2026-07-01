@@ -93,6 +93,11 @@ Goal: Give the product owner the protected workspace needed to create and manage
 
 Goal: Replace mock upcoming-class content with live ClassKit classes after manager-created class inventory exists.
 
+- [x] `done` Extract reusable class views
+  - Description: Move the manager class day, week, month, list, calendar, and card presentation into reusable domain components that can support both manager and customer class surfaces.
+  - Shape: Shared class views should receive normalized display data and action slots. Manager-only `management.*` fields and actions stay in the manager feature, while the future customer page maps `classes.*` responses into the same presentation model.
+  - Progress: Class range, toolbar, list, calendar, and card presentation now live under shared class domain components with manager-specific data mapping and actions kept in the manager feature.
+
 - [ ] `next` Create the classes page
   - Description: Add a dedicated classes page for browsing available classes, selecting a class, and entering the customer booking flow from a focused class context.
   - Shape: "View all" should navigate to this page. Clicking a class preview should open the same page with that class focused.

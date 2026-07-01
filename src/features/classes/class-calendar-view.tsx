@@ -1,53 +1,57 @@
-import type { ManagedClass } from "@class-kit/react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { cn } from "@/lib/utils";
+import type { ClassViewItem } from "@/features/classes/class-types";
 import {
   getCalendarDays,
   getLocalDateKey,
   type LocalDateRange,
   type RangeScope,
-} from "@/features/manager/classes/class-range";
+} from "@/features/classes/class-range";
+import { cn } from "@/lib/utils";
 
 type ClassCalendarViewProps = {
   rangeScope: RangeScope;
   localRange: LocalDateRange;
-  classes: ManagedClass[];
+  items: ClassViewItem[];
   selectedClassId: string | null;
+  labelPrefix?: string;
   onSelectClass: (classId: string) => void;
 };
 
 type CalendarClassButtonProps = {
-  managedClass: ManagedClass;
+  item: ClassViewItem;
   selectedClassId: string | null;
   timeFormatter: Intl.DateTimeFormat;
   onSelect: () => void;
 };
 
 function CalendarClassButton({
-  managedClass,
+  item,
   selectedClassId,
   timeFormatter,
   onSelect,
 }: CalendarClassButtonProps) {
-  const registeredCount = managedClass.registeredUsersCount ?? 0;
+  const countLabel =
+    item.registeredUsersCount === undefined
+      ? `${item.capacity}`
+      : `${item.registeredUsersCount}/${item.capacity}`;
 
   return (
     <button
       type="button"
       className={cn(
         "w-full rounded-xl border border-blush/24 bg-background/46 p-2.5 text-start text-xs leading-5 transition-colors hover:border-blush-strong hover:bg-blush-strong/10 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blush-strong/55 xl:p-3 xl:text-sm",
-        managedClass.id === selectedClassId && "border-blush-strong bg-background/70",
+        item.id === selectedClassId && "border-blush-strong bg-background/70",
       )}
       onClick={onSelect}
     >
       <span className="block font-semibold text-foreground">
-        {timeFormatter.format(new Date(managedClass.starts_at))}
+        {timeFormatter.format(new Date(item.startsAt))}
       </span>
-      <span className="block break-words text-foreground/68">{managedClass.name}</span>
+      <span className="block break-words text-foreground/68">{item.name}</span>
       <span className="mt-1 block text-[0.68rem] font-semibold text-foreground/52 xl:text-xs">
-        {registeredCount}/{managedClass.capacity}
+        {countLabel}
       </span>
     </button>
   );
@@ -56,8 +60,9 @@ function CalendarClassButton({
 export function ClassCalendarView({
   rangeScope,
   localRange,
-  classes,
+  items,
   selectedClassId,
+  labelPrefix = "classes",
   onSelectClass,
 }: ClassCalendarViewProps) {
   const { t, i18n } = useTranslation();
@@ -78,17 +83,17 @@ export function ClassCalendarView({
   });
   const days = useMemo(() => getCalendarDays(localRange), [localRange]);
   const classesByDate = useMemo(() => {
-    const groups = new Map<string, ManagedClass[]>();
+    const groups = new Map<string, ClassViewItem[]>();
 
-    classes.forEach((managedClass) => {
-      const dateKey = getLocalDateKey(new Date(managedClass.starts_at));
+    items.forEach((item) => {
+      const dateKey = getLocalDateKey(new Date(item.startsAt));
       const dayClasses = groups.get(dateKey) ?? [];
-      dayClasses.push(managedClass);
+      dayClasses.push(item);
       groups.set(dateKey, dayClasses);
     });
 
     return groups;
-  }, [classes]);
+  }, [items]);
   const collapsedClassLimit = rangeScope === "month" ? 2 : 4;
   const rangeStartKey = getLocalDateKey(localRange.start);
   const rangeEndKey = getLocalDateKey(localRange.end);
@@ -97,7 +102,7 @@ export function ClassCalendarView({
   if (rangeScope === "today" || rangeScope === "custom") {
     return (
       <div className="rounded-[1.4rem] border border-blush/24 bg-background/46 p-4 text-sm leading-6 text-foreground/68">
-        {t("manager.calendar.listFallback")}
+        {t(`${labelPrefix}.calendar.listFallback`)}
       </div>
     );
   }
@@ -135,13 +140,13 @@ export function ClassCalendarView({
               {dateFormatter.format(day)}
             </h3>
             <div className="mt-3 flex flex-col gap-2">
-              {visibleClasses.map((managedClass) => (
+              {visibleClasses.map((item) => (
                 <CalendarClassButton
-                  key={managedClass.id}
-                  managedClass={managedClass}
+                  key={item.id}
+                  item={item}
                   selectedClassId={selectedClassId}
                   timeFormatter={timeFormatter}
-                  onSelect={() => onSelectClass(managedClass.id)}
+                  onSelect={() => onSelectClass(item.id)}
                 />
               ))}
               {hasOverflow && (
@@ -152,18 +157,18 @@ export function ClassCalendarView({
                   aria-expanded={expanded}
                   aria-label={
                     expanded
-                      ? t("manager.calendar.lessAria", {
+                      ? t(`${labelPrefix}.calendar.lessAria`, {
                           date: fullDateFormatter.format(day),
                         })
-                      : t("manager.calendar.moreAria", {
+                      : t(`${labelPrefix}.calendar.moreAria`, {
                           count: hiddenCount,
                           date: fullDateFormatter.format(day),
                         })
                   }
                 >
                   {expanded
-                    ? t("manager.calendar.less")
-                    : t("manager.calendar.more", { count: hiddenCount })}
+                    ? t(`${labelPrefix}.calendar.less`)
+                    : t(`${labelPrefix}.calendar.more`, { count: hiddenCount })}
                 </button>
               )}
             </div>

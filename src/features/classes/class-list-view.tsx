@@ -1,34 +1,30 @@
-import type { ManagedClass } from "@class-kit/react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ClassCard } from "@/features/manager/classes/class-card";
-import { getLocalDateKey } from "@/features/manager/classes/class-range";
+import { ClassCard } from "@/features/classes/class-card";
+import type {
+  ClassViewDateGroup,
+  ClassViewItem,
+} from "@/features/classes/class-types";
+import { getLocalDateKey } from "@/features/classes/class-range";
 import { cn } from "@/lib/utils";
 
-type ClassDateGroup = {
-  dateKey: string;
-  label: string;
-  classes: ManagedClass[];
-};
-
 type ClassListViewProps = {
-  groups: ClassDateGroup[];
+  groups: ClassViewDateGroup[];
   selectedClassId: string | null;
-  canManageClasses: boolean;
-  isMutating: boolean;
+  selectLabel: string;
   onSelectClass: (classId: string) => void;
-  onPublishClass: (classId: string) => void;
-  onDraftClass: (classId: string) => void;
+  renderCardMeta?: (item: ClassViewItem) => ReactNode;
+  renderCardActions?: (item: ClassViewItem) => ReactNode;
 };
 
 export function ClassListView({
   groups,
   selectedClassId,
-  canManageClasses,
-  isMutating,
+  selectLabel,
   onSelectClass,
-  onPublishClass,
-  onDraftClass,
+  renderCardMeta,
+  renderCardActions,
 }: ClassListViewProps) {
   const { i18n } = useTranslation();
   const todayKey = getLocalDateKey(new Date());
@@ -69,21 +65,20 @@ export function ClassListView({
                 </h2>
               </div>
               <span className="shrink-0 rounded-full border border-blush/24 px-3 py-1 text-xs font-semibold text-foreground/60">
-                {group.classes.length}
+                {group.items.length}
               </span>
             </div>
 
             <div className="grid min-w-0 flex-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
-              {group.classes.map((managedClass) => (
+              {group.items.map((item) => (
                 <ClassCard
-                  key={managedClass.id}
-                  managedClass={managedClass}
-                  canManageClasses={canManageClasses}
-                  isSelected={managedClass.id === selectedClassId}
-                  isMutating={isMutating}
+                  key={item.id}
+                  item={item}
+                  isSelected={item.id === selectedClassId}
+                  selectLabel={selectLabel}
                   onSelect={onSelectClass}
-                  onPublish={onPublishClass}
-                  onDraft={onDraftClass}
+                  renderMeta={renderCardMeta}
+                  renderActions={renderCardActions}
                 />
               ))}
             </div>

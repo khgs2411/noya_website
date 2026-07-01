@@ -23,7 +23,7 @@ import {
   shiftRange,
   toDateInput,
   toVisibleRange,
-} from "@/features/manager/classes/class-range";
+} from "@/features/classes/class-range";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 type MutationStatus =

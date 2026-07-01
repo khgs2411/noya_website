@@ -1,15 +1,26 @@
 import { useProductContext } from "@class-kit/react";
-import { AlertCircle, CalendarPlus, Loader2, RefreshCw } from "lucide-react";
-import { useState } from "react";
+import {
+  AlertCircle,
+  CalendarPlus,
+  Loader2,
+  RefreshCw,
+  Send,
+  Undo2,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { ClassCalendarView } from "@/features/manager/classes/class-calendar-view";
+import { ClassCalendarView } from "@/features/classes/class-calendar-view";
+import { ClassListView } from "@/features/classes/class-list-view";
+import { ClassRangeToolbar } from "@/features/classes/class-range-toolbar";
+import type {
+  ClassViewDateGroup,
+  ClassViewItem,
+} from "@/features/classes/class-types";
 import { ClassCancelDialog } from "@/features/manager/classes/class-cancel-dialog";
 import { ClassDetailPanel } from "@/features/manager/classes/class-detail-panel";
 import { ClassFormDialog } from "@/features/manager/classes/class-form-dialog";
-import { ClassListView } from "@/features/manager/classes/class-list-view";
-import { ClassRangeToolbar } from "@/features/manager/classes/class-range-toolbar";
 import { useManagedClasses } from "@/features/manager/classes/use-managed-classes";
 import { useManagedTemplates } from "@/features/manager/templates/use-managed-templates";
 
@@ -39,15 +50,93 @@ export function ClassManagementTab({
     formSurface?.mode === "edit"
       ? state.classes.find((managedClass) => managedClass.id === formSurface.classId) ?? state.selectedClass
       : null;
+  const classById = useMemo(
+    () =>
+      new Map(state.classes.map((managedClass) => [managedClass.id, managedClass])),
+    [state.classes],
+  );
+  const classViewGroups = useMemo<ClassViewDateGroup[]>(
+    () =>
+      state.classesGroupedByDate.map((group) => ({
+        dateKey: group.dateKey,
+        label: group.label,
+        items: group.classes.map((managedClass) => ({
+          id: managedClass.id,
+          name: managedClass.name,
+          description: managedClass.description,
+          category: managedClass.category,
+          startsAt: managedClass.starts_at,
+          endsAt: managedClass.ends_at,
+          location: managedClass.location,
+          capacity: managedClass.capacity,
+          registeredUsersCount: managedClass.registeredUsersCount,
+          registrationOpen: managedClass.registration_open,
+          temporalStatus: managedClass.temporal_status,
+          statusLabel: t(`manager.classStatus.${managedClass.status}`),
+          capacityLabel: t("manager.classCard.capacity", {
+            count: managedClass.capacity,
+            registered: managedClass.registeredUsersCount ?? 0,
+          }),
+        })),
+      })),
+    [state.classesGroupedByDate, t],
+  );
+  const classViewItems = useMemo(
+    () => classViewGroups.flatMap((group) => group.items),
+    [classViewGroups],
+  );
+  const renderManagerClassActions = (item: ClassViewItem) => {
+    const managedClass = classById.get(item.id);
+    if (!managedClass) return null;
+
+    const canPublish =
+      state.canManageClasses &&
+      !managedClass.read_only &&
+      managedClass.status === "draft";
+    const canDraft =
+      state.canManageClasses &&
+      !managedClass.read_only &&
+      managedClass.status === "published";
+
+    if (!canPublish && !canDraft) return null;
+
+    return (
+      <>
+        {canPublish && (
+          <Button
+            type="button"
+            size="sm"
+            className="rounded-full"
+            disabled={state.mutationStatus !== "idle"}
+            onClick={() => actions.publishClass(item.id)}
+          >
+            <Send className="size-4" aria-hidden="true" />
+            {t("manager.classActions.publish")}
+          </Button>
+        )}
+        {canDraft && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="rounded-full"
+            disabled={state.mutationStatus !== "idle"}
+            onClick={() => actions.draftClass(item.id)}
+          >
+            <Undo2 className="size-4" aria-hidden="true" />
+            {t("manager.classActions.moveToDraft")}
+          </Button>
+        )}
+      </>
+    );
+  };
   const listView = (
     <ClassListView
-      groups={state.classesGroupedByDate}
+      groups={classViewGroups}
       selectedClassId={state.selectedClassId}
-      canManageClasses={state.canManageClasses}
-      isMutating={state.mutationStatus !== "idle"}
+      selectLabel={t("manager.classCard.select")}
       onSelectClass={actions.selectClass}
-      onPublishClass={actions.publishClass}
-      onDraftClass={actions.draftClass}
+      renderCardActions={renderManagerClassActions}
     />
   );
 
@@ -91,6 +180,7 @@ export function ClassManagementTab({
             customRange={state.customRange}
             visibleRangeLabel={state.visibleRangeLabel}
             viewMode={state.viewMode}
+            labelPrefix="manager"
             onScopeChange={actions.setRangeScope}
             onCustomRangeChange={actions.setCustomRange}
             onPrevious={actions.goToPreviousRange}
@@ -190,8 +280,9 @@ export function ClassManagementTab({
                   <ClassCalendarView
                     rangeScope={state.rangeScope}
                     localRange={state.localRange}
-                    classes={state.classes}
+                    items={classViewItems}
                     selectedClassId={state.selectedClassId}
+                    labelPrefix="manager"
                     onSelectClass={actions.selectClass}
                   />
                 ) : (

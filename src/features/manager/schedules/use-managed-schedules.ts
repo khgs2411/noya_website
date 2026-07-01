@@ -120,10 +120,7 @@ export function useManagedSchedules({
     async (input: CreateScheduleInput) => {
       const result = await performMutation(
         "creating",
-        () =>
-          client
-            ? client.management.schedules.create(input)
-            : Promise.resolve({ schedule: null, generation: null }),
+        () => client!.management.schedules.create(input),
         { refresh: true },
       );
 
@@ -140,10 +137,7 @@ export function useManagedSchedules({
     async (input: UpdateScheduleInput) => {
       const result = await performMutation(
         "updating",
-        () =>
-          client
-            ? client.management.schedules.update(input)
-            : Promise.resolve({ schedule: null, generation: null }),
+        () => client!.management.schedules.update(input),
         { refresh: true },
       );
 
@@ -222,4 +216,3 @@ export function useManagedSchedules({
     },
   };
 }
-
