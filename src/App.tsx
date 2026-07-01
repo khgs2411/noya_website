@@ -96,7 +96,7 @@ export default function App() {
   }
 
   if (isLessonsPath(route.pathname)) {
-    return <LessonsPage />;
+    return <LessonsPage onNavigate={navigateTo} />;
   }
 
   return (

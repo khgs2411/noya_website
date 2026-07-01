@@ -1,5 +1,10 @@
 type RegistrationStatusValue = "pending" | "approved" | "rejected" | "cancelled";
 type ClassTemporalStatusValue = "upcoming" | "started" | "ended" | "cancelled";
+type MembershipRequirementValue = "none" | "required";
+type RegistrationPolicyValue =
+  | "auto_approve"
+  | "member_auto_approve"
+  | "approval_required";
 
 export type ClassViewItem = {
   id: string;
@@ -11,6 +16,9 @@ export type ClassViewItem = {
   location: string | null;
   capacity: number;
   registeredUsersCount?: number;
+  membershipRequirement?: MembershipRequirementValue;
+  cancellationCutoffHours?: number;
+  registrationPolicy?: RegistrationPolicyValue;
   registrationOpen?: boolean;
   canRegister?: boolean;
   canCancelRegistration?: boolean;

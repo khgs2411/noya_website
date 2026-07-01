@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CalendarClock, MapPin } from "lucide-react";
+import { CalendarClock, Loader2, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { ClassViewItem } from "@/features/classes/class-types";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 type ClassCardProps = {
   item: ClassViewItem;
   isSelected: boolean;
+  isLoading?: boolean;
   selectLabel: string;
   onSelect: (classId: string) => void;
   renderMeta?: (item: ClassViewItem) => ReactNode;
@@ -17,6 +18,7 @@ type ClassCardProps = {
 export function ClassCard({
   item,
   isSelected,
+  isLoading = false,
   selectLabel,
   onSelect,
   renderMeta,
@@ -41,6 +43,8 @@ export function ClassCard({
       <button
         type="button"
         className="block w-full min-w-0 text-start"
+        disabled={isLoading}
+        aria-busy={isLoading}
         onClick={() => onSelect(item.id)}
       >
         <div className="flex min-w-0 items-start justify-between gap-3">
@@ -55,11 +59,19 @@ export function ClassCard({
               {item.name}
             </h3>
           </div>
-          {item.statusLabel && (
-            <span className="shrink-0 rounded-full border border-blush/24 px-2 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-foreground/56">
-              {item.statusLabel}
-            </span>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            {isLoading && (
+              <Loader2
+                className="size-4 animate-spin text-blush-strong"
+                aria-hidden="true"
+              />
+            )}
+            {item.statusLabel && (
+              <span className="rounded-full border border-blush/24 px-2 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-foreground/56">
+                {item.statusLabel}
+              </span>
+            )}
+          </div>
         </div>
 
         {item.location && (

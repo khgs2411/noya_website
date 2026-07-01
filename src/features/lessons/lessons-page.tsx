@@ -1,13 +1,545 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useProductContext,
+  type ClassInformation,
+  type ClassSummary,
+} from "@class-kit/react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  LogIn,
+  RefreshCw,
+  X,
+  XCircle,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { ReadonlyScheduleCard } from "./readonly-schedule-card";
+import { Button } from "@/components/ui/button";
+import { authPath } from "@/content/site-content";
+import { ClassCalendarView } from "@/features/classes/class-calendar-view";
+import { ClassListView } from "@/features/classes/class-list-view";
+import {
+  type CustomRangeValue,
+  getLocalDateKey,
+  type RangeScope,
+  type ViewMode,
+  getLocalRange,
+  getVisibleRangeLabel,
+  shiftRange,
+  toDateInput,
+} from "@/features/classes/class-range";
+import { ClassRangeToolbar } from "@/features/classes/class-range-toolbar";
+import type {
+  ClassViewDateGroup,
+  ClassViewItem,
+} from "@/features/classes/class-types";
 
-export function LessonsPage() {
-  const { t } = useTranslation();
+type LoadStatus = "idle" | "loading" | "loaded" | "error";
+type RegistrationMutation =
+  | { type: "register"; classId: string }
+  | { type: "cancel"; classId: string }
+  | null;
+
+type DetailStatus = "idle" | "loading" | "loaded" | "error";
+
+function toClassViewItem(
+  classSummary: ClassSummary,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): ClassViewItem {
+  return {
+    id: classSummary.id,
+    name: classSummary.name,
+    description: classSummary.description,
+    category: classSummary.category,
+    startsAt: classSummary.startsAt,
+    endsAt: classSummary.endsAt,
+    location: classSummary.location,
+    capacity: classSummary.capacity,
+    registeredUsersCount: classSummary.registeredUsersCount,
+    membershipRequirement: classSummary.membershipRequirement,
+    cancellationCutoffHours: classSummary.cancellationCutoffHours,
+    registrationPolicy: classSummary.registrationPolicy,
+    registrationOpen: classSummary.registrationOpen,
+    canRegister: classSummary.canRegister,
+    canCancelRegistration: classSummary.canCancelRegistration,
+    userRegistrationState: classSummary.userRegistrationState,
+    temporalStatus: classSummary.temporalStatus,
+    statusLabel: t(`classes.temporalStatus.${classSummary.temporalStatus}`),
+    capacityLabel:
+      classSummary.registeredUsersCount === undefined
+        ? t("classes.capacity", { count: classSummary.capacity })
+        : t("classes.capacityWithRegistered", {
+            count: classSummary.capacity,
+            registered: classSummary.registeredUsersCount,
+          }),
+  };
+}
+
+function groupClassesByDate(
+  items: ClassViewItem[],
+  locale: string,
+): ClassViewDateGroup[] {
+  const formatter = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+  const groups = new Map<string, ClassViewItem[]>();
+
+  for (const item of [...items].sort((a, b) => a.startsAt.localeCompare(b.startsAt))) {
+    const key = getLocalDateKey(new Date(item.startsAt));
+    groups.set(key, [...(groups.get(key) ?? []), item]);
+  }
+
+  return [...groups.entries()].map(([dateKey, groupedItems]) => ({
+    dateKey,
+    label: formatter.format(new Date(groupedItems[0].startsAt)),
+    items: groupedItems,
+  }));
+}
+
+export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+  const { t, i18n } = useTranslation();
+  const { client, productUser, session } = useProductContext();
+  const [rangeScope, setRangeScope] = useState<RangeScope>("week");
+  const [rangeAnchorDate, setRangeAnchorDate] = useState(() => new Date());
+  const [customRange, setCustomRangeState] =
+    useState<CustomRangeValue | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [classes, setClasses] = useState<ClassSummary[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [operationMessage, setOperationMessage] = useState<string | null>(null);
+  const [operationError, setOperationError] = useState<string | null>(null);
+  const [registrationMutation, setRegistrationMutation] =
+    useState<RegistrationMutation>(null);
+  const [selectedClassDetail, setSelectedClassDetail] =
+    useState<ClassInformation | null>(null);
+  const [detailStatus, setDetailStatus] = useState<DetailStatus>("idle");
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
+  const detailRequestIdRef = useRef(0);
+
+  const localRange = useMemo(
+    () => getLocalRange(rangeScope, rangeAnchorDate, customRange),
+    [customRange, rangeAnchorDate, rangeScope],
+  );
+  const visibleRangeLabel = useMemo(
+    () => getVisibleRangeLabel(localRange),
+    [localRange],
+  );
+  const visibleRange = useMemo(
+    () => ({
+      start: toDateInput(localRange.start),
+      end: toDateInput(localRange.end),
+    }),
+    [localRange],
+  );
+  const classViewItems = useMemo(
+    () => classes.map((classSummary) => toClassViewItem(classSummary, t)),
+    [classes, t],
+  );
+  const classViewGroups = useMemo(
+    () => groupClassesByDate(classViewItems, i18n.language),
+    [classViewItems, i18n.language],
+  );
+  const selectedClass = useMemo(
+    () =>
+      selectedClassDetail
+        ? toClassViewItem(selectedClassDetail, t)
+        : classViewItems.find((item) => item.id === selectedClassId) ?? null,
+    [classViewItems, selectedClassDetail, selectedClassId, t],
+  );
+  const loadingClassId =
+    registrationMutation?.classId ??
+    (detailStatus === "loading" ? selectedClassId : null);
+
+  const refreshClasses = useCallback(async () => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    setLoadStatus("loading");
+    setErrorMessage(null);
+
+    if (!client) {
+      setClasses([]);
+      setLoadStatus("error");
+      setErrorMessage(t("classes.unavailable"));
+      return;
+    }
+
+    const result = await client.classes.list({
+      range: visibleRange,
+      fields: ["description", "category", "registeredUsersCount"],
+    });
+
+    if (requestIdRef.current !== requestId) return;
+
+    if (result.error) {
+      setClasses([]);
+      setLoadStatus("error");
+      setErrorMessage(result.error.message);
+      return;
+    }
+
+    setClasses(result.data.classes);
+    setLoadStatus("loaded");
+    setErrorMessage(null);
+    setOperationError(null);
+  }, [client, t, visibleRange]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void refreshClasses();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [refreshClasses]);
+
+  function setScope(scope: RangeScope) {
+    setRangeScope(scope);
+    closeClassDetails();
+    if (scope === "custom") {
+      setViewMode("list");
+      const today = new Date();
+      const inputDate = toDateInput(today);
+      setCustomRangeState((current) => current ?? {
+        startDate: inputDate,
+        endDate: inputDate,
+      });
+    }
+  }
+
+  function setCustomRange(startDate: string, endDate: string) {
+    setRangeScope("custom");
+    setViewMode("list");
+    setCustomRangeState({ startDate, endDate });
+    closeClassDetails();
+  }
+
+  function goToPreviousRange() {
+    const next = shiftRange(rangeScope, rangeAnchorDate, customRange, -1);
+    setRangeAnchorDate(next.anchorDate);
+    setCustomRangeState(next.customRange);
+    closeClassDetails();
+  }
+
+  function goToNextRange() {
+    const next = shiftRange(rangeScope, rangeAnchorDate, customRange, 1);
+    setRangeAnchorDate(next.anchorDate);
+    setCustomRangeState(next.customRange);
+    closeClassDetails();
+  }
+
+  function goToToday() {
+    const today = new Date();
+    setRangeAnchorDate(today);
+    closeClassDetails();
+
+    if (rangeScope === "custom") {
+      const inputDate = toDateInput(today);
+      setCustomRangeState({ startDate: inputDate, endDate: inputDate });
+    }
+  }
+
+  function closeClassDetails() {
+    setSelectedClassId(null);
+    setSelectedClassDetail(null);
+    setDetailStatus("idle");
+    setDetailError(null);
+  }
+
+  const loadClassDetail = useCallback(
+    async (classId: string) => {
+      const requestId = detailRequestIdRef.current + 1;
+      detailRequestIdRef.current = requestId;
+      setDetailStatus("loading");
+      setDetailError(null);
+
+      if (!client) {
+        setDetailStatus("error");
+        setDetailError(t("classes.unavailable"));
+        return null;
+      }
+
+      const result = await client.classes.get(classId, {
+        fields: [
+          "membershipRequirement",
+          "cancellationCutoff",
+          "registeredUsersCount",
+        ],
+      });
+
+      if (detailRequestIdRef.current !== requestId) return null;
+
+      if (result.error) {
+        setDetailStatus("error");
+        setDetailError(result.error.message);
+        return null;
+      }
+
+      setSelectedClassDetail(result.data.class);
+      setClasses((currentClasses) =>
+        currentClasses.map((classSummary) =>
+          classSummary.id === result.data.class.id ? result.data.class : classSummary,
+        ),
+      );
+      setDetailStatus("loaded");
+      return result.data.class;
+    },
+    [client, t],
+  );
+
+  function openClassDetails(classId: string) {
+    setSelectedClassId(classId);
+    setSelectedClassDetail(null);
+    setOperationMessage(null);
+    setOperationError(null);
+    void loadClassDetail(classId);
+  }
+
+  async function registerForClass(item: ClassViewItem) {
+    setOperationMessage(null);
+    setOperationError(null);
+
+    if (!session) {
+      onNavigate(authPath);
+      return;
+    }
+
+    if (!client) {
+      setOperationError(t("classes.unavailable"));
+      return;
+    }
+
+    const detail =
+      selectedClassDetail?.id === item.id
+        ? selectedClassDetail
+        : await loadClassDetail(item.id);
+
+    if (!detail) return;
+
+    if (
+      detail.membershipRequirement === "required" &&
+      !productUser?.has_active_membership
+    ) {
+      setOperationError(t("classes.membershipRequired"));
+      return;
+    }
+
+    if (!detail.canRegister) {
+      setOperationError(t("classes.registrationUnavailable"));
+      return;
+    }
+
+    setRegistrationMutation({ type: "register", classId: item.id });
+
+    try {
+      const result = await client.classes.register(item.id);
+
+      if (result.error) {
+        setOperationError(result.error.message);
+        return;
+      }
+
+      setOperationMessage(t(`classes.registrationStatus.${result.data.status}`));
+      await loadClassDetail(item.id);
+    } finally {
+      setRegistrationMutation(null);
+    }
+  }
+
+  async function cancelRegistration(item: ClassViewItem) {
+    setOperationMessage(null);
+    setOperationError(null);
+
+    if (!client || !item.userRegistrationState?.id) {
+      setOperationError(t("classes.unavailable"));
+      return;
+    }
+
+    setRegistrationMutation({ type: "cancel", classId: item.id });
+
+    try {
+      const result = await client.classes.cancelRegistration(
+        item.userRegistrationState.id,
+      );
+
+      if (result.error) {
+        setOperationError(result.error.message);
+        return;
+      }
+
+      setOperationMessage(t("classes.cancelled"));
+      await loadClassDetail(item.id);
+    } finally {
+      setRegistrationMutation(null);
+    }
+  }
+
+  function renderClassMeta(item: ClassViewItem) {
+    if (!item.category && !item.description) return null;
+
+    return (
+      <div className="mt-3 grid gap-2 text-sm text-foreground/68">
+        {item.category && (
+          <p className="font-semibold text-foreground/72">{item.category}</p>
+        )}
+        {item.description && <p className="leading-6">{item.description}</p>}
+      </div>
+    );
+  }
+
+  function renderClassActions(item: ClassViewItem) {
+    const mutationActive = registrationMutation?.classId === item.id;
+    const actionBusy = mutationActive || loadingClassId === item.id;
+    const registrationState = item.userRegistrationState?.status;
+
+    if (registrationState === "approved" || registrationState === "pending") {
+      return (
+        <>
+          <span className="inline-flex items-center gap-2 rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/68">
+            <CheckCircle2 className="size-4 text-blush-strong" aria-hidden="true" />
+            {t(`classes.registrationStatus.${registrationState}`)}
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="rounded-full"
+            disabled={actionBusy}
+            onClick={() => void cancelRegistration(item)}
+          >
+            {actionBusy && registrationMutation?.type !== "register" ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <XCircle className="size-4" aria-hidden="true" />
+            )}
+            {item.canCancelRegistration
+              ? t("classes.cancelRegistration")
+              : t("classes.cancelRegistrationRequest")}
+          </Button>
+          {!item.canCancelRegistration && (
+            <span className="text-xs leading-5 text-foreground/52">
+              {t("classes.cancelRegistrationFallback")}
+            </span>
+          )}
+        </>
+      );
+    }
+
+    if (!session && item.registrationOpen) {
+      return (
+        <Button
+          type="button"
+          size="sm"
+          className="rounded-full"
+          onClick={() => void registerForClass(item)}
+        >
+          <LogIn className="size-4" aria-hidden="true" />
+          {t("classes.signInToRegister")}
+        </Button>
+      );
+    }
+
+    if (
+      session &&
+      item.membershipRequirement === "required" &&
+      !productUser?.has_active_membership
+    ) {
+      return (
+        <span className="rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/58">
+          {t("classes.membershipRequiredShort")}
+        </span>
+      );
+    }
+
+    if (session && item.canRegister) {
+      return (
+        <Button
+          type="button"
+          size="sm"
+          className="rounded-full"
+          disabled={actionBusy}
+          onClick={() => void registerForClass(item)}
+        >
+          {actionBusy ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <CheckCircle2 className="size-4" aria-hidden="true" />
+          )}
+          {t("classes.register")}
+        </Button>
+      );
+    }
+
+    return (
+      <span className="rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/58">
+        {t("classes.registrationClosed")}
+      </span>
+    );
+  }
+
+  function renderClassFacts(item: ClassViewItem) {
+    const facts = [
+      {
+        label: t("classes.detail.time"),
+        value: new Intl.DateTimeFormat(i18n.language, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).formatRange(new Date(item.startsAt), new Date(item.endsAt)),
+      },
+      {
+        label: t("classes.detail.location"),
+        value: item.location ?? t("classes.detail.noLocation"),
+      },
+      {
+        label: t("classes.detail.capacity"),
+        value: item.capacityLabel ?? t("classes.capacity", { count: item.capacity }),
+      },
+      item.membershipRequirement
+        ? {
+            label: t("classes.detail.membership"),
+            value: t(`classes.membershipRequirement.${item.membershipRequirement}`),
+          }
+        : null,
+      item.registrationPolicy
+        ? {
+            label: t("classes.detail.registrationPolicy"),
+            value: t(`classes.registrationPolicy.${item.registrationPolicy}`),
+          }
+        : null,
+      item.cancellationCutoffHours !== undefined
+        ? {
+            label: t("classes.detail.cancellationCutoff"),
+            value: t("classes.cancellationCutoff", {
+              count: item.cancellationCutoffHours,
+            }),
+          }
+        : null,
+    ].filter((fact): fact is { label: string; value: string } => Boolean(fact));
+
+    return (
+      <dl className="mt-5 grid gap-3 text-sm">
+        {facts.map((fact) => (
+          <div
+            key={fact.label}
+            className="grid gap-1 rounded-xl border border-blush/24 bg-background/46 p-3 sm:grid-cols-[9rem_1fr]"
+          >
+            <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+              {fact.label}
+            </dt>
+            <dd className="break-words text-foreground/72">{fact.value}</dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-background px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 text-foreground sm:px-8 md:pb-10">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-6xl">
         <a
           href="./"
           className="inline-flex text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
@@ -15,7 +547,212 @@ export function LessonsPage() {
           {t("actions.back")}
         </a>
 
-        <ReadonlyScheduleCard className="mt-6" />
+        <section className="mt-6 rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft sm:p-5">
+          <div className="max-w-3xl">
+            <p className="font-serif text-[0.68rem] uppercase tracking-[0.25em] text-foreground/48">
+              {t("classes.pageEyebrow")}
+            </p>
+            <h1 className="mt-2 font-serif text-4xl text-foreground sm:text-5xl">
+              {t("classes.pageTitle")}
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-foreground/68">
+              {t("classes.pageBody")}
+            </p>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-4">
+            <ClassRangeToolbar
+              rangeScope={rangeScope}
+              customRange={customRange}
+              visibleRangeLabel={visibleRangeLabel}
+              viewMode={viewMode}
+              labelPrefix="classes"
+              onScopeChange={setScope}
+              onCustomRangeChange={setCustomRange}
+              onPrevious={goToPreviousRange}
+              onNext={goToNextRange}
+              onToday={goToToday}
+              onViewModeChange={setViewMode}
+            />
+
+            {loadStatus === "loading" && (
+              <div className="rounded-xl border border-blush/24 bg-background/46 p-5">
+                <div className="flex items-center gap-3 text-sm text-foreground/68">
+                  <Loader2
+                    className="size-4 shrink-0 animate-spin text-blush-strong"
+                    aria-hidden="true"
+                  />
+                  {t("classes.loading")}
+                </div>
+              </div>
+            )}
+
+            {loadStatus === "error" && (
+              <div className="rounded-xl border border-blush/24 bg-background/46 p-5">
+                <div className="flex items-start gap-3">
+                  <AlertCircle
+                    className="mt-0.5 size-5 shrink-0 text-blush-strong"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0">
+                    <p className="font-serif text-xl text-foreground">
+                      {t("classes.errorTitle")}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-foreground/68">
+                      {errorMessage ?? t("classes.errorBody")}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="mt-4 rounded-full"
+                      onClick={() => void refreshClasses()}
+                    >
+                      <RefreshCw className="size-4" aria-hidden="true" />
+                      {t("classes.retry")}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {operationError && (
+              <p className="rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-blush-strong">
+                {operationError}
+              </p>
+            )}
+
+            {operationMessage && (
+              <p className="rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-foreground/68">
+                {operationMessage}
+              </p>
+            )}
+
+            {viewMode === "calendar" ? (
+              <ClassCalendarView
+                rangeScope={rangeScope}
+                localRange={localRange}
+                items={classViewItems}
+                selectedClassId={selectedClassId}
+                loadingClassId={loadingClassId}
+                labelPrefix="classes"
+                onSelectClass={openClassDetails}
+              />
+            ) : (
+              <ClassListView
+                groups={classViewGroups}
+                selectedClassId={selectedClassId}
+                loadingClassId={loadingClassId}
+                selectLabel={t("classes.select")}
+                onSelectClass={openClassDetails}
+                renderCardMeta={renderClassMeta}
+                renderCardActions={renderClassActions}
+              />
+            )}
+
+            {loadStatus === "loaded" && classViewItems.length === 0 && (
+              <div className="rounded-xl border border-blush/24 bg-background/46 p-5">
+                <p className="font-serif text-xl text-foreground">
+                  {t("classes.emptyTitle")}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-foreground/68">
+                  {t("classes.emptyBody")}
+                </p>
+              </div>
+            )}
+
+            {viewMode === "calendar" && loadStatus === "loaded" && classViewItems.length > 0 && (
+              <div className="md:hidden">
+                <ClassListView
+                  groups={classViewGroups}
+                  selectedClassId={selectedClassId}
+                  loadingClassId={loadingClassId}
+                  selectLabel={t("classes.select")}
+                  onSelectClass={openClassDetails}
+                  renderCardMeta={renderClassMeta}
+                  renderCardActions={renderClassActions}
+                />
+              </div>
+            )}
+
+            {selectedClass && (
+              <div
+                className="fixed inset-0 z-50 grid place-items-end bg-black/50 p-0 md:place-items-center md:p-6"
+                onClick={closeClassDetails}
+              >
+                <aside
+                  className="max-h-[92vh] w-full overflow-y-auto rounded-t-[1.4rem] border border-blush/24 bg-background p-5 text-foreground shadow-soft md:max-w-xl md:rounded-[1.4rem] md:bg-card/95"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <header className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
+                        {t("classes.detail.eyebrow")}
+                      </p>
+                      <h2 className="mt-2 break-words font-serif text-3xl text-foreground">
+                        {selectedClass.name}
+                      </h2>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={closeClassDetails}
+                      aria-label={t("actions.close")}
+                    >
+                      <X className="size-5" aria-hidden="true" />
+                    </Button>
+                  </header>
+
+                  {detailStatus === "loading" && (
+                    <div className="mt-5 flex items-center gap-3 rounded-xl border border-blush/24 bg-background/46 p-4 text-sm text-foreground/68">
+                      <Loader2
+                        className="size-4 shrink-0 animate-spin text-blush-strong"
+                        aria-hidden="true"
+                      />
+                      {t("classes.detail.loading")}
+                    </div>
+                  )}
+
+                  {detailStatus === "error" && (
+                    <p className="mt-5 rounded-xl border border-blush/24 bg-background/46 p-4 text-sm leading-6 text-blush-strong">
+                      {detailError ?? t("classes.detail.error")}
+                    </p>
+                  )}
+
+                  {selectedClass.description && (
+                    <p className="mt-5 text-sm leading-6 text-foreground/68">
+                      {selectedClass.description}
+                    </p>
+                  )}
+
+                  {selectedClass.category && (
+                    <p className="mt-3 inline-flex rounded-full border border-blush/24 px-3 py-1 text-xs font-semibold text-foreground/60">
+                      {selectedClass.category}
+                    </p>
+                  )}
+
+                  {renderClassFacts(selectedClass)}
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {renderClassActions(selectedClass)}
+                  </div>
+                </aside>
+              </div>
+            )}
+
+            {loadStatus === "idle" && (
+              <div className="rounded-xl border border-blush/24 bg-background/46 p-5">
+              <p className="font-serif text-xl text-foreground">
+                {t("classes.emptyTitle")}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-foreground/68">
+                {t("classes.emptyBody")}
+              </p>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </main>
   );

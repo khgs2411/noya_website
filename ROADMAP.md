@@ -98,11 +98,12 @@ Goal: Replace mock upcoming-class content with live ClassKit classes after manag
   - Shape: Shared class views should receive normalized display data and action slots. Manager-only `management.*` fields and actions stay in the manager feature, while the future customer page maps `classes.*` responses into the same presentation model.
   - Progress: Class range, toolbar, list, calendar, and card presentation now live under shared class domain components with manager-specific data mapping and actions kept in the manager feature.
 
-- [ ] `next` Create the classes page
+- [x] `done` Create the classes page
   - Description: Add a dedicated classes page for browsing available classes, selecting a class, and entering the customer booking flow from a focused class context.
   - Shape: "View all" should navigate to this page. Clicking a class preview should open the same page with that class focused.
+  - Progress: The existing lessons route now serves a public ClassKit-backed class browser with range controls, list/calendar views, selected-class focus, and customer registration actions that prompt unauthenticated users to sign in.
 
-- [ ] `open` Link the landing "Upcoming Classes" section to real classes
+- [ ] `next` Link the landing "Upcoming Classes" section to real classes
   - Description: Use ClassKit class list data for the landing-page preview so the cards reflect actual upcoming classes rather than static May mockups.
   - Shape: The section remains a preview; the full browsing and focused class behavior belongs on the classes page.
 

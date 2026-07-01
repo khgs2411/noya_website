@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 type ClassListViewProps = {
   groups: ClassViewDateGroup[];
   selectedClassId: string | null;
+  loadingClassId?: string | null;
   selectLabel: string;
   onSelectClass: (classId: string) => void;
   renderCardMeta?: (item: ClassViewItem) => ReactNode;
@@ -21,6 +22,7 @@ type ClassListViewProps = {
 export function ClassListView({
   groups,
   selectedClassId,
+  loadingClassId = null,
   selectLabel,
   onSelectClass,
   renderCardMeta,
@@ -75,6 +77,7 @@ export function ClassListView({
                   key={item.id}
                   item={item}
                   isSelected={item.id === selectedClassId}
+                  isLoading={item.id === loadingClassId}
                   selectLabel={selectLabel}
                   onSelect={onSelectClass}
                   renderMeta={renderCardMeta}

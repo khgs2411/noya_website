@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { ClassViewItem } from "@/features/classes/class-types";
@@ -15,6 +16,7 @@ type ClassCalendarViewProps = {
   localRange: LocalDateRange;
   items: ClassViewItem[];
   selectedClassId: string | null;
+  loadingClassId?: string | null;
   labelPrefix?: string;
   onSelectClass: (classId: string) => void;
 };
@@ -22,6 +24,7 @@ type ClassCalendarViewProps = {
 type CalendarClassButtonProps = {
   item: ClassViewItem;
   selectedClassId: string | null;
+  isLoading: boolean;
   timeFormatter: Intl.DateTimeFormat;
   onSelect: () => void;
 };
@@ -29,6 +32,7 @@ type CalendarClassButtonProps = {
 function CalendarClassButton({
   item,
   selectedClassId,
+  isLoading,
   timeFormatter,
   onSelect,
 }: CalendarClassButtonProps) {
@@ -40,14 +44,22 @@ function CalendarClassButton({
   return (
     <button
       type="button"
+      disabled={isLoading}
+      aria-busy={isLoading}
       className={cn(
         "w-full rounded-xl border border-blush/24 bg-background/46 p-2.5 text-start text-xs leading-5 transition-colors hover:border-blush-strong hover:bg-blush-strong/10 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blush-strong/55 xl:p-3 xl:text-sm",
         item.id === selectedClassId && "border-blush-strong bg-background/70",
       )}
       onClick={onSelect}
     >
-      <span className="block font-semibold text-foreground">
-        {timeFormatter.format(new Date(item.startsAt))}
+      <span className="flex items-center justify-between gap-2 font-semibold text-foreground">
+        <span>{timeFormatter.format(new Date(item.startsAt))}</span>
+        {isLoading && (
+          <Loader2
+            className="size-3.5 shrink-0 animate-spin text-blush-strong"
+            aria-hidden="true"
+          />
+        )}
       </span>
       <span className="block break-words text-foreground/68">{item.name}</span>
       <span className="mt-1 block text-[0.68rem] font-semibold text-foreground/52 xl:text-xs">
@@ -62,6 +74,7 @@ export function ClassCalendarView({
   localRange,
   items,
   selectedClassId,
+  loadingClassId = null,
   labelPrefix = "classes",
   onSelectClass,
 }: ClassCalendarViewProps) {
@@ -145,6 +158,7 @@ export function ClassCalendarView({
                   key={item.id}
                   item={item}
                   selectedClassId={selectedClassId}
+                  isLoading={item.id === loadingClassId}
                   timeFormatter={timeFormatter}
                   onSelect={() => onSelectClass(item.id)}
                 />
