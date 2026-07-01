@@ -207,8 +207,14 @@ function TemplateFormDialogContent({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 p-0 sm:grid sm:place-items-center sm:p-6">
-      <section className="flex h-full w-full flex-col overflow-hidden bg-background text-foreground sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-[1.4rem] sm:border sm:border-blush/24 sm:bg-card/95 sm:shadow-soft">
+    <div
+      className="fixed inset-0 z-50 bg-black/50 p-0 sm:grid sm:place-items-center sm:p-6"
+      onClick={onClose}
+    >
+      <section
+        className="flex h-full w-full flex-col overflow-hidden bg-background text-foreground sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-[1.4rem] sm:border sm:border-blush/24 sm:bg-card/95 sm:shadow-soft"
+        onClick={(event) => event.stopPropagation()}
+      >
         <header className="flex items-center justify-between gap-3 border-b border-blush/24 p-5">
           <div className="min-w-0">
             <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">

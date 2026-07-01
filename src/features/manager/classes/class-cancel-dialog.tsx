@@ -59,8 +59,14 @@ function ClassCancelDialogContent({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-end bg-black/50 p-0 sm:place-items-center sm:p-6">
-      <section className="w-full rounded-t-[1.4rem] border border-blush/24 bg-background p-5 text-foreground shadow-soft sm:max-w-lg sm:rounded-[1.4rem]">
+    <div
+      className="fixed inset-0 z-50 grid place-items-end bg-black/50 p-0 sm:place-items-center sm:p-6"
+      onClick={onClose}
+    >
+      <section
+        className="w-full rounded-t-[1.4rem] border border-blush/24 bg-background p-5 text-foreground shadow-soft sm:max-w-lg sm:rounded-[1.4rem]"
+        onClick={(event) => event.stopPropagation()}
+      >
         <h2 className="font-serif text-3xl">{t("manager.cancel.title")}</h2>
         <p className="mt-3 text-sm leading-6 text-foreground/68">
           {t("manager.cancel.body")}

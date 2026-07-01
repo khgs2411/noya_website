@@ -52,39 +52,40 @@ export function ClassManagementTab({
   );
 
   return (
-    <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-5 shadow-soft sm:p-6">
-      <div className="flex items-start gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
-          <CalendarPlus className="size-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
-            {t("manager.tabs.classes")}
-          </p>
-          <h2 className="mt-2 font-serif text-3xl text-foreground">
-            {t("manager.classes.title")}
-          </h2>
-          <p className="mt-3 max-w-prose text-sm leading-6 text-foreground/68">
-            {canManageClasses
-              ? t("manager.classes.body")
-              : t("manager.classes.noAccessBody")}
-          </p>
+    <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
+            <CalendarPlus className="size-4" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="font-serif text-[0.68rem] uppercase tracking-[0.25em] text-foreground/48">
+              {t("manager.tabs.classes")}
+            </p>
+            <h2 className="mt-1 font-serif text-3xl text-foreground sm:text-4xl">
+              {t("manager.classes.title")}
+            </h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-foreground/68">
+              {canManageClasses
+                ? t("manager.classes.body")
+                : t("manager.classes.noAccessBody")}
+            </p>
+          </div>
         </div>
+        {canManageClasses && (
+          <Button
+            type="button"
+            className="w-full rounded-full sm:w-auto"
+            onClick={() => setFormSurface({ mode: "create" })}
+          >
+            <CalendarPlus className="size-4" aria-hidden="true" />
+            {t("manager.classActions.create")}
+          </Button>
+        )}
       </div>
 
       {canManageClasses ? (
-        <div className="mt-5 flex flex-col gap-4">
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              className="rounded-full"
-              onClick={() => setFormSurface({ mode: "create" })}
-            >
-              <CalendarPlus className="size-4" aria-hidden="true" />
-              {t("manager.classActions.create")}
-            </Button>
-          </div>
-
+        <div className="mt-4 flex flex-col gap-4">
           <ClassRangeToolbar
             rangeScope={state.rangeScope}
             customRange={state.customRange}

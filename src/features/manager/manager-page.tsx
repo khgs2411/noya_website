@@ -5,25 +5,8 @@ import { useTranslation } from "react-i18next";
 
 import { ClassManagementTab } from "@/features/manager/classes/class-management-tab";
 import { ManagerTabs, type ManagerTab } from "@/features/manager/manager-tabs";
+import { ScheduleManagementTab } from "@/features/manager/schedules/schedule-management-tab";
 import { TemplateManagementTab } from "@/features/manager/templates/template-management-tab";
-
-function ComingNextPanel({ kind }: { kind: "templates" | "schedules" }) {
-  const { t } = useTranslation();
-
-  return (
-    <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-5 shadow-soft sm:p-6">
-      <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
-        {t(`manager.tabs.${kind}`)}
-      </p>
-      <h2 className="mt-2 font-serif text-3xl text-foreground">
-        {t(`manager.${kind}.title`)}
-      </h2>
-      <p className="mt-3 max-w-prose text-sm leading-6 text-foreground/68">
-        {t(`manager.${kind}.body`)}
-      </p>
-    </section>
-  );
-}
 
 export function ManagerPage({ loading = false }: { loading?: boolean }) {
   const { t } = useTranslation();
@@ -34,8 +17,8 @@ export function ManagerPage({ loading = false }: { loading?: boolean }) {
   );
 
   return (
-    <main className="min-h-screen bg-background px-5 pb-12 pt-6 text-foreground sm:px-8">
-      <div className="mx-auto max-w-5xl">
+    <main className="min-h-screen bg-background px-4 pb-12 pt-5 text-foreground sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[88rem]">
         <a
           href="./"
           className="inline-flex items-center gap-2 text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
@@ -63,7 +46,9 @@ export function ManagerPage({ loading = false }: { loading?: boolean }) {
             {activeTab === "templates" && (
               <TemplateManagementTab canManageTemplates={canManageClasses} />
             )}
-            {activeTab === "schedules" && <ComingNextPanel kind="schedules" />}
+            {activeTab === "schedules" && (
+              <ScheduleManagementTab canManageSchedules={canManageClasses} />
+            )}
           </section>
         )}
       </div>

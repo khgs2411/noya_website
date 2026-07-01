@@ -117,8 +117,9 @@ export function getVisibleRangeLabel(range: LocalDateRange) {
 
 export function getCalendarDays(range: LocalDateRange) {
   const days: Date[] = [];
-  let cursor = startOfLocalDay(range.start);
-  const last = startOfLocalDay(range.end);
+  let cursor = startOfLocalDay(addDays(range.start, -range.start.getDay()));
+  const end = startOfLocalDay(range.end);
+  const last = startOfLocalDay(addDays(end, 6 - end.getDay()));
 
   while (cursor.getTime() <= last.getTime()) {
     days.push(cursor);

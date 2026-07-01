@@ -42,7 +42,7 @@ export function ClassCard({
   return (
     <article
       className={cn(
-        "rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft",
+        "rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft transition-colors hover:border-blush-strong hover:bg-blush-strong/10",
         isSelected && "border-blush-strong",
       )}
     >

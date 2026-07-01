@@ -79,19 +79,21 @@ Goal: Give the product owner the protected workspace needed to create and manage
   - Description: Let the manager create, edit, publish, draft, cancel, and inspect classes through the ClassKit management facade.
   - Progress: The manager workspace now supports one-off class inventory management with mobile-first list browsing, desktop calendar/list controls, quick publish/draft actions, create/edit/cancel surfaces, and item details presented through a mobile drawer or desktop dialog overlay instead of expanding inline.
 
-- [ ] `next` Add template-backed class setup
+- [x] `done` Add template-backed class setup
   - Description: Let the manager define reusable class templates that make repeated class creation consistent enough for public discovery.
+  - Progress: The manager workspace now supports ClassKit-backed template listing, creation, editing, deactivation, and template selection during one-off class creation.
 
-- [ ] `open` Add initial schedule-backed class generation
+- [x] `done` Add initial schedule-backed class generation
   - Description: Let the manager use ClassKit schedules enough to create real upcoming class availability for the public classes page and landing preview.
   - Why: Public discovery should be downstream of manager-created inventory, not a mock frontend surface that later has to be rewired.
   - Shape: Keep this to manager-side inventory creation. Broader schedule operations remain in the later manager schedule system step.
+  - Progress: The manager workspace now supports ClassKit-backed schedule listing, creation, editing, preview, and generation from active templates, while skip/unskip and broader lifecycle tools remain in the later schedule-system step.
 
 ## Roadmap Step 3: Public Class Discovery
 
 Goal: Replace mock upcoming-class content with live ClassKit classes after manager-created class inventory exists.
 
-- [ ] `open` Create the classes page
+- [ ] `next` Create the classes page
   - Description: Add a dedicated classes page for browsing available classes, selecting a class, and entering the customer booking flow from a focused class context.
   - Shape: "View all" should navigate to this page. Clicking a class preview should open the same page with that class focused.
 
