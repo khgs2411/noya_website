@@ -64,6 +64,11 @@ function CalendarClassButton({
         )}
       </span>
       <span className="block break-words text-foreground/68">{item.name}</span>
+      {item.statusLabel && (
+        <span className="mt-1 inline-flex rounded-full border border-blush/24 px-2 py-0.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-foreground/56">
+          {item.statusLabel}
+        </span>
+      )}
       <span className="mt-1 block text-[0.68rem] font-semibold text-foreground/52 xl:text-xs">
         {countLabel}
       </span>

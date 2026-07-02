@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
-type MutationStatus = { registrationId: string; action: "approve" | "reject" } | null;
+type MutationStatuses = Record<string, "approve" | "reject">;
 
 type PendingRegistrationsPanelProps = {
   client: ClassKitClient | null;
@@ -27,6 +27,15 @@ function getRegistrationUserLabel(registration: ManagementRegistrationSummary) {
   );
 }
 
+function getClassLabel(
+  registration: ManagementRegistrationSummary,
+  formatter: Intl.DateTimeFormat,
+) {
+  if (!registration.class) return null;
+
+  return `${registration.class.name} · ${formatter.format(new Date(registration.class.startsAt))}`;
+}
+
 export function PendingRegistrationsPanel({
   client,
   canManageRegistrations,
@@ -39,7 +48,7 @@ export function PendingRegistrationsPanel({
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [operationError, setOperationError] = useState<string | null>(null);
-  const [mutationStatus, setMutationStatus] = useState<MutationStatus>(null);
+  const [mutationStatuses, setMutationStatuses] = useState<MutationStatuses>({});
   const formatter = useMemo(
     () =>
       new Intl.DateTimeFormat(i18n.language, {
@@ -48,8 +57,16 @@ export function PendingRegistrationsPanel({
       }),
     [i18n.language],
   );
+  const classFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(i18n.language, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }),
+    [i18n.language],
+  );
 
-  const loadPending = useCallback(async () => {
+  const loadPending = useCallback(async (options?: { silent?: boolean }) => {
     if (!client || !canManageRegistrations) {
       setRegistrations([]);
       setLoadStatus("idle");
@@ -57,8 +74,10 @@ export function PendingRegistrationsPanel({
       return;
     }
 
-    setLoadStatus("loading");
-    setErrorMessage(null);
+    if (!options?.silent) {
+      setLoadStatus("loading");
+      setErrorMessage(null);
+    }
 
     try {
       const result = await client.management.registrations.listPending(
@@ -67,6 +86,8 @@ export function PendingRegistrationsPanel({
       setRegistrations(result.registrations);
       setLoadStatus("loaded");
     } catch (error) {
+      if (options?.silent) return;
+
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -86,10 +107,15 @@ export function PendingRegistrationsPanel({
 
   const runAction = useCallback(
     async (registrationId: string, action: "approve" | "reject") => {
-      if (!client || !canManageRegistrations || mutationStatus) return;
+      if (!client || !canManageRegistrations || mutationStatuses[registrationId]) {
+        return;
+      }
 
       setOperationError(null);
-      setMutationStatus({ registrationId, action });
+      setMutationStatuses((current) => ({
+        ...current,
+        [registrationId]: action,
+      }));
 
       try {
         if (action === "approve") {
@@ -98,8 +124,13 @@ export function PendingRegistrationsPanel({
           await client.management.registrations.reject(registrationId);
         }
 
-        await loadPending();
-        await onChanged?.();
+        setRegistrations((current) =>
+          current.filter((registration) => registration.id !== registrationId),
+        );
+        void loadPending({ silent: true });
+        void Promise.resolve(onChanged?.()).catch(() => {
+          // The local mutation already succeeded; class/range refresh can retry later.
+        });
       } catch (error) {
         setOperationError(
           error instanceof Error
@@ -107,14 +138,18 @@ export function PendingRegistrationsPanel({
             : t("manager.pending.actionFailed"),
         );
       } finally {
-        setMutationStatus(null);
+        setMutationStatuses((current) => {
+          const next = { ...current };
+          delete next[registrationId];
+          return next;
+        });
       }
     },
     [
       canManageRegistrations,
       client,
       loadPending,
-      mutationStatus,
+      mutationStatuses,
       onChanged,
       t,
     ],
@@ -135,24 +170,41 @@ export function PendingRegistrationsPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      {!compact && (
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
-            <Clock3 className="size-5" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
-              {t("manager.pending.eyebrow")}
-            </p>
-            <h2 className="mt-1 font-serif text-3xl text-foreground">
-              {t("manager.pending.title")}
-            </h2>
-            <p className="mt-2 max-w-prose text-sm leading-6 text-foreground/68">
-              {t("manager.pending.body")}
-            </p>
+      <div className="flex items-start justify-between gap-3">
+        {!compact && (
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
+              <Clock3 className="size-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
+                {t("manager.pending.eyebrow")}
+              </p>
+              <h2 className="mt-1 font-serif text-3xl text-foreground">
+                {t("manager.pending.title")}
+              </h2>
+              <p className="mt-2 max-w-prose text-sm leading-6 text-foreground/68">
+                {t("manager.pending.body")}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="ms-auto shrink-0 rounded-full"
+          disabled={loadStatus === "loading"}
+          onClick={() => void loadPending()}
+          aria-label={t("manager.pending.refresh")}
+        >
+          <RefreshCw
+            className={`size-4 ${loadStatus === "loading" ? "animate-spin" : ""}`}
+            aria-hidden="true"
+          />
+          <span className="hidden sm:inline">{t("manager.pending.refresh")}</span>
+        </Button>
+      </div>
 
       {loadStatus === "loading" && (
         <div className="rounded-xl border border-blush/24 bg-background/46 p-4 text-sm text-foreground/68">
@@ -212,12 +264,10 @@ export function PendingRegistrationsPanel({
       {loadStatus === "loaded" && registrations.length > 0 && (
         <div className="grid gap-3">
           {registrations.map((registration) => {
-            const approving =
-              mutationStatus?.registrationId === registration.id &&
-              mutationStatus.action === "approve";
-            const rejecting =
-              mutationStatus?.registrationId === registration.id &&
-              mutationStatus.action === "reject";
+            const mutationStatus = mutationStatuses[registration.id];
+            const approving = mutationStatus === "approve";
+            const rejecting = mutationStatus === "reject";
+            const classLabel = getClassLabel(registration, classFormatter);
 
             return (
               <article
@@ -234,9 +284,13 @@ export function PendingRegistrationsPanel({
                         {registration.user.email}
                       </p>
                     )}
-                    {registration.class && !classId && (
-                      <p className="mt-2 text-sm leading-6 text-foreground/68">
-                        {registration.class.name}
+                    {classLabel && (
+                      <p className="mt-2 text-sm font-semibold leading-6 text-foreground/72">
+                        <span className="text-foreground/48">
+                          {t("manager.pending.classLabel")}
+                          {" "}
+                        </span>
+                        {classLabel}
                       </p>
                     )}
                     <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">

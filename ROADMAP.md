@@ -177,24 +177,37 @@ Goal: Expand manager-owned schedule operations after the core manager class work
 
 Goal: Let managers operate concrete class sessions once schedule and class inventory exists.
 
-- [ ] `next` Add class attendance and session reporting
+- [x] `done` Add class attendance and session reporting
   - Description: Let the manager start a concrete class session, view approved registered participants, mark attendance, add supported walk-in or trial participants, complete the class, and view the resulting class attendance report.
   - Why: This is not schedule management and it is not pending registration review. It operates on concrete class sessions after classes have been created manually or generated from schedules.
   - Shape: Use `management.attendance.*` for `listForClass`, `start`, `updateParticipant`, `addWalkIn`, `addTrial`, and `complete`. Use approved registration data only as roster context; pending approval workflows remain in Step 5. Current SDK docs expose attendance lifecycle actions, but not a separate report endpoint, so the report view should be derived from class state and attendance participants unless ClassKit adds a dedicated report API. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Attendance, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Attendance lifecycle.
+  - Progress: The manager class detail workflow now includes attendance loading, class start, participant present/absent updates, walk-in and trial participant creation, class completion, and an in-panel attendance report derived from participants.
 
-## Roadmap Step 9: Membership Management
+## Roadmap Step 9: Responsive Async Operations
+
+Goal: Improve manager and customer workflow responsiveness by applying local UI updates with backend confirmation where ClassKit mutations already provide a clear success boundary.
+
+- [ ] `next` Review lazy async mutation opportunities
+  - Description: Review the application for places where a successful SDK mutation can update the local UI immediately and reconcile in the background instead of forcing full-page or full-panel loading states.
+  - Shape: Good candidates include pending registration approval/rejection, attendance start, participant attendance updates, walk-in and trial additions, class completion, and other repeated operational actions where one row, card, or section can own the loading state while broader data refreshes happen silently.
+
+## Roadmap Step 10: Membership Management
 
 Goal: Expose ClassKit membership administration through the manager interface without making this website own payment processing or membership business rules.
 
 - [ ] `open` Add membership visibility
   - Description: Let authorized managers view a user's current membership grants, membership type, remaining quota or usage, ledger context, and membership status.
-  - Shape: The current SDK exposes `management.memberships.listTypes()` and `management.memberships.listUserGrants(userId)` for product dashboards. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Capability Map.
+  - Shape: Use `management.memberships.listTypes()`, `management.memberships.listUserGrants(userId)`, and `management.memberships.listLedger({ userId, limit })` for product-scoped manager views. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Memberships.
 
-- [ ] `open` Add membership grant and lifecycle management
-  - Description: Let authorized managers assign, update, replace, or remove a user's membership once the needed SDK facade methods are available.
-  - Shape: ClassKit backend supports membership type creation, grants, upgrades, revocation, and ledger operations, but current docs identify SDK facade gaps for those mutations. Product website implementation should add/use SDK facade methods before using those operations; do not call raw Edge Functions from this website. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Function-to-SDK map.
+- [ ] `open` Add membership type management
+  - Description: Let authorized managers create, update, and deactivate product membership types without this website owning payment processing or membership business rules.
+  - Shape: Use `management.memberships.listTypes()`, `management.memberships.createType(input)`, `management.memberships.updateType(input)`, and `management.memberships.deactivateType(membershipTypeId)`. Membership type modes, stock, duration, activation, and validation remain ClassKit-owned. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Memberships.
 
-## Roadmap Step 10: Static Lessons And External Schedule Content
+- [ ] `open` Add membership grant lifecycle management
+  - Description: Let authorized managers assign, upgrade, replace, revoke, and inspect a user's membership grants from the product user management experience.
+  - Shape: Use `management.memberships.grant(input)`, `management.memberships.upgrade(input)`, `management.memberships.revoke(membershipGrantId)`, `management.memberships.listUserGrants(userId)`, and `management.memberships.listLedger({ userId, limit })`. Do not call raw Edge Functions from this website; ClassKit owns active type validation, stock, validity, grant replacement, revocation, and ledger side effects. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Function-to-SDK map.
+
+## Roadmap Step 11: Static Lessons And External Schedule Content
 
 Goal: Preserve the current read-only lessons/schedule content as client-owned information while the ClassKit platform takes over managed classes.
 
@@ -206,7 +219,7 @@ Goal: Preserve the current read-only lessons/schedule content as client-owned in
   - Description: Make the retained static lessons content feel like part of the same product without confusing it with ClassKit-managed classes or manager-owned schedules.
   - Progress: The static schedule now shares a reusable card between the homepage section and the legacy read-only route.
 
-## Roadmap Step 11: Platform Polish
+## Roadmap Step 12: Platform Polish
 
 Goal: Make the platform feel cohesive after the core ClassKit workflows exist.
 
@@ -217,6 +230,3 @@ Goal: Make the platform feel cohesive after the core ClassKit workflows exist.
 - [ ] `open` Tighten responsive platform navigation
   - Description: Ensure the landing page, classes page, schedule surface, auth/profile, and manager workspace are easy to move between on mobile and desktop.
   - Progress: The shared site navigation controls now appear across the landing page, classes page, auth/profile, and manager workspace, with a compact header treatment and locale-aware menu behavior.
-
-- [ ] `open` Replace static pricing/logistics with product-aware content
-  - Description: Revisit the current static lesson card and pricing table once ClassKit-backed classes and schedules exist, deciding what remains as marketing copy versus live operational data.

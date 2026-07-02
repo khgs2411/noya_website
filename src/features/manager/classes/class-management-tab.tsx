@@ -27,6 +27,7 @@ import { useManagedTemplates } from "@/features/manager/templates/use-managed-te
 type ClassManagementTabProps = {
   canManageClasses: boolean;
   canManageRegistrations: boolean;
+  canManageAttendance: boolean;
 };
 
 type FormSurface =
@@ -34,9 +35,21 @@ type FormSurface =
   | { mode: "edit"; classId: string }
   | null;
 
+function getManagerStatusLabel(
+  managedClass: { status: string; temporal_status: string },
+  t: (key: string) => string,
+) {
+  if (managedClass.temporal_status !== "upcoming") {
+    return t(`classes.temporalStatus.${managedClass.temporal_status}`);
+  }
+
+  return t(`manager.classStatus.${managedClass.status}`);
+}
+
 export function ClassManagementTab({
   canManageClasses,
   canManageRegistrations,
+  canManageAttendance,
 }: ClassManagementTabProps) {
   const { t } = useTranslation();
   const [formSurface, setFormSurface] = useState<FormSurface>(null);
@@ -75,7 +88,7 @@ export function ClassManagementTab({
           pendingRegistrationCount: managedClass.pendingRegistrationCount,
           registrationOpen: managedClass.registration_open,
           temporalStatus: managedClass.temporal_status,
-          statusLabel: t(`manager.classStatus.${managedClass.status}`),
+          statusLabel: getManagerStatusLabel(managedClass, t),
           capacityLabel: t("manager.classCard.capacity", {
             count: managedClass.capacity,
             registered: managedClass.registeredUsersCount ?? 0,
@@ -300,6 +313,7 @@ export function ClassManagementTab({
             managedClass={state.selectedClass}
             canManageClasses={state.canManageClasses}
             canManageRegistrations={canManageRegistrations}
+            canManageAttendance={canManageAttendance}
             onClose={actions.clearSelection}
             onEdit={() => {
               if (!state.selectedClass) return;
@@ -308,6 +322,11 @@ export function ClassManagementTab({
             }}
             onCancel={() => setCancelOpen(true)}
             onRegistrationsChanged={async () => {
+              await actions.refreshVisibleRange({
+                preserveExistingOnFailure: true,
+              });
+            }}
+            onClassChanged={async () => {
               await actions.refreshVisibleRange({
                 preserveExistingOnFailure: true,
               });

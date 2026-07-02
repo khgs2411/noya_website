@@ -16,14 +16,74 @@ import { ProfilePage } from "@/features/account/profile-page";
 import { LandingPage } from "@/features/landing/landing-page";
 import { MobileMenu } from "@/features/landing/mobile-menu";
 import { LessonsPage } from "@/features/lessons/lessons-page";
-import { ManagerPage } from "@/features/manager/manager-page";
+import {
+  ManagerPage,
+  type ManagerAccessSnapshot,
+} from "@/features/manager/manager-page";
 import { useTheme } from "@/hooks/use-theme";
+
+const MANAGER_ACCESS_CACHE_KEY = "noya.manager.lastAccess";
+const MANAGER_ACCESS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+type StoredManagerAccess = ManagerAccessSnapshot & {
+  userId: string;
+  checkedAt: number;
+};
 
 function getCurrentRoute() {
   return {
     pathname: window.location.pathname,
     search: window.location.search,
   };
+}
+
+function readStoredManagerAccess(userId: string | null) {
+  if (!userId) return null;
+
+  try {
+    const rawValue = window.localStorage.getItem(MANAGER_ACCESS_CACHE_KEY);
+    if (!rawValue) return null;
+
+    const parsed = JSON.parse(rawValue) as Partial<StoredManagerAccess>;
+    const expired =
+      typeof parsed.checkedAt !== "number" ||
+      Date.now() - parsed.checkedAt > MANAGER_ACCESS_CACHE_TTL_MS;
+
+    if (parsed.userId !== userId || expired) {
+      window.localStorage.removeItem(MANAGER_ACCESS_CACHE_KEY);
+      return null;
+    }
+
+    if (!parsed.dashboard || !Array.isArray(parsed.permissions)) return null;
+
+    return {
+      dashboard: {
+        can_manage_classes: Boolean(parsed.dashboard.can_manage_classes),
+        can_manage_roles: Boolean(parsed.dashboard.can_manage_roles),
+        can_manage_users: Boolean(parsed.dashboard.can_manage_users),
+      },
+      permissions: parsed.permissions.filter(
+        (permission): permission is string => typeof permission === "string",
+      ),
+    };
+  } catch {
+    window.localStorage.removeItem(MANAGER_ACCESS_CACHE_KEY);
+    return null;
+  }
+}
+
+function writeStoredManagerAccess(
+  userId: string,
+  snapshot: ManagerAccessSnapshot,
+) {
+  window.localStorage.setItem(
+    MANAGER_ACCESS_CACHE_KEY,
+    JSON.stringify({
+      ...snapshot,
+      userId,
+      checkedAt: Date.now(),
+    } satisfies StoredManagerAccess),
+  );
 }
 
 export default function App() {
@@ -33,6 +93,8 @@ export default function App() {
   const [aboutExpanded, setAboutExpanded] = useState(false);
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [route, setRoute] = useState(getCurrentRoute);
+  const [managerAccessSnapshot, setManagerAccessSnapshot] =
+    useState<ManagerAccessSnapshot | null>(null);
 
   useEffect(() => {
     function handleNavigation() {
@@ -51,9 +113,79 @@ export default function App() {
   }, [menuOpen, activeImage]);
 
   const canEnterManager = capabilities.dashboard.can_enter;
+  const managerUserId = session?.user.id ?? null;
 
   useEffect(() => {
-    if (!isManagerPath(route.pathname) || loading || canEnterManager) return;
+    let timeoutId: number | null = null;
+
+    function setCachedSnapshot(snapshot: ManagerAccessSnapshot | null) {
+      timeoutId = window.setTimeout(() => {
+        setManagerAccessSnapshot(snapshot);
+      }, 0);
+    }
+
+    if (!isManagerPath(route.pathname) || !managerUserId) {
+      setCachedSnapshot(null);
+    } else {
+      setCachedSnapshot(readStoredManagerAccess(managerUserId));
+    }
+
+    return () => {
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+    };
+  }, [managerUserId, route.pathname]);
+
+  useEffect(() => {
+    if (!isManagerPath(route.pathname) || loading || !managerUserId) return;
+    let timeoutId: number | null = null;
+
+    function setCachedSnapshot(snapshot: ManagerAccessSnapshot | null) {
+      timeoutId = window.setTimeout(() => {
+        setManagerAccessSnapshot(snapshot);
+      }, 0);
+    }
+
+    if (canEnterManager) {
+      const snapshot = {
+        dashboard: {
+          can_manage_classes: Boolean(
+            capabilities.dashboard.can_manage_classes,
+          ),
+          can_manage_roles: Boolean(capabilities.dashboard.can_manage_roles),
+          can_manage_users: Boolean(capabilities.dashboard.can_manage_users),
+        },
+        permissions: capabilities.permissions,
+      };
+      writeStoredManagerAccess(managerUserId, snapshot);
+      setCachedSnapshot(snapshot);
+    } else {
+      window.localStorage.removeItem(MANAGER_ACCESS_CACHE_KEY);
+      setCachedSnapshot(null);
+    }
+
+    return () => {
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+    };
+  }, [
+    canEnterManager,
+    capabilities.dashboard.can_manage_classes,
+    capabilities.dashboard.can_manage_roles,
+    capabilities.dashboard.can_manage_users,
+    capabilities.permissions,
+    loading,
+    managerUserId,
+    route.pathname,
+  ]);
+
+  useEffect(() => {
+    if (
+      !isManagerPath(route.pathname) ||
+      loading ||
+      canEnterManager ||
+      managerAccessSnapshot
+    ) {
+      return;
+    }
 
     const timeoutId = window.setTimeout(() => {
       window.history.replaceState({}, "", "./");
@@ -62,7 +194,7 @@ export default function App() {
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [canEnterManager, loading, route.pathname]);
+  }, [canEnterManager, loading, managerAccessSnapshot, route.pathname]);
 
   function navigateTo(path: string) {
     window.history.pushState({}, "", path);
@@ -125,6 +257,13 @@ export default function App() {
 
   if (isManagerPath(route.pathname)) {
     if (loading) {
+      if (managerAccessSnapshot) {
+        return renderWithMenu(
+          <ManagerPage accessSnapshot={managerAccessSnapshot} />,
+          true,
+        );
+      }
+
       return renderWithMenu(<ManagerPage loading />, true);
     }
 

@@ -3,6 +3,7 @@ import { Ban, Edit3, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { ClassAttendancePanel } from "@/features/manager/attendance/class-attendance-panel";
 import { PendingRegistrationsPanel } from "@/features/manager/registrations/pending-registrations-panel";
 
 type ClassDetailPanelProps = {
@@ -10,10 +11,12 @@ type ClassDetailPanelProps = {
   managedClass: ManagedClass | null;
   canManageClasses: boolean;
   canManageRegistrations: boolean;
+  canManageAttendance: boolean;
   onClose: () => void;
   onEdit: () => void;
   onCancel: () => void;
   onRegistrationsChanged: () => void | Promise<void>;
+  onClassChanged: () => void | Promise<void>;
 };
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -32,10 +35,12 @@ export function ClassDetailPanel({
   managedClass,
   canManageClasses,
   canManageRegistrations,
+  canManageAttendance,
   onClose,
   onEdit,
   onCancel,
   onRegistrationsChanged,
+  onClassChanged,
 }: ClassDetailPanelProps) {
   const { t, i18n } = useTranslation();
 
@@ -133,6 +138,13 @@ export function ClassDetailPanel({
             onChanged={onRegistrationsChanged}
           />
         </section>
+        <ClassAttendancePanel
+          client={client}
+          managedClass={managedClass}
+          canManageAttendance={canManageAttendance}
+          canManageRegistrations={canManageRegistrations}
+          onClassChanged={onClassChanged}
+        />
         {editable && (
           <div className="mt-5 flex flex-wrap gap-2">
             <Button type="button" className="rounded-full" onClick={onEdit}>

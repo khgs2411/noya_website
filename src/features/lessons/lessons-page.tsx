@@ -190,9 +190,11 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
   );
   const selectedClass = useMemo(
     () =>
-      selectedClassDetail
+      selectedClassId && selectedClassDetail
         ? toClassViewItem(selectedClassDetail, t)
-        : classViewItems.find((item) => item.id === selectedClassId) ?? null,
+        : selectedClassId
+          ? classViewItems.find((item) => item.id === selectedClassId) ?? null
+          : null,
     [classViewItems, selectedClassDetail, selectedClassId, t],
   );
   const loadingClassId =
@@ -214,7 +216,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
 
     const result = await client.classes.list({
       range: visibleRange,
-      fields: ["description", "category", "registeredUsersCount"],
+      fields: ["registeredUsersCount"],
     });
 
     if (requestIdRef.current !== requestId) return;
@@ -343,11 +345,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
       }
 
       const result = await client.classes.get(classId, {
-        fields: [
-          "membershipRequirement",
-          "cancellationCutoff",
-          "registeredUsersCount",
-        ],
+        fields: ["membershipRequirement", "registeredUsersCount"],
       });
 
       if (detailRequestIdRef.current !== requestId) return null;
@@ -407,22 +405,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
       return;
     }
 
-    const detail =
-      selectedClassDetail?.id === item.id
-        ? selectedClassDetail
-        : await loadClassDetail(item.id);
-
-    if (!detail) return;
-
-    if (
-      detail.membershipRequirement === "required" &&
-      !productUser?.has_active_membership
-    ) {
-      setOperationError(t("classes.membershipRequired"));
-      return;
-    }
-
-    if (!detail.canRegister) {
+    if (!item.canRegister) {
       setOperationError(t("classes.registrationUnavailable"));
       return;
     }
@@ -445,7 +428,11 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
             : undefined,
         variant: result.data.status === "pending" ? "info" : "success",
       });
-      await loadClassDetail(item.id);
+      if (selectedClassId === item.id) {
+        await loadClassDetail(item.id);
+      } else {
+        await refreshClasses();
+      }
     } finally {
       setRegistrationMutation(null);
     }
@@ -475,7 +462,11 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
         title: t("classes.toast.cancelled"),
         variant: "success",
       });
-      await loadClassDetail(item.id);
+      if (selectedClassId === item.id) {
+        await loadClassDetail(item.id);
+      } else {
+        await refreshClasses();
+      }
     } finally {
       setRegistrationMutation(null);
     }
@@ -657,6 +648,29 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
           </div>
         ))}
       </dl>
+    );
+  }
+
+  function renderClassDetailCta(item: ClassViewItem) {
+    if (session || !item.registrationOpen) return null;
+
+    return (
+      <div className="mt-5 rounded-xl border border-blush/24 bg-background/46 p-4">
+        <p className="font-serif text-lg text-foreground">
+          {t("classes.detail.signInForMoreTitle")}
+        </p>
+        <p className="mt-2 text-sm leading-6 text-foreground/68">
+          {t("classes.detail.signInForMoreBody")}
+        </p>
+        <Button
+          type="button"
+          className="mt-4 rounded-full"
+          onClick={() => onNavigate(authPath)}
+        >
+          <LogIn className="size-4" aria-hidden="true" />
+          {t("classes.detail.signInForMoreAction")}
+        </Button>
+      </div>
     );
   }
 
@@ -844,6 +858,8 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
                   )}
 
                   {renderClassFacts(selectedClass)}
+
+                  {renderClassDetailCta(selectedClass)}
 
                   <div className="mt-5 flex flex-wrap gap-2">
                     {renderClassActions(selectedClass)}

@@ -10,17 +10,35 @@ import { ScheduleManagementTab } from "@/features/manager/schedules/schedule-man
 import { TemplateManagementTab } from "@/features/manager/templates/template-management-tab";
 import { UserRoleManagementTab } from "@/features/manager/users/user-role-management-tab";
 
-export function ManagerPage({ loading = false }: { loading?: boolean }) {
+export type ManagerAccessSnapshot = {
+  dashboard: {
+    can_manage_classes: boolean;
+    can_manage_roles: boolean;
+    can_manage_users: boolean;
+  };
+  permissions: string[];
+};
+
+export function ManagerPage({
+  loading = false,
+  accessSnapshot = null,
+}: {
+  loading?: boolean;
+  accessSnapshot?: ManagerAccessSnapshot | null;
+}) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ManagerTab>("classes");
   const { capabilities } = useProductContext();
+  const managerAccess = accessSnapshot ?? capabilities;
   const canManageClasses = Boolean(
-    capabilities.dashboard.can_manage_classes,
+    managerAccess.dashboard.can_manage_classes,
   );
   const canManageRegistrations =
-    capabilities.permissions.includes("registrations.manage");
-  const canManageRoles = Boolean(capabilities.dashboard.can_manage_roles);
-  const canManageUsers = Boolean(capabilities.dashboard.can_manage_users);
+    managerAccess.permissions.includes("registrations.manage");
+  const canManageAttendance =
+    managerAccess.permissions.includes("attendance.manage");
+  const canManageRoles = Boolean(managerAccess.dashboard.can_manage_roles);
+  const canManageUsers = Boolean(managerAccess.dashboard.can_manage_users);
 
   return (
     <main className="min-h-screen bg-background px-4 pb-12 pt-5 text-foreground sm:px-6 lg:px-8">
@@ -50,6 +68,7 @@ export function ManagerPage({ loading = false }: { loading?: boolean }) {
               <ClassManagementTab
                 canManageClasses={canManageClasses}
                 canManageRegistrations={canManageRegistrations}
+                canManageAttendance={canManageAttendance}
               />
             )}
             {activeTab === "pending" && (
