@@ -125,21 +125,63 @@ Goal: Turn class browsing into a real customer booking experience through the Cl
   - Description: Show capacity, registration state, membership requirements, and roster/count information when the ClassKit response exposes those fields.
   - Progress: Class cards and details now distinguish approved registrations from pending approval requests, show membership and registration policy context, and only display registered counts when the customer-facing response exposes them.
 
-## Roadmap Step 5: Manager Schedule System
+## Roadmap Step 5: Pending Class Registration Management
+
+Goal: Give managers a focused workflow for reviewing pending class registration requests separately from approved registrations.
+
+- [ ] `next` Add global pending registration review
+  - Description: Add a management surface that lists pending class registration requests across the product and lets authorized managers approve or reject requests through `management.registrations.*`.
+  - Shape: Pending requests are not registrations. They represent users waiting for approval and should be displayed separately from approved registration counts.
+
+- [ ] `open` Add per-class pending registration review
+  - Description: Add pending request review to the selected class detail surface so managers can approve or reject requests without leaving the class context.
+  - Shape: Use `management.registrations.listPending(...)` scoped by class where appropriate. Keep customer self-service registration under `classes.*`.
+
+- [ ] `open` Add pending request indicators to class views
+  - Description: Show a badge or similar visual indicator in manager list and calendar views when a class has pending registration requests.
+  - Shape: Use `pendingRegistrationCount` as pending-request state, not as part of registered user count. Approved registrations remain represented by `registeredUsersCount`.
+
+## Roadmap Step 6: User, Role, And Permission Management
+
+Goal: Give managers product-scoped administration tools for users, roles, and permissions using the ClassKit management facade.
+
+- [ ] `open` Add product user management
+  - Description: Let authorized managers view product users, inspect each user's assigned roles, and inspect effective product permissions.
+  - Shape: Use `management.users.*` for product-scoped user visibility. Do not treat product user role assignment as global Supabase identity creation.
+
+- [ ] `open` Add role and permission management
+  - Description: Let authorized managers view roles, create roles, update roles, view role permissions, and grant or revoke permissions on roles.
+  - Shape: Use `management.roles.*`; role level is metadata, while permission-key grants remain explicit where backend guards require them.
+
+- [ ] `open` Add user role assignment
+  - Description: Let authorized managers assign and revoke product roles for users through the documented user-role management facade.
+  - Shape: Role assignment should remain product-local authority and should not expose platform-admin controls.
+
+## Roadmap Step 7: Manager Schedule System
 
 Goal: Expand manager-owned schedule operations after the core manager class workflow and public class flow exist.
 
-- [ ] `next` Expand schedule management
+- [ ] `open` Expand schedule management
   - Description: Give the manager a fuller schedule workspace for maintaining recurring class patterns, generated availability, skipped dates, and schedule lifecycle state.
   - Why: Schedule management is not a customer-facing feature; it is an owner workflow that supports reliable public availability.
 
 - [ ] `open` Add registration and attendance operations
-  - Description: Let the manager review pending and approved registrations, approve or reject where relevant, and manage attendance for classes.
+  - Description: Let the manager review approved registrations and manage attendance for classes after the pending-request workflow is in place.
+  - Shape: Pending approval workflows live in Step 5. Attendance remains a class-session operational workflow under `management.attendance.*`.
 
-- [ ] `open` Add user and role management
-  - Description: Let the manager inspect product users and manage product-scoped roles where the user's ClassKit capabilities allow it.
+## Roadmap Step 8: Membership Management
 
-## Roadmap Step 6: Static Lessons And External Schedule Content
+Goal: Expose ClassKit membership administration through the manager interface without making this website own payment processing or membership business rules.
+
+- [ ] `open` Add membership visibility
+  - Description: Let authorized managers view a user's current membership grants, membership type, remaining quota or usage, ledger context, and membership status.
+  - Shape: The current SDK exposes `management.memberships.listTypes()` and `management.memberships.listUserGrants(userId)` for product dashboards.
+
+- [ ] `open` Add membership grant and lifecycle management
+  - Description: Let authorized managers assign, update, replace, or remove a user's membership once the needed SDK facade methods are available.
+  - Shape: ClassKit backend supports membership type creation, grants, upgrades, revocation, and ledger operations, but current docs identify SDK facade gaps for those mutations. Product website implementation should add/use SDK facade methods before using those operations; do not call raw Edge Functions from this website.
+
+## Roadmap Step 9: Static Lessons And External Schedule Content
 
 Goal: Preserve the current read-only lessons/schedule content as client-owned information while the ClassKit platform takes over managed classes.
 
@@ -151,7 +193,7 @@ Goal: Preserve the current read-only lessons/schedule content as client-owned in
   - Description: Make the retained static lessons content feel like part of the same product without confusing it with ClassKit-managed classes or manager-owned schedules.
   - Progress: The static schedule now shares a reusable card between the homepage section and the legacy read-only route.
 
-## Roadmap Step 7: Platform Polish
+## Roadmap Step 10: Platform Polish
 
 Goal: Make the platform feel cohesive after the core ClassKit workflows exist.
 
