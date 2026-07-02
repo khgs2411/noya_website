@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { ClassManagementTab } from "@/features/manager/classes/class-management-tab";
 import { ManagerTabs, type ManagerTab } from "@/features/manager/manager-tabs";
+import { MembershipManagementTab } from "@/features/manager/memberships/membership-management-tab";
 import { PendingRegistrationManagementTab } from "@/features/manager/registrations/pending-registration-management-tab";
 import { ScheduleManagementTab } from "@/features/manager/schedules/schedule-management-tab";
 import { TemplateManagementTab } from "@/features/manager/templates/template-management-tab";
@@ -37,6 +38,8 @@ export function ManagerPage({
     managerAccess.permissions.includes("registrations.manage");
   const canManageAttendance =
     managerAccess.permissions.includes("attendance.manage");
+  const canManageMemberships =
+    managerAccess.permissions.includes("memberships.manage");
   const canManageRoles = Boolean(managerAccess.dashboard.can_manage_roles);
   const canManageUsers = Boolean(managerAccess.dashboard.can_manage_users);
 
@@ -81,6 +84,9 @@ export function ManagerPage({
             )}
             {activeTab === "schedules" && (
               <ScheduleManagementTab canManageSchedules={canManageClasses} />
+            )}
+            {activeTab === "memberships" && (
+              <MembershipManagementTab canManageMemberships={canManageMemberships} />
             )}
             {activeTab === "users" && (
               <UserRoleManagementTab

@@ -251,6 +251,7 @@ export function UserRoleManagementTab({
   );
   const [editingRole, setEditingRole] = useState<EditingRoleForm>(null);
   const [assignRoleByUserId, setAssignRoleByUserId] = useState<Record<string, string>>({});
+  const [userSearch, setUserSearch] = useState("");
   const rolesById = useMemo(
     () => new Map(roles.map((role) => [role.id, role])),
     [roles],
@@ -259,6 +260,24 @@ export function UserRoleManagementTab({
     () => getAvailablePermissionGroups(permissions),
     [permissions],
   );
+  const filteredUsers = useMemo(() => {
+    const query = userSearch.trim().toLowerCase();
+    if (!query) return users;
+
+    return users.filter((user) =>
+      [
+        user.display_name,
+        user.email,
+        user.user_id,
+        user.status,
+        user.scope,
+        ...(user.roles?.map((role) => role.role_name ?? role.role_key ?? "") ??
+          []),
+      ]
+        .filter((value): value is string => Boolean(value))
+        .some((value) => value.toLowerCase().includes(query)),
+    );
+  }, [userSearch, users]);
   const hasAccess = canManageRoles || canManageUsers;
 
   const loadAdministration = useCallback(async (options?: { silent?: boolean }) => {
@@ -300,7 +319,13 @@ export function UserRoleManagementTab({
       );
       setLoadStatus("error");
     }
-  }, [canManageRoles, canManageUsers, client, hasAccess, t]);
+  }, [
+    canManageRoles,
+    canManageUsers,
+    client,
+    hasAccess,
+    t,
+  ]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -955,7 +980,17 @@ export function UserRoleManagementTab({
 
                 {usersExpanded && (
                   <div className="mt-4 grid gap-3">
-                  {users.map((user) => {
+                    <input
+                      className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                      value={userSearch}
+                      placeholder={t("manager.users.search")}
+                      onChange={(event) => setUserSearch(event.target.value)}
+                    />
+                  {filteredUsers.length === 0 ? (
+                    <p className="rounded-xl border border-blush/24 bg-card/40 p-4 text-sm leading-6 text-foreground/60">
+                      {t("manager.users.noSearchResults")}
+                    </p>
+                  ) : filteredUsers.map((user) => {
                     const assignedRoleIds = getUserRoleIds(user);
                     const assignableRoles = roles.filter(
                       (role) => !assignedRoleIds.has(role.id),
@@ -992,7 +1027,8 @@ export function UserRoleManagementTab({
                             </p>
                           </div>
 
-                          <div className="min-w-0">
+                          {canManageUsers && (
+                            <div className="min-w-0">
                             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
                               {t("manager.users.assignedRoles")}
                             </p>
@@ -1065,10 +1101,12 @@ export function UserRoleManagementTab({
                                 {t("manager.users.assignRole")}
                               </Button>
                             </div>
-                          </div>
+                            </div>
+                          )}
                         </div>
 
-                        <div className="mt-4">
+                        {canManageUsers && (
+                          <div className="mt-4">
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
                             {t("manager.users.effectivePermissions")}
                           </p>
@@ -1091,7 +1129,9 @@ export function UserRoleManagementTab({
                               ))
                             )}
                           </div>
-                        </div>
+                          </div>
+                        )}
+
                       </article>
                     );
                   })}

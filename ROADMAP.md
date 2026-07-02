@@ -196,17 +196,23 @@ Goal: Improve manager and customer workflow responsiveness by applying local UI 
 
 Goal: Expose ClassKit membership administration through the manager interface without making this website own payment processing or membership business rules.
 
-- [ ] `next` Add membership visibility
-  - Description: Let authorized managers view a user's current membership grants, membership type, remaining quota or usage, ledger context, and membership status.
-  - Shape: Use `management.memberships.listTypes()`, `management.memberships.listUserGrants(userId)`, and `management.memberships.listLedger({ userId, limit })` for product-scoped manager views. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Memberships.
+- [x] `done` Add a dedicated membership workspace
+  - Description: Give memberships their own manager surface instead of treating membership administration as an inline read-only detail inside every user card.
+  - Shape: Use `management.memberships.*` from the ClassKit management facade. Keep payment processing and membership business rules in ClassKit; this website owns the manager UI, localized copy, and responsive interaction polish. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Memberships.
+  - Progress: The manager workspace now has a first-class Memberships tab, while the Users tab is reduced back to user, role, and permission administration with a lightweight search path for larger user lists.
 
-- [ ] `open` Add membership type management
+- [x] `done` Add membership type management
   - Description: Let authorized managers create, update, and deactivate product membership types without this website owning payment processing or membership business rules.
   - Shape: Use `management.memberships.listTypes()`, `management.memberships.createType(input)`, `management.memberships.updateType(input)`, and `management.memberships.deactivateType(membershipTypeId)`. Membership type modes, stock, duration, activation, and validation remain ClassKit-owned. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Memberships.
+  - Progress: Membership type creation, editing, deactivation, focused loading states, and silent background refresh now live in the dedicated Memberships tab.
 
-- [ ] `open` Add membership grant lifecycle management
+- [ ] `next` Add membership grant lifecycle management
   - Description: Let authorized managers assign, upgrade, replace, revoke, and inspect a user's membership grants from the product user management experience.
-  - Shape: Use `management.memberships.grant(input)`, `management.memberships.upgrade(input)`, `management.memberships.revoke(membershipGrantId)`, `management.memberships.listUserGrants(userId)`, and `management.memberships.listLedger({ userId, limit })`. Do not call raw Edge Functions from this website; ClassKit owns active type validation, stock, validity, grant replacement, revocation, and ledger side effects. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Function-to-SDK map.
+  - Shape: Use `management.memberships.grant(input)`, `management.memberships.upgrade(input)`, `management.memberships.revoke(membershipGrantId)`, `management.memberships.listUserGrants(userId)`, and `management.memberships.listLedger({ userId, limit })`. This should be driven by a scalable user lookup and focused user detail drawer/dialog rather than expanding membership administration inline for every user card. Do not call raw Edge Functions from this website; ClassKit owns active type validation, stock, validity, grant replacement, revocation, and ledger side effects. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Function-to-SDK map.
+
+- [ ] `open` Redesign the user administration directory
+  - Description: Make the users, roles, permissions, and membership assignment workflow scale to hundreds of users.
+  - Shape: Keep the Users tab as a searchable directory with compact rows and focused detail surfaces for role and permission changes. Membership assignment should connect to the dedicated Memberships workflow instead of adding heavy per-user panels to the main list.
 
 ## Roadmap Step 11: Static Lessons And External Schedule Content
 
