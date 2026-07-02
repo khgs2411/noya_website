@@ -20,6 +20,7 @@ export type ClassViewItem = {
   cancellationCutoffHours?: number;
   registrationPolicy?: RegistrationPolicyValue;
   registrationOpen?: boolean;
+  pendingRegistrationCount?: number;
   canRegister?: boolean;
   canCancelRegistration?: boolean;
   userRegistrationState?: { id: string; status: RegistrationStatusValue } | null;

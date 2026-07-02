@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CalendarClock, Loader2, MapPin } from "lucide-react";
+import { CalendarClock, Clock3, Loader2, MapPin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { ClassViewItem } from "@/features/classes/class-types";
@@ -24,7 +24,7 @@ export function ClassCard({
   renderMeta,
   renderActions,
 }: ClassCardProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const timeFormatter = new Intl.DateTimeFormat(i18n.language, {
     hour: "2-digit",
     minute: "2-digit",
@@ -84,6 +84,18 @@ export function ClassCard({
         {item.capacityLabel && (
           <p className="mt-3 text-sm text-foreground/68">{item.capacityLabel}</p>
         )}
+
+        {item.pendingRegistrationCount !== undefined &&
+          item.pendingRegistrationCount > 0 && (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-blush-strong/45 bg-blush-strong/10 px-3 py-1 text-xs font-semibold text-blush-strong">
+              <Clock3 className="size-3.5 shrink-0" aria-hidden="true" />
+              <span>
+                {t("classes.pendingBadge", {
+                  count: item.pendingRegistrationCount,
+                })}
+              </span>
+            </p>
+          )}
 
         {renderMeta?.(item)}
         <p className="sr-only">{selectLabel}</p>

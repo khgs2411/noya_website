@@ -1,15 +1,19 @@
-import type { ManagedClass } from "@class-kit/react";
+import type { ClassKitClient, ManagedClass } from "@class-kit/react";
 import { Ban, Edit3, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { PendingRegistrationsPanel } from "@/features/manager/registrations/pending-registrations-panel";
 
 type ClassDetailPanelProps = {
+  client: ClassKitClient | null;
   managedClass: ManagedClass | null;
   canManageClasses: boolean;
+  canManageRegistrations: boolean;
   onClose: () => void;
   onEdit: () => void;
   onCancel: () => void;
+  onRegistrationsChanged: () => void | Promise<void>;
 };
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -24,11 +28,14 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 export function ClassDetailPanel({
+  client,
   managedClass,
   canManageClasses,
+  canManageRegistrations,
   onClose,
   onEdit,
   onCancel,
+  onRegistrationsChanged,
 }: ClassDetailPanelProps) {
   const { t, i18n } = useTranslation();
 
@@ -104,6 +111,28 @@ export function ClassDetailPanel({
             />
           )}
         </dl>
+        <section className="mt-5 rounded-[1.2rem] border border-blush/24 bg-card/50 p-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="font-serif text-xl text-foreground">
+              {t("manager.pending.classTitle")}
+            </h3>
+            {managedClass.pendingRegistrationCount !== undefined &&
+              managedClass.pendingRegistrationCount > 0 && (
+                <span className="rounded-full border border-blush-strong/35 px-3 py-1 text-xs font-semibold text-blush-strong">
+                  {t("classes.pendingBadge", {
+                    count: managedClass.pendingRegistrationCount,
+                  })}
+                </span>
+              )}
+          </div>
+          <PendingRegistrationsPanel
+            client={client}
+            canManageRegistrations={canManageRegistrations}
+            classId={managedClass.id}
+            compact
+            onChanged={onRegistrationsChanged}
+          />
+        </section>
         {editable && (
           <div className="mt-5 flex flex-wrap gap-2">
             <Button type="button" className="rounded-full" onClick={onEdit}>

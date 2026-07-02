@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Clock3, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { ClassViewItem } from "@/features/classes/class-types";
@@ -25,6 +25,7 @@ type CalendarClassButtonProps = {
   item: ClassViewItem;
   selectedClassId: string | null;
   isLoading: boolean;
+  pendingLabel: string;
   timeFormatter: Intl.DateTimeFormat;
   onSelect: () => void;
 };
@@ -33,6 +34,7 @@ function CalendarClassButton({
   item,
   selectedClassId,
   isLoading,
+  pendingLabel,
   timeFormatter,
   onSelect,
 }: CalendarClassButtonProps) {
@@ -65,6 +67,13 @@ function CalendarClassButton({
       <span className="mt-1 block text-[0.68rem] font-semibold text-foreground/52 xl:text-xs">
         {countLabel}
       </span>
+      {item.pendingRegistrationCount !== undefined &&
+        item.pendingRegistrationCount > 0 && (
+          <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-blush-strong/35 px-2 py-0.5 text-[0.66rem] font-semibold text-blush-strong">
+            <Clock3 className="size-3 shrink-0" aria-hidden="true" />
+            {pendingLabel}
+          </span>
+        )}
     </button>
   );
 }
@@ -159,6 +168,9 @@ export function ClassCalendarView({
                   item={item}
                   selectedClassId={selectedClassId}
                   isLoading={item.id === loadingClassId}
+                  pendingLabel={t("classes.pendingBadge", {
+                    count: item.pendingRegistrationCount ?? 0,
+                  })}
                   timeFormatter={timeFormatter}
                   onSelect={() => onSelectClass(item.id)}
                 />

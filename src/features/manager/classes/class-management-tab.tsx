@@ -26,6 +26,7 @@ import { useManagedTemplates } from "@/features/manager/templates/use-managed-te
 
 type ClassManagementTabProps = {
   canManageClasses: boolean;
+  canManageRegistrations: boolean;
 };
 
 type FormSurface =
@@ -35,6 +36,7 @@ type FormSurface =
 
 export function ClassManagementTab({
   canManageClasses,
+  canManageRegistrations,
 }: ClassManagementTabProps) {
   const { t } = useTranslation();
   const [formSurface, setFormSurface] = useState<FormSurface>(null);
@@ -70,6 +72,7 @@ export function ClassManagementTab({
           location: managedClass.location,
           capacity: managedClass.capacity,
           registeredUsersCount: managedClass.registeredUsersCount,
+          pendingRegistrationCount: managedClass.pendingRegistrationCount,
           registrationOpen: managedClass.registration_open,
           temporalStatus: managedClass.temporal_status,
           statusLabel: t(`manager.classStatus.${managedClass.status}`),
@@ -293,8 +296,10 @@ export function ClassManagementTab({
           )}
 
           <ClassDetailPanel
+            client={client}
             managedClass={state.selectedClass}
             canManageClasses={state.canManageClasses}
+            canManageRegistrations={canManageRegistrations}
             onClose={actions.clearSelection}
             onEdit={() => {
               if (!state.selectedClass) return;
@@ -302,6 +307,11 @@ export function ClassManagementTab({
               actions.clearSelection();
             }}
             onCancel={() => setCancelOpen(true)}
+            onRegistrationsChanged={async () => {
+              await actions.refreshVisibleRange({
+                preserveExistingOnFailure: true,
+              });
+            }}
           />
 
           <ClassFormDialog

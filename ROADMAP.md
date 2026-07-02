@@ -129,39 +129,45 @@ Goal: Turn class browsing into a real customer booking experience through the Cl
 
 Goal: Give managers a focused workflow for reviewing pending class registration requests separately from approved registrations.
 
-- [ ] `next` Add global pending registration review
+- [x] `done` Add global pending registration review
   - Description: Add a management surface that lists pending class registration requests across the product and lets authorized managers approve or reject requests through `management.registrations.*`.
-  - Shape: Pending requests are not registrations. They represent users waiting for approval and should be displayed separately from approved registration counts.
+  - Shape: Pending requests are not registrations. They represent users waiting for approval and should be displayed separately from approved registration counts. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Registration Management, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Capability Map.
+  - Progress: The manager workspace now includes a global pending-request review surface backed by `management.registrations.listPending`, with approve and reject actions.
 
-- [ ] `open` Add per-class pending registration review
+- [x] `done` Add per-class pending registration review
   - Description: Add pending request review to the selected class detail surface so managers can approve or reject requests without leaving the class context.
-  - Shape: Use `management.registrations.listPending(...)` scoped by class where appropriate. Keep customer self-service registration under `classes.*`.
+  - Shape: Use `management.registrations.listPending(...)` scoped by class where appropriate. Keep customer self-service registration under `classes.*`. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Registration Management.
+  - Progress: Selected manager class details now include class-scoped pending request review and refresh the visible class range after approval or rejection.
 
-- [ ] `open` Add pending request indicators to class views
+- [x] `done` Add pending request indicators to class views
   - Description: Show a badge or similar visual indicator in manager list and calendar views when a class has pending registration requests.
-  - Shape: Use `pendingRegistrationCount` as pending-request state, not as part of registered user count. Approved registrations remain represented by `registeredUsersCount`.
+  - Shape: Use `pendingRegistrationCount` as pending-request state, not as part of registered user count. Approved registrations remain represented by `registeredUsersCount`. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Field Shape Notes.
+  - Progress: Shared class cards and calendar cells can display a pending-request badge when the manager adapter provides `pendingRegistrationCount`.
 
 ## Roadmap Step 6: User, Role, And Permission Management
 
 Goal: Give managers product-scoped administration tools for users, roles, and permissions using the ClassKit management facade.
 
-- [ ] `open` Add product user management
+- [x] `done` Add product user management
   - Description: Let authorized managers view product users, inspect each user's assigned roles, and inspect effective product permissions.
-  - Shape: Use `management.users.*` for product-scoped user visibility. Do not treat product user role assignment as global Supabase identity creation.
+  - Shape: Use `management.users.*` for product-scoped user visibility. Do not treat product user role assignment as global Supabase identity creation. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Product Roles And Users.
+  - Progress: The manager workspace now includes a users surface backed by `management.users.list`, showing assigned roles and permissions derived from role grants.
 
-- [ ] `open` Add role and permission management
+- [x] `done` Add role and permission management
   - Description: Let authorized managers view roles, create roles, update roles, view role permissions, and grant or revoke permissions on roles.
-  - Shape: Use `management.roles.*`; role level is metadata, while permission-key grants remain explicit where backend guards require them.
+  - Shape: Use `management.roles.*`; role level is metadata, while permission-key grants remain explicit where backend guards require them. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Product Roles And Users, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Product Context Response.
+  - Progress: The manager workspace now lists product roles and permission catalog entries, supports role creation and update, and supports granting or revoking role permissions through `management.roles.*`.
 
-- [ ] `open` Add user role assignment
+- [x] `done` Add user role assignment
   - Description: Let authorized managers assign and revoke product roles for users through the documented user-role management facade.
-  - Shape: Role assignment should remain product-local authority and should not expose platform-admin controls.
+  - Shape: Role assignment should remain product-local authority and should not expose platform-admin controls. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Capability Map, `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Product Roles And Users.
+  - Progress: Product user cards now support assigning and revoking roles through `management.users.roles.*`.
 
 ## Roadmap Step 7: Manager Schedule System
 
 Goal: Expand manager-owned schedule operations after the core manager class workflow and public class flow exist.
 
-- [ ] `open` Expand schedule management
+- [ ] `next` Expand schedule management
   - Description: Give the manager a fuller schedule workspace for maintaining recurring class patterns, generated availability, skipped dates, and schedule lifecycle state.
   - Why: Schedule management is not a customer-facing feature; it is an owner workflow that supports reliable public availability.
 
@@ -175,11 +181,11 @@ Goal: Expose ClassKit membership administration through the manager interface wi
 
 - [ ] `open` Add membership visibility
   - Description: Let authorized managers view a user's current membership grants, membership type, remaining quota or usage, ledger context, and membership status.
-  - Shape: The current SDK exposes `management.memberships.listTypes()` and `management.memberships.listUserGrants(userId)` for product dashboards.
+  - Shape: The current SDK exposes `management.memberships.listTypes()` and `management.memberships.listUserGrants(userId)` for product dashboards. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Capability Map.
 
 - [ ] `open` Add membership grant and lifecycle management
   - Description: Let authorized managers assign, update, replace, or remove a user's membership once the needed SDK facade methods are available.
-  - Shape: ClassKit backend supports membership type creation, grants, upgrades, revocation, and ledger operations, but current docs identify SDK facade gaps for those mutations. Product website implementation should add/use SDK facade methods before using those operations; do not call raw Edge Functions from this website.
+  - Shape: ClassKit backend supports membership type creation, grants, upgrades, revocation, and ledger operations, but current docs identify SDK facade gaps for those mutations. Product website implementation should add/use SDK facade methods before using those operations; do not call raw Edge Functions from this website. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Function-to-SDK map.
 
 ## Roadmap Step 9: Static Lessons And External Schedule Content
 

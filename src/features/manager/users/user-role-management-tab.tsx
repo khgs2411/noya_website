@@ -1,0 +1,1008 @@
+import type {
+  ProductManagedPermission,
+  ProductManagedRole,
+  ProductUserListItem,
+} from "@class-kit/react";
+import { useProductContext } from "@class-kit/react";
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  Loader2,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  UserCog,
+  X,
+} from "lucide-react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+
+import { Button } from "@/components/ui/button";
+
+type LoadStatus = "idle" | "loading" | "loaded" | "error";
+type MutationStatus =
+  | "idle"
+  | "creatingRole"
+  | "updatingRole"
+  | "grantingPermission"
+  | "revokingPermission"
+  | "assigningRole"
+  | "revokingRole";
+
+type UserRoleManagementTabProps = {
+  canManageRoles: boolean;
+  canManageUsers: boolean;
+};
+
+type RoleForm = {
+  name: string;
+  levelPreset: RoleLevelPreset;
+  customLevel: string;
+  permissionGroups: string[];
+};
+
+type EditingRoleForm = {
+  roleId: string;
+  name: string;
+  levelPreset: RoleLevelPreset;
+  customLevel: string;
+} | null;
+
+type RoleLevelPreset = "coach" | "supervisor" | "manager" | "custom";
+
+const rolesPanelStorageKey = "noya.manager.users.rolesPanelExpanded";
+const usersPanelStorageKey = "noya.manager.users.usersPanelExpanded";
+
+const roleLevelPresets: Array<{
+  id: RoleLevelPreset;
+  level: number | null;
+  labelKey: string;
+}> = [
+  { id: "coach", level: 20, labelKey: "manager.users.rolePresets.coach" },
+  {
+    id: "supervisor",
+    level: 40,
+    labelKey: "manager.users.rolePresets.supervisor",
+  },
+  { id: "manager", level: 75, labelKey: "manager.users.rolePresets.manager" },
+  { id: "custom", level: null, labelKey: "manager.users.rolePresets.custom" },
+];
+
+const permissionGroups: Array<{
+  id: string;
+  labelKey: string;
+  descriptionKey: string;
+  permissionKeys: string[];
+}> = [
+  {
+    id: "classManagement",
+    labelKey: "manager.users.permissionGroups.classManagement",
+    descriptionKey: "manager.users.permissionGroupDescriptions.classManagement",
+    permissionKeys: [
+      "classes.create",
+      "classes.update",
+      "classes.publish",
+      "classes.draft",
+      "classes.cancel",
+      "classes.drafts.read",
+      "classes.extra_fields.read",
+    ],
+  },
+  {
+    id: "scheduleManagement",
+    labelKey: "manager.users.permissionGroups.scheduleManagement",
+    descriptionKey: "manager.users.permissionGroupDescriptions.scheduleManagement",
+    permissionKeys: ["schedules.manage", "templates.manage"],
+  },
+  {
+    id: "registrationManagement",
+    labelKey: "manager.users.permissionGroups.registrationManagement",
+    descriptionKey: "manager.users.permissionGroupDescriptions.registrationManagement",
+    permissionKeys: [
+      "registrations.manage",
+      "attendance.manage",
+      "memberships.manage",
+    ],
+  },
+  {
+    id: "staffManagement",
+    labelKey: "manager.users.permissionGroups.staffManagement",
+    descriptionKey: "manager.users.permissionGroupDescriptions.staffManagement",
+    permissionKeys: [
+      "product_users.read",
+      "product_users.manage",
+      "product_user_roles.manage",
+      "product_roles.manage",
+      "product_role_permissions.manage",
+      "product_users.promote_manager",
+    ],
+  },
+  {
+    id: "studioSettings",
+    labelKey: "manager.users.permissionGroups.studioSettings",
+    descriptionKey: "manager.users.permissionGroupDescriptions.studioSettings",
+    permissionKeys: ["product.auth_mode.update"],
+  },
+];
+
+function getUserLabel(user: ProductUserListItem) {
+  return user.display_name ?? user.email ?? user.user_id;
+}
+
+function getRoleLabel(role: ProductManagedRole | undefined, roleId: string) {
+  return role ? `${role.name} (${role.key})` : roleId;
+}
+
+function getUserRoleIds(user: ProductUserListItem) {
+  return new Set(user.roles?.map((role) => role.role_id) ?? []);
+}
+
+function getUserPermissionKeys(
+  user: ProductUserListItem,
+  rolesById: Map<string, ProductManagedRole>,
+) {
+  const permissions = new Set<string>();
+
+  for (const assignment of user.roles ?? []) {
+    const role = rolesById.get(assignment.role_id);
+    role?.permissions.forEach((permission) => permissions.add(permission));
+  }
+
+  return [...permissions].sort();
+}
+
+function getRoleKeyFromName(name: string) {
+  const key = name
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  return key || `role_${Date.now().toString(36)}`;
+}
+
+function getPresetFromLevel(level: number): RoleLevelPreset {
+  const preset = roleLevelPresets.find((option) => option.level === level);
+  return preset?.id ?? "custom";
+}
+
+function getLevelFromPreset(preset: RoleLevelPreset, customLevel: string) {
+  const presetLevel = roleLevelPresets.find((option) => option.id === preset)?.level;
+  return presetLevel ?? Number(customLevel);
+}
+
+function isValidLevel(level: number) {
+  return Number.isInteger(level) && level >= 0 && level <= 100;
+}
+
+function getAvailablePermissionGroups(permissions: ProductManagedPermission[]) {
+  const availableKeys = new Set(permissions.map((permission) => permission.key));
+
+  return permissionGroups
+    .map((group) => ({
+      ...group,
+      permissionKeys: group.permissionKeys.filter((key) => availableKeys.has(key)),
+    }))
+    .filter((group) => group.permissionKeys.length > 0);
+}
+
+function getRoleGroupState(
+  role: ProductManagedRole,
+  group: { permissionKeys: string[] },
+) {
+  const granted = group.permissionKeys.filter((key) =>
+    role.permissions.includes(key),
+  );
+
+  if (granted.length === 0) return "none";
+  if (granted.length === group.permissionKeys.length) return "all";
+  return "partial";
+}
+
+function readStoredExpandedState(key: string, defaultValue: boolean) {
+  if (typeof window === "undefined") return defaultValue;
+
+  const storedValue = window.localStorage.getItem(key);
+  if (storedValue === "true") return true;
+  if (storedValue === "false") return false;
+  return defaultValue;
+}
+
+function usePersistentExpandedState(key: string, defaultValue = true) {
+  const [expanded, setExpanded] = useState(() =>
+    readStoredExpandedState(key, defaultValue),
+  );
+
+  useEffect(() => {
+    window.localStorage.setItem(key, String(expanded));
+  }, [expanded, key]);
+
+  return [expanded, setExpanded] as const;
+}
+
+export function UserRoleManagementTab({
+  canManageRoles,
+  canManageUsers,
+}: UserRoleManagementTabProps) {
+  const { t } = useTranslation();
+  const { client } = useProductContext();
+  const [users, setUsers] = useState<ProductUserListItem[]>([]);
+  const [roles, setRoles] = useState<ProductManagedRole[]>([]);
+  const [permissions, setPermissions] = useState<ProductManagedPermission[]>([]);
+  const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [operationError, setOperationError] = useState<string | null>(null);
+  const [mutationStatus, setMutationStatus] =
+    useState<MutationStatus>("idle");
+  const [roleForm, setRoleForm] = useState<RoleForm>({
+    name: "",
+    levelPreset: "coach",
+    customLevel: "75",
+    permissionGroups: [],
+  });
+  const [rolesExpanded, setRolesExpanded] = usePersistentExpandedState(
+    rolesPanelStorageKey,
+  );
+  const [usersExpanded, setUsersExpanded] = usePersistentExpandedState(
+    usersPanelStorageKey,
+  );
+  const [editingRole, setEditingRole] = useState<EditingRoleForm>(null);
+  const [assignRoleByUserId, setAssignRoleByUserId] = useState<Record<string, string>>({});
+  const rolesById = useMemo(
+    () => new Map(roles.map((role) => [role.id, role])),
+    [roles],
+  );
+  const availablePermissionGroups = useMemo(
+    () => getAvailablePermissionGroups(permissions),
+    [permissions],
+  );
+  const hasAccess = canManageRoles || canManageUsers;
+
+  const loadAdministration = useCallback(async () => {
+    if (!client || !hasAccess) {
+      setUsers([]);
+      setRoles([]);
+      setPermissions([]);
+      setLoadStatus("idle");
+      return;
+    }
+
+    setLoadStatus("loading");
+    setErrorMessage(null);
+
+    try {
+      const [roleResult, permissionResult, userResult] = await Promise.all([
+        canManageRoles || canManageUsers
+          ? client.management.roles.list()
+          : Promise.resolve({ roles: [] }),
+        canManageRoles
+          ? client.management.roles.listPermissions()
+          : Promise.resolve({ permissions: [] }),
+        canManageUsers
+          ? client.management.users.list()
+          : Promise.resolve({ users: [] }),
+      ]);
+
+      setRoles(roleResult.roles);
+      setPermissions(permissionResult.permissions);
+      setUsers(userResult.users);
+      setLoadStatus("loaded");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : t("manager.users.errorBody"),
+      );
+      setLoadStatus("error");
+    }
+  }, [canManageRoles, canManageUsers, client, hasAccess, t]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void loadAdministration();
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadAdministration]);
+
+  const runMutation = useCallback(
+    async (status: MutationStatus, command: () => Promise<unknown>) => {
+      if (!client || mutationStatus !== "idle") return false;
+
+      setOperationError(null);
+      setMutationStatus(status);
+
+      try {
+        await command();
+        await loadAdministration();
+        return true;
+      } catch (error) {
+        setOperationError(
+          error instanceof Error
+            ? error.message
+            : t("manager.users.actionFailed"),
+        );
+        return false;
+      } finally {
+        setMutationStatus("idle");
+      }
+    },
+    [client, loadAdministration, mutationStatus, t],
+  );
+
+  const createRole = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!client || !canManageRoles) return;
+
+      const level = getLevelFromPreset(roleForm.levelPreset, roleForm.customLevel);
+      if (!isValidLevel(level)) {
+        setOperationError(t("manager.users.invalidRoleLevel"));
+        return;
+      }
+
+      const selectedGroups = availablePermissionGroups.filter((group) =>
+        roleForm.permissionGroups.includes(group.id),
+      );
+      const created = await runMutation("creatingRole", async () => {
+        const result = await client.management.roles.create({
+          key: getRoleKeyFromName(roleForm.name),
+          name: roleForm.name.trim(),
+          level,
+        });
+
+        for (const group of selectedGroups) {
+          for (const permissionKey of group.permissionKeys) {
+            await client.management.roles.grantPermission({
+              roleId: result.role.id,
+              permissionKey,
+            });
+          }
+        }
+      });
+
+      if (created) {
+        setRoleForm({
+          name: "",
+          levelPreset: "coach",
+          customLevel: "75",
+          permissionGroups: [],
+        });
+      }
+    },
+    [availablePermissionGroups, canManageRoles, client, roleForm, runMutation, t],
+  );
+
+  const updateRole = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!client || !canManageRoles || !editingRole) return;
+
+      const level = getLevelFromPreset(
+        editingRole.levelPreset,
+        editingRole.customLevel,
+      );
+      if (!isValidLevel(level)) {
+        setOperationError(t("manager.users.invalidRoleLevel"));
+        return;
+      }
+
+      const updated = await runMutation("updatingRole", () =>
+        client.management.roles.update({
+          roleId: editingRole.roleId,
+          name: editingRole.name.trim(),
+          level,
+        }),
+      );
+
+      if (updated) {
+        setEditingRole(null);
+      }
+    },
+    [canManageRoles, client, editingRole, runMutation, t],
+  );
+
+  const togglePermissionGroup = useCallback(
+    async (role: ProductManagedRole, group: { permissionKeys: string[] }) => {
+      if (!client || !canManageRoles) return;
+      const groupState = getRoleGroupState(role, group);
+
+      if (groupState === "all") {
+        await runMutation("revokingPermission", async () => {
+          for (const permissionKey of group.permissionKeys) {
+            await client.management.roles.revokePermission({
+              roleId: role.id,
+              permissionKey,
+            });
+          }
+        });
+        return;
+      }
+
+      await runMutation("grantingPermission", async () => {
+        for (const permissionKey of group.permissionKeys) {
+          if (!role.permissions.includes(permissionKey)) {
+            await client.management.roles.grantPermission({
+              roleId: role.id,
+              permissionKey,
+            });
+          }
+        }
+      });
+    },
+    [canManageRoles, client, runMutation],
+  );
+
+  const assignRole = useCallback(
+    async (userId: string) => {
+      if (!client || !canManageUsers) return;
+      const roleId = assignRoleByUserId[userId];
+      if (!roleId) return;
+
+      const assigned = await runMutation("assigningRole", () =>
+        client.management.users.roles.assign({ userId, roleId }),
+      );
+
+      if (assigned) {
+        setAssignRoleByUserId((current) => ({ ...current, [userId]: "" }));
+      }
+    },
+    [assignRoleByUserId, canManageUsers, client, runMutation],
+  );
+
+  const revokeRole = useCallback(
+    (userId: string, roleId: string) => {
+      if (!client || !canManageUsers) return;
+      void runMutation("revokingRole", () =>
+        client.management.users.roles.revoke({ userId, roleId }),
+      );
+    },
+    [canManageUsers, client, runMutation],
+  );
+
+  if (!hasAccess) {
+    return (
+      <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-5 shadow-soft">
+        <p className="font-serif text-xl text-foreground">
+          {t("manager.users.noAccessTitle")}
+        </p>
+        <p className="mt-2 text-sm leading-6 text-foreground/68">
+          {t("manager.users.noAccessBody")}
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft sm:p-5">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
+          <UserCog className="size-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
+            {t("manager.users.eyebrow")}
+          </p>
+          <h2 className="mt-1 font-serif text-3xl text-foreground">
+            {t("manager.users.title")}
+          </h2>
+          <p className="mt-2 max-w-prose text-sm leading-6 text-foreground/68">
+            {t("manager.users.body")}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-col gap-4">
+        {loadStatus === "loading" && (
+          <div className="rounded-xl border border-blush/24 bg-background/46 p-4 text-sm text-foreground/68">
+            <Loader2
+              className="me-2 inline size-4 animate-spin text-blush-strong"
+              aria-hidden="true"
+            />
+            {t("manager.users.loading")}
+          </div>
+        )}
+
+        {loadStatus === "error" && (
+          <div className="rounded-xl border border-blush/24 bg-background/46 p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle
+                className="mt-0.5 size-5 shrink-0 text-blush-strong"
+                aria-hidden="true"
+              />
+              <div className="min-w-0">
+                <p className="font-serif text-xl text-foreground">
+                  {t("manager.users.errorTitle")}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-foreground/68">
+                  {errorMessage ?? t("manager.users.errorBody")}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4 rounded-full"
+                  onClick={() => void loadAdministration()}
+                >
+                  <RefreshCw className="size-4" aria-hidden="true" />
+                  {t("manager.users.retry")}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {operationError && (
+          <p className="rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-blush-strong">
+            {operationError}
+          </p>
+        )}
+
+        {loadStatus === "loaded" && (
+          <>
+            {canManageRoles && (
+              <section className="rounded-[1.3rem] border border-blush/24 bg-background/34 p-4">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 text-start"
+                  aria-expanded={rolesExpanded}
+                  onClick={() => setRolesExpanded((expanded) => !expanded)}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <ShieldCheck
+                      className="size-5 shrink-0 text-blush-strong"
+                      aria-hidden="true"
+                    />
+                    <span className="font-serif text-2xl text-foreground">
+                      {t("manager.users.rolesTitle")}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                    {rolesExpanded
+                      ? t("manager.users.collapse")
+                      : t("manager.users.expand")}
+                    <ChevronDown
+                      className={[
+                        "size-4 transition-transform",
+                        rolesExpanded ? "rotate-180" : "",
+                      ].join(" ")}
+                      aria-hidden="true"
+                    />
+                  </span>
+                </button>
+
+                {rolesExpanded && (
+                  <>
+                    <form
+                      className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_1fr_auto]"
+                      onSubmit={(event) => void createRole(event)}
+                    >
+                  <input
+                    className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                    value={roleForm.name}
+                    placeholder={t("manager.users.roleName")}
+                    onChange={(event) =>
+                      setRoleForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                  <div className="grid gap-2 sm:grid-cols-[1fr_7rem]">
+                    <select
+                      className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                      value={roleForm.levelPreset}
+                      onChange={(event) =>
+                        setRoleForm((current) => ({
+                          ...current,
+                          levelPreset: event.target.value as RoleLevelPreset,
+                        }))
+                      }
+                    >
+                      {roleLevelPresets.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {t(preset.labelKey)}
+                        </option>
+                      ))}
+                    </select>
+                    {roleForm.levelPreset === "custom" && (
+                      <input
+                        className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={roleForm.customLevel}
+                        placeholder={t("manager.users.roleLevel")}
+                        onChange={(event) =>
+                          setRoleForm((current) => ({
+                            ...current,
+                            customLevel: event.target.value,
+                          }))
+                        }
+                        required
+                      />
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    className="rounded-full"
+                    disabled={mutationStatus !== "idle"}
+                  >
+                    <Plus className="size-4" aria-hidden="true" />
+                    {t("manager.users.createRole")}
+                  </Button>
+                    </form>
+                    <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                  {availablePermissionGroups.map((group) => {
+                    const selected = roleForm.permissionGroups.includes(group.id);
+
+                    return (
+                      <button
+                        key={group.id}
+                        type="button"
+                        className={[
+                          "rounded-xl border p-3 text-start transition-colors",
+                          selected
+                            ? "border-blush-strong bg-blush-strong/12 text-foreground"
+                            : "border-blush/24 bg-card/50 text-foreground/72 hover:border-blush-strong/55",
+                        ].join(" ")}
+                        onClick={() =>
+                          setRoleForm((current) => ({
+                            ...current,
+                            permissionGroups: selected
+                              ? current.permissionGroups.filter(
+                                  (groupId) => groupId !== group.id,
+                                )
+                              : [...current.permissionGroups, group.id],
+                          }))
+                        }
+                      >
+                        <span className="flex items-center gap-2 font-serif text-lg">
+                          {selected && (
+                            <Check className="size-4 text-blush-strong" aria-hidden="true" />
+                          )}
+                          {t(group.labelKey)}
+                        </span>
+                        <span className="mt-1 block text-xs leading-5 text-foreground/56">
+                          {t(group.descriptionKey)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                    </div>
+
+                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                  {roles.map((role) => {
+                    const isEditing = editingRole?.roleId === role.id;
+
+                    return (
+                      <article
+                        key={role.id}
+                        className="rounded-[1.2rem] border border-blush/24 bg-card/60 p-4"
+                      >
+                        {isEditing ? (
+                          <form
+                            className="grid gap-2 sm:grid-cols-[1fr_12rem_auto_auto]"
+                            onSubmit={(event) => void updateRole(event)}
+                          >
+                            <input
+                              className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                              value={editingRole.name}
+                              onChange={(event) =>
+                                setEditingRole((current) =>
+                                  current
+                                    ? { ...current, name: event.target.value }
+                                    : current,
+                                )
+                              }
+                              required
+                            />
+                            <div className="grid gap-2">
+                              <select
+                                className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                                value={editingRole.levelPreset}
+                                onChange={(event) =>
+                                  setEditingRole((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          levelPreset: event.target
+                                            .value as RoleLevelPreset,
+                                        }
+                                      : current,
+                                  )
+                                }
+                              >
+                                {roleLevelPresets.map((preset) => (
+                                  <option key={preset.id} value={preset.id}>
+                                    {t(preset.labelKey)}
+                                  </option>
+                                ))}
+                              </select>
+                              {editingRole.levelPreset === "custom" && (
+                                <input
+                                  className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={editingRole.customLevel}
+                                  onChange={(event) =>
+                                    setEditingRole((current) =>
+                                      current
+                                        ? {
+                                            ...current,
+                                            customLevel: event.target.value,
+                                          }
+                                        : current,
+                                    )
+                                  }
+                                  required
+                                />
+                              )}
+                            </div>
+                            <Button
+                              type="submit"
+                              size="sm"
+                              className="rounded-full"
+                              disabled={mutationStatus !== "idle"}
+                            >
+                              <Check className="size-4" aria-hidden="true" />
+                              {t("actions.save")}
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="rounded-full"
+                              onClick={() => setEditingRole(null)}
+                            >
+                              {t("actions.cancel")}
+                            </Button>
+                          </form>
+                        ) : (
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h4 className="break-words font-serif text-xl text-foreground">
+                                {role.name}
+                              </h4>
+                              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                                {t(
+                                  roleLevelPresets.find(
+                                    (preset) => preset.level === role.level,
+                                  )?.labelKey ?? "manager.users.rolePresets.custom",
+                                )}
+                              </p>
+                            </div>
+                            {!role.is_protected && (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="rounded-full"
+                                onClick={() =>
+                                  setEditingRole({
+                                    roleId: role.id,
+                                    name: role.name,
+                                    levelPreset: getPresetFromLevel(role.level),
+                                    customLevel: String(role.level),
+                                  })
+                                }
+                              >
+                                {t("manager.users.editRole")}
+                              </Button>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {availablePermissionGroups.map((group) => {
+                            const groupState = getRoleGroupState(role, group);
+                            const selected = groupState === "all";
+                            const partial = groupState === "partial";
+
+                            return (
+                              <button
+                                key={group.id}
+                                type="button"
+                                className={[
+                                  "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+                                  selected || partial
+                                    ? "border-blush-strong/45 bg-blush-strong/10 text-blush-strong"
+                                    : "border-blush/24 text-foreground/56 hover:border-blush-strong/45",
+                                ].join(" ")}
+                                disabled={role.is_protected || mutationStatus !== "idle"}
+                                onClick={() => void togglePermissionGroup(role, group)}
+                              >
+                                {t(group.labelKey)}
+                                {partial ? ` · ${t("manager.users.partial")}` : ""}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </article>
+                    );
+                  })}
+                    </div>
+                  </>
+                )}
+              </section>
+            )}
+
+            {canManageUsers && (
+              <section className="rounded-[1.3rem] border border-blush/24 bg-background/34 p-4">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 text-start"
+                  aria-expanded={usersExpanded}
+                  onClick={() => setUsersExpanded((expanded) => !expanded)}
+                >
+                  <span className="font-serif text-2xl text-foreground">
+                    {t("manager.users.usersTitle")}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                    {usersExpanded
+                      ? t("manager.users.collapse")
+                      : t("manager.users.expand")}
+                    <ChevronDown
+                      className={[
+                        "size-4 transition-transform",
+                        usersExpanded ? "rotate-180" : "",
+                      ].join(" ")}
+                      aria-hidden="true"
+                    />
+                  </span>
+                </button>
+
+                {usersExpanded && (
+                  <div className="mt-4 grid gap-3">
+                  {users.map((user) => {
+                    const assignedRoleIds = getUserRoleIds(user);
+                    const assignableRoles = roles.filter(
+                      (role) => !assignedRoleIds.has(role.id),
+                    );
+                    const userPermissions = getUserPermissionKeys(user, rolesById);
+                    const userPermissionSet = new Set(userPermissions);
+                    const userPermissionGroups = availablePermissionGroups
+                      .map((group) => {
+                        const grantedCount = group.permissionKeys.filter((key) =>
+                          userPermissionSet.has(key),
+                        ).length;
+
+                        return { ...group, grantedCount };
+                      })
+                      .filter((group) => group.grantedCount > 0);
+
+                    return (
+                      <article
+                        key={user.user_id}
+                        className="rounded-[1.2rem] border border-blush/24 bg-card/60 p-4"
+                      >
+                        <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
+                          <div className="min-w-0">
+                            <h4 className="break-words font-serif text-xl text-foreground">
+                              {getUserLabel(user)}
+                            </h4>
+                            {user.email && (
+                              <p className="mt-1 break-words text-sm text-foreground/60">
+                                {user.email}
+                              </p>
+                            )}
+                            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                              {user.status} · {user.scope}
+                            </p>
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                              {t("manager.users.assignedRoles")}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {(user.roles ?? []).length === 0 ? (
+                                <span className="text-sm text-foreground/56">
+                                  {t("manager.users.noRoles")}
+                                </span>
+                              ) : (
+                                user.roles?.map((assignment) => (
+                                  <span
+                                    key={`${user.user_id}-${assignment.role_id}`}
+                                    className="inline-flex items-center gap-1 rounded-full border border-blush/24 px-2.5 py-1 text-xs text-foreground/68"
+                                  >
+                                    {assignment.role_name ??
+                                      getRoleLabel(
+                                        rolesById.get(assignment.role_id),
+                                        assignment.role_id,
+                                      )}
+                                    <button
+                                      type="button"
+                                      className="rounded-full text-foreground/48 hover:text-blush-strong"
+                                      disabled={mutationStatus !== "idle"}
+                                      onClick={() =>
+                                        revokeRole(
+                                          user.user_id,
+                                          assignment.role_id,
+                                        )
+                                      }
+                                      aria-label={t("manager.users.revokeRole")}
+                                    >
+                                      <X className="size-3" aria-hidden="true" />
+                                    </button>
+                                  </span>
+                                ))
+                              )}
+                            </div>
+
+                            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                              <select
+                                className="h-10 min-w-0 flex-1 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                                value={assignRoleByUserId[user.user_id] ?? ""}
+                                onChange={(event) =>
+                                  setAssignRoleByUserId((current) => ({
+                                    ...current,
+                                    [user.user_id]: event.target.value,
+                                  }))
+                                }
+                              >
+                                <option value="">
+                                  {t("manager.users.chooseRole")}
+                                </option>
+                                {assignableRoles.map((role) => (
+                                  <option key={role.id} value={role.id}>
+                                    {role.name}
+                                  </option>
+                                ))}
+                              </select>
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="rounded-full"
+                                disabled={
+                                  mutationStatus !== "idle" ||
+                                  !assignRoleByUserId[user.user_id]
+                                }
+                                onClick={() => void assignRole(user.user_id)}
+                              >
+                                <Plus className="size-4" aria-hidden="true" />
+                                {t("manager.users.assignRole")}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                            {t("manager.users.effectivePermissions")}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {userPermissionGroups.length === 0 ? (
+                              <span className="text-sm text-foreground/56">
+                                {t("manager.users.noPermissions")}
+                              </span>
+                            ) : (
+                              userPermissionGroups.map((group) => (
+                                <span
+                                  key={group.id}
+                                  className="rounded-full border border-blush/24 px-2.5 py-1 text-xs text-foreground/68"
+                                >
+                                  {t(group.labelKey)}
+                                  {group.grantedCount < group.permissionKeys.length
+                                    ? ` · ${t("manager.users.partial")}`
+                                    : ""}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                  </div>
+                )}
+              </section>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}

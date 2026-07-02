@@ -5,8 +5,10 @@ import { useTranslation } from "react-i18next";
 
 import { ClassManagementTab } from "@/features/manager/classes/class-management-tab";
 import { ManagerTabs, type ManagerTab } from "@/features/manager/manager-tabs";
+import { PendingRegistrationManagementTab } from "@/features/manager/registrations/pending-registration-management-tab";
 import { ScheduleManagementTab } from "@/features/manager/schedules/schedule-management-tab";
 import { TemplateManagementTab } from "@/features/manager/templates/template-management-tab";
+import { UserRoleManagementTab } from "@/features/manager/users/user-role-management-tab";
 
 export function ManagerPage({ loading = false }: { loading?: boolean }) {
   const { t } = useTranslation();
@@ -15,6 +17,10 @@ export function ManagerPage({ loading = false }: { loading?: boolean }) {
   const canManageClasses = Boolean(
     capabilities.dashboard.can_manage_classes,
   );
+  const canManageRegistrations =
+    capabilities.permissions.includes("registrations.manage");
+  const canManageRoles = Boolean(capabilities.dashboard.can_manage_roles);
+  const canManageUsers = Boolean(capabilities.dashboard.can_manage_users);
 
   return (
     <main className="min-h-screen bg-background px-4 pb-12 pt-5 text-foreground sm:px-6 lg:px-8">
@@ -41,13 +47,27 @@ export function ManagerPage({ loading = false }: { loading?: boolean }) {
           <section className="mt-7 flex flex-col gap-4">
             <ManagerTabs activeTab={activeTab} onChange={setActiveTab} />
             {activeTab === "classes" && (
-              <ClassManagementTab canManageClasses={canManageClasses} />
+              <ClassManagementTab
+                canManageClasses={canManageClasses}
+                canManageRegistrations={canManageRegistrations}
+              />
+            )}
+            {activeTab === "pending" && (
+              <PendingRegistrationManagementTab
+                canManageRegistrations={canManageRegistrations}
+              />
             )}
             {activeTab === "templates" && (
               <TemplateManagementTab canManageTemplates={canManageClasses} />
             )}
             {activeTab === "schedules" && (
               <ScheduleManagementTab canManageSchedules={canManageClasses} />
+            )}
+            {activeTab === "users" && (
+              <UserRoleManagementTab
+                canManageRoles={canManageRoles}
+                canManageUsers={canManageUsers}
+              />
             )}
           </section>
         )}
