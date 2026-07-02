@@ -419,6 +419,12 @@ const resources = {
           rejected: 'Registration rejected',
           cancelled: 'Registration cancelled',
         },
+        toast: {
+          pending: 'Request sent for approval',
+          approved: 'Registration confirmed',
+          cancelled: 'Registration cancelled',
+          cancellationClosed: 'You cannot cancel registration less than 24 hours before class starts.',
+        },
         temporalStatus: {
           upcoming: 'Upcoming',
           started: 'Started',
@@ -893,6 +899,12 @@ const resources = {
           rejected: 'Запись отклонена',
           cancelled: 'Запись отменена',
         },
+        toast: {
+          pending: 'Заявка отправлена на подтверждение',
+          approved: 'Запись подтверждена',
+          cancelled: 'Запись отменена',
+          cancellationClosed: 'Нельзя отменить запись менее чем за 24 часа до начала занятия.',
+        },
         temporalStatus: {
           upcoming: 'Скоро',
           started: 'Началось',
@@ -1365,6 +1377,12 @@ const resources = {
           approved: 'נרשמת',
           rejected: 'ההרשמה נדחתה',
           cancelled: 'ההרשמה בוטלה',
+        },
+        toast: {
+          pending: 'הבקשה נשלחה לאישור',
+          approved: 'ההרשמה אושרה',
+          cancelled: 'ההרשמה בוטלה',
+          cancellationClosed: 'אי אפשר לבטל הרשמה פחות מ-24 שעות לפני תחילת השיעור.',
         },
         temporalStatus: {
           upcoming: 'קרוב',

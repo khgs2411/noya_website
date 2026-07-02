@@ -17,6 +17,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { ToastStack, type ToastItem } from "@/components/ui/toast";
 import { authPath } from "@/content/site-content";
 import { ClassCalendarView } from "@/features/classes/class-calendar-view";
 import { ClassListView } from "@/features/classes/class-list-view";
@@ -27,8 +28,10 @@ import {
   type ViewMode,
   getLocalRange,
   getVisibleRangeLabel,
+  parseDateInput,
   shiftRange,
   toDateInput,
+  toVisibleRange,
 } from "@/features/classes/class-range";
 import { ClassRangeToolbar } from "@/features/classes/class-range-toolbar";
 import type {
@@ -43,6 +46,21 @@ type RegistrationMutation =
   | null;
 
 type DetailStatus = "idle" | "loading" | "loaded" | "error";
+type ClassToast = ToastItem;
+const CANCELLATION_CLOSED_MESSAGE = "Cancellation is closed for this class.";
+const dateInputPattern = /^\d{4}-\d{2}-\d{2}$/;
+
+function getInitialClassFocus() {
+  const params = new URLSearchParams(window.location.search);
+  const date = params.get("date");
+  const classId = params.get("classId");
+
+  if (!date || !dateInputPattern.test(date)) {
+    return { date: null, classId };
+  }
+
+  return { date, classId };
+}
 
 function getCustomerStatusLabel(
   classSummary: ClassSummary,
@@ -118,17 +136,31 @@ function groupClassesByDate(
 export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void }) {
   const { t, i18n } = useTranslation();
   const { client, productUser, session } = useProductContext();
-  const [rangeScope, setRangeScope] = useState<RangeScope>("week");
-  const [rangeAnchorDate, setRangeAnchorDate] = useState(() => new Date());
+  const [initialClassFocus] = useState(getInitialClassFocus);
+  const [rangeScope, setRangeScope] = useState<RangeScope>(() =>
+    initialClassFocus.date ? "custom" : "week",
+  );
+  const [rangeAnchorDate, setRangeAnchorDate] = useState(() =>
+    initialClassFocus.date ? parseDateInput(initialClassFocus.date) : new Date(),
+  );
   const [customRange, setCustomRangeState] =
-    useState<CustomRangeValue | null>(null);
+    useState<CustomRangeValue | null>(() =>
+      initialClassFocus.date
+        ? {
+            startDate: initialClassFocus.date,
+            endDate: initialClassFocus.date,
+          }
+        : null,
+    );
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [classes, setClasses] = useState<ClassSummary[]>([]);
-  const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<string | null>(
+    initialClassFocus.classId,
+  );
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [operationMessage, setOperationMessage] = useState<string | null>(null);
   const [operationError, setOperationError] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ClassToast[]>([]);
   const [registrationMutation, setRegistrationMutation] =
     useState<RegistrationMutation>(null);
   const [selectedClassDetail, setSelectedClassDetail] =
@@ -137,6 +169,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
   const [detailError, setDetailError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
   const detailRequestIdRef = useRef(0);
+  const toastTimeoutsRef = useRef<number[]>([]);
 
   const localRange = useMemo(
     () => getLocalRange(rangeScope, rangeAnchorDate, customRange),
@@ -146,13 +179,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     () => getVisibleRangeLabel(localRange),
     [localRange],
   );
-  const visibleRange = useMemo(
-    () => ({
-      start: toDateInput(localRange.start),
-      end: toDateInput(localRange.end),
-    }),
-    [localRange],
-  );
+  const visibleRange = useMemo(() => toVisibleRange(localRange), [localRange]);
   const classViewItems = useMemo(
     () => classes.map((classSummary) => toClassViewItem(classSummary, t)),
     [classes, t],
@@ -212,6 +239,42 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
 
     return () => window.clearTimeout(timeoutId);
   }, [refreshClasses]);
+
+  useEffect(
+    () => () => {
+      toastTimeoutsRef.current.forEach((timeoutId) =>
+        window.clearTimeout(timeoutId),
+      );
+    },
+    [],
+  );
+
+  function dismissToast(toastId: string) {
+    setToasts((current) => current.filter((toast) => toast.id !== toastId));
+  }
+
+  function showToast(toast: Omit<ClassToast, "id">) {
+    const toastId = crypto.randomUUID();
+    setToasts((current) => [...current.slice(-2), { ...toast, id: toastId }]);
+
+    const timeoutId = window.setTimeout(() => {
+      dismissToast(toastId);
+    }, 4200);
+    toastTimeoutsRef.current.push(timeoutId);
+  }
+
+  function showOperationError(message: string) {
+    const mappedMessage =
+      message === CANCELLATION_CLOSED_MESSAGE
+        ? t("classes.toast.cancellationClosed")
+        : message;
+
+    setOperationError(mappedMessage);
+    showToast({
+      title: mappedMessage,
+      variant: "error",
+    });
+  }
 
   function setScope(scope: RangeScope) {
     setRangeScope(scope);
@@ -307,16 +370,31 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     [client, t],
   );
 
+  useEffect(() => {
+    if (
+      !client ||
+      !selectedClassId ||
+      detailStatus !== "idle" ||
+      selectedClassDetail?.id === selectedClassId
+    ) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void loadClassDetail(selectedClassId);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [client, detailStatus, loadClassDetail, selectedClassDetail?.id, selectedClassId]);
+
   function openClassDetails(classId: string) {
     setSelectedClassId(classId);
     setSelectedClassDetail(null);
-    setOperationMessage(null);
     setOperationError(null);
     void loadClassDetail(classId);
   }
 
   async function registerForClass(item: ClassViewItem) {
-    setOperationMessage(null);
     setOperationError(null);
 
     if (!session) {
@@ -355,11 +433,18 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
       const result = await client.classes.register(item.id);
 
       if (result.error) {
-        setOperationError(result.error.message);
+        showOperationError(result.error.message);
         return;
       }
 
-      setOperationMessage(t(`classes.registrationStatus.${result.data.status}`));
+      showToast({
+        title: t(`classes.toast.${result.data.status}`),
+        description:
+          result.data.status === "pending"
+            ? t("classes.pendingRegistrationHint")
+            : undefined,
+        variant: result.data.status === "pending" ? "info" : "success",
+      });
       await loadClassDetail(item.id);
     } finally {
       setRegistrationMutation(null);
@@ -367,7 +452,6 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
   }
 
   async function cancelRegistration(item: ClassViewItem) {
-    setOperationMessage(null);
     setOperationError(null);
 
     if (!client || !item.userRegistrationState?.id) {
@@ -383,11 +467,14 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
       );
 
       if (result.error) {
-        setOperationError(result.error.message);
+        showOperationError(result.error.message);
         return;
       }
 
-      setOperationMessage(t("classes.cancelled"));
+      showToast({
+        title: t("classes.toast.cancelled"),
+        variant: "success",
+      });
       await loadClassDetail(item.id);
     } finally {
       setRegistrationMutation(null);
@@ -657,12 +744,6 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
               </p>
             )}
 
-            {operationMessage && (
-              <p className="rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-foreground/68">
-                {operationMessage}
-              </p>
-            )}
-
             {viewMode === "calendar" ? (
               <ClassCalendarView
                 rangeScope={rangeScope}
@@ -784,6 +865,11 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
           </div>
         </section>
       </div>
+      <ToastStack
+        toasts={toasts}
+        dir={i18n.dir()}
+        onDismiss={dismissToast}
+      />
     </main>
   );
 }

@@ -101,31 +101,35 @@ Goal: Replace mock upcoming-class content with live ClassKit classes after manag
 - [x] `done` Create the classes page
   - Description: Add a dedicated classes page for browsing available classes, selecting a class, and entering the customer booking flow from a focused class context.
   - Shape: "View all" should navigate to this page. Clicking a class preview should open the same page with that class focused.
-  - Progress: The existing lessons route now serves a public ClassKit-backed class browser with range controls, list/calendar views, selected-class focus, and customer registration actions that prompt unauthenticated users to sign in.
+  - Progress: The existing lessons route now serves a public ClassKit-backed class browser with range controls, list/calendar views, selected-class focus, and customer registration actions that prompt unauthenticated users to sign in. It uses customer-safe `classes.*` data, targeted class refreshes, and shared class presentation components.
 
-- [ ] `next` Link the landing "Upcoming Classes" section to real classes
+- [x] `done` Link the landing "Upcoming Classes" section to real classes
   - Description: Use ClassKit class list data for the landing-page preview so the cards reflect actual upcoming classes rather than static May mockups.
   - Shape: The section remains a preview; the full browsing and focused class behavior belongs on the classes page.
+  - Progress: The homepage preview now fetches the next three customer-visible upcoming classes through `classes.list`, keeps the existing card image treatment, and links each class to the customer classes page filtered to that class date with the class focused.
 
-- [ ] `open` Add class detail focus
+- [x] `done` Add class detail focus
   - Description: Give each class a durable focused state that can show richer ClassKit data such as description, category, location, capacity, registration policy, roster visibility, and the user's registration state when available.
+  - Progress: Customer class cards now open a focused detail surface as a desktop dialog or mobile drawer, fetch focused class data through `classes.get`, and show customer-safe details and registration state without exposing manager fields.
 
 ## Roadmap Step 4: Customer Registration
 
 Goal: Turn class browsing into a real customer booking experience through the ClassKit registration facade.
 
-- [ ] `open` Add class registration actions
+- [x] `done` Add class registration actions
   - Description: Allow eligible signed-in customers to register for a class, see pending or approved registration state, and cancel when ClassKit says cancellation is allowed.
   - Shape: Registration UI should respect active product membership, membership requirements, manager-user restrictions, temporal class state, and ClassKit-provided register/cancel flags.
+  - Progress: Signed-out users are routed to authentication before registering. Signed-in users can register or cancel through `classes.*`, see pending versus approved state, and receive localized toast confirmations and mapped cancellation-cutoff errors.
 
-- [ ] `open` Add registration-aware class presentation
+- [x] `done` Add registration-aware class presentation
   - Description: Show capacity, registration state, membership requirements, and roster/count information when the ClassKit response exposes those fields.
+  - Progress: Class cards and details now distinguish approved registrations from pending approval requests, show membership and registration policy context, and only display registered counts when the customer-facing response exposes them.
 
 ## Roadmap Step 5: Manager Schedule System
 
 Goal: Expand manager-owned schedule operations after the core manager class workflow and public class flow exist.
 
-- [ ] `open` Expand schedule management
+- [ ] `next` Expand schedule management
   - Description: Give the manager a fuller schedule workspace for maintaining recurring class patterns, generated availability, skipped dates, and schedule lifecycle state.
   - Why: Schedule management is not a customer-facing feature; it is an owner workflow that supports reliable public availability.
 
@@ -153,9 +157,11 @@ Goal: Make the platform feel cohesive after the core ClassKit workflows exist.
 
 - [ ] `open` Align copy and localization for platform flows
   - Description: Extend the current Hebrew, English, and Russian language support across class browsing, auth, profile, registration, schedule, and manager states.
+  - Progress: Customer class browsing, detail, registration, cancellation, pending approval, and toast states now have localized copy in Hebrew, English, and Russian. Broader platform copy can continue to be tightened as more workflows land.
 
 - [ ] `open` Tighten responsive platform navigation
   - Description: Ensure the landing page, classes page, schedule surface, auth/profile, and manager workspace are easy to move between on mobile and desktop.
+  - Progress: The shared site navigation controls now appear across the landing page, classes page, auth/profile, and manager workspace, with a compact header treatment and locale-aware menu behavior.
 
 - [ ] `open` Replace static pricing/logistics with product-aware content
   - Description: Revisit the current static lesson card and pricing table once ClassKit-backed classes and schedules exist, deciding what remains as marketing copy versus live operational data.
