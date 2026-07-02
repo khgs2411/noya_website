@@ -12,10 +12,21 @@ import { useTranslation } from "react-i18next";
 import { sortSchedules } from "@/features/manager/schedules/schedule-utils";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
-type MutationStatus = "idle" | "creating" | "updating" | "previewing" | "generating";
+type MutationStatus =
+  | "idle"
+  | "creating"
+  | "updating"
+  | "previewing"
+  | "generating"
+  | "pausing"
+  | "archiving"
+  | "skipping"
+  | "unskipping";
 
 type PreviewState = {
   scheduleId: string;
+  from: string;
+  through: string;
   occurrences: SchedulePreviewOccurrence[];
 } | null;
 
@@ -49,6 +60,15 @@ export function useManagedSchedules({
     [schedules, selectedScheduleId],
   );
 
+  const mergeSchedule = useCallback((schedule: Schedule) => {
+    setSchedules((current) => {
+      const existingIndex = current.findIndex((item) => item.id === schedule.id);
+      if (existingIndex === -1) return [...current, schedule];
+
+      return current.map((item) => (item.id === schedule.id ? schedule : item));
+    });
+  }, []);
+
   const refreshSchedules = useCallback(async () => {
     if (!client || !canManageSchedules) {
       setSchedules([]);
@@ -71,6 +91,17 @@ export function useManagedSchedules({
       setLoadStatus("error");
     }
   }, [canManageSchedules, client, t]);
+
+  const refreshPreview = useCallback(async () => {
+    if (!client || !preview) return;
+
+    const result = await client.management.schedules.preview({
+      scheduleId: preview.scheduleId,
+      from: preview.from,
+      through: preview.through,
+    });
+    setPreview({ ...preview, occurrences: result.occurrences });
+  }, [client, preview]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -159,7 +190,7 @@ export function useManagedSchedules({
       );
 
       if (result.ok) {
-        setPreview({ scheduleId, occurrences: result.result.occurrences });
+        setPreview({ scheduleId, from, through, occurrences: result.result.occurrences });
       }
 
       return result;
@@ -189,6 +220,85 @@ export function useManagedSchedules({
     [client, performMutation],
   );
 
+  const pauseSchedule = useCallback(
+    async (scheduleId: string) => {
+      const result = await performMutation(
+        "pausing",
+        () => client!.management.schedules.pause(scheduleId),
+        { refresh: true },
+      );
+
+      if (result.ok) mergeSchedule(result.result.schedule);
+
+      return result;
+    },
+    [client, mergeSchedule, performMutation],
+  );
+
+  const archiveSchedule = useCallback(
+    async (scheduleId: string) => {
+      const result = await performMutation(
+        "archiving",
+        () => client!.management.schedules.archive(scheduleId),
+        { refresh: true },
+      );
+
+      if (result.ok) {
+        mergeSchedule(result.result.schedule);
+        setPreview(null);
+      }
+
+      return result;
+    },
+    [client, mergeSchedule, performMutation],
+  );
+
+  const skipScheduleDate = useCallback(
+    async (scheduleId: string, date: string, reason?: string | null) => {
+      const result = await performMutation("skipping", () =>
+        client!.management.schedules.skipDate({ scheduleId, date, reason }),
+      );
+
+      if (result.ok) await refreshPreview();
+
+      return result;
+    },
+    [client, performMutation, refreshPreview],
+  );
+
+  const unskipScheduleDate = useCallback(
+    async (scheduleId: string, date: string) => {
+      const result = await performMutation("unskipping", () =>
+        client!.management.schedules.unskipDate({ scheduleId, date }),
+      );
+
+      if (result.ok) await refreshPreview();
+
+      return result;
+    },
+    [client, performMutation, refreshPreview],
+  );
+
+  const selectSchedule = useCallback(
+    (scheduleId: string) => {
+      setSelectedScheduleId(scheduleId);
+
+      if (!client || !canManageSchedules) return;
+
+      void client.management.schedules
+        .get(scheduleId)
+        .then((result) => mergeSchedule(result.schedule))
+        .catch((error) => {
+          setOperationError(
+            error instanceof Error
+              ? error.message
+              : t("manager.scheduleActions.actionFailed"),
+          );
+        });
+    },
+    [canManageSchedules, client, mergeSchedule, t],
+  );
+
   return {
     state: {
       schedules,
@@ -205,7 +315,7 @@ export function useManagedSchedules({
     },
     actions: {
       refreshSchedules,
-      selectSchedule: setSelectedScheduleId,
+      selectSchedule,
       clearSelection: () => setSelectedScheduleId(null),
       clearPreview: () => setPreview(null),
       clearGenerationResult: () => setGenerationResult(null),
@@ -213,6 +323,10 @@ export function useManagedSchedules({
       updateSchedule,
       previewSchedule,
       generateSchedule,
+      pauseSchedule,
+      archiveSchedule,
+      skipScheduleDate,
+      unskipScheduleDate,
     },
   };
 }

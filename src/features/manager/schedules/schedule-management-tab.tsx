@@ -164,7 +164,11 @@ export function ScheduleManagementTab({
             generationResult={state.generationResult}
             submitting={
               state.mutationStatus === "previewing" ||
-              state.mutationStatus === "generating"
+              state.mutationStatus === "generating" ||
+              state.mutationStatus === "pausing" ||
+              state.mutationStatus === "archiving" ||
+              state.mutationStatus === "skipping" ||
+              state.mutationStatus === "unskipping"
             }
             onClose={() => {
               actions.clearSelection();
@@ -184,6 +188,18 @@ export function ScheduleManagementTab({
             }}
             onGenerate={(scheduleId, generationCount) => {
               void actions.generateSchedule(scheduleId, generationCount);
+            }}
+            onPause={(scheduleId) => {
+              void actions.pauseSchedule(scheduleId);
+            }}
+            onArchive={(scheduleId) => {
+              void actions.archiveSchedule(scheduleId);
+            }}
+            onSkipDate={(scheduleId, date, reason) => {
+              void actions.skipScheduleDate(scheduleId, date, reason);
+            }}
+            onUnskipDate={(scheduleId, date) => {
+              void actions.unskipScheduleDate(scheduleId, date);
             }}
           />
 
@@ -215,4 +231,3 @@ export function ScheduleManagementTab({
     </section>
   );
 }
-

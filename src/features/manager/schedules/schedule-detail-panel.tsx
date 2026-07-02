@@ -4,7 +4,7 @@ import type {
   ScheduleGenerationResult,
   SchedulePreviewOccurrence,
 } from "@class-kit/react";
-import { CalendarSearch, Edit3, Play, X } from "lucide-react";
+import { Archive, CalendarOff, CalendarSearch, Edit3, Pause, Play, RotateCcw, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -25,6 +25,10 @@ type ScheduleDetailPanelProps = {
   onEdit: () => void;
   onPreview: (scheduleId: string, from: string, through: string) => void;
   onGenerate: (scheduleId: string, generationCount: number) => void;
+  onPause: (scheduleId: string) => void;
+  onArchive: (scheduleId: string) => void;
+  onSkipDate: (scheduleId: string, date: string, reason?: string | null) => void;
+  onUnskipDate: (scheduleId: string, date: string) => void;
 };
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -66,13 +70,20 @@ export function ScheduleDetailPanel({
   onEdit,
   onPreview,
   onGenerate,
+  onPause,
+  onArchive,
+  onSkipDate,
+  onUnskipDate,
 }: ScheduleDetailPanelProps) {
   const { t } = useTranslation();
   const [generationCount, setGenerationCount] = useState("8");
+  const [skipDate, setSkipDate] = useState("");
+  const [skipReason, setSkipReason] = useState("");
 
   if (!schedule) return null;
 
   const previewDefaults = getPreviewDefaults(schedule);
+  const skipDateValue = skipDate || previewDefaults.from;
   const currentPreview =
     preview?.scheduleId === schedule.id ? preview.occurrences : [];
   const generateDisabled =
@@ -81,6 +92,9 @@ export function ScheduleDetailPanel({
     !Number.isInteger(Number(generationCount)) ||
     Number(generationCount) < 1 ||
     Number(generationCount) > 52;
+  const pauseDisabled = submitting || schedule.status !== "active";
+  const archiveDisabled = submitting || schedule.status === "archived";
+  const skipDisabled = submitting || schedule.status === "archived" || !skipDateValue;
 
   return (
     <div
@@ -175,6 +189,82 @@ export function ScheduleDetailPanel({
 
         <section className="mt-5 rounded-xl border border-blush/24 bg-background/46 p-4">
           <p className="font-serif text-xl text-foreground">
+            {t("manager.scheduleLifecycle.title")}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-foreground/68">
+            {t("manager.scheduleLifecycle.body")}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              disabled={pauseDisabled}
+              onClick={() => onPause(schedule.id)}
+            >
+              <Pause className="size-4" aria-hidden="true" />
+              {t("manager.scheduleActions.pause")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              disabled={archiveDisabled}
+              onClick={() => onArchive(schedule.id)}
+            >
+              <Archive className="size-4" aria-hidden="true" />
+              {t("manager.scheduleActions.archive")}
+            </Button>
+          </div>
+        </section>
+
+        <section className="mt-5 rounded-xl border border-blush/24 bg-background/46 p-4">
+          <p className="font-serif text-xl text-foreground">
+            {t("manager.scheduleSkips.title")}
+          </p>
+          <p className="mt-2 text-sm leading-6 text-foreground/68">
+            {t("manager.scheduleSkips.body")}
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-[10rem_1fr_auto] sm:items-end">
+            <label className="block text-sm text-foreground/68">
+              <span>{t("manager.scheduleSkips.date")}</span>
+              <input
+                className="mt-2 min-h-11 w-full rounded-xl border border-blush/24 bg-background/70 px-3 text-foreground outline-none focus:border-blush-strong"
+                type="date"
+                value={skipDateValue}
+                onChange={(event) => setSkipDate(event.target.value)}
+              />
+            </label>
+            <label className="block text-sm text-foreground/68">
+              <span>{t("manager.scheduleSkips.reason")}</span>
+              <input
+                className="mt-2 min-h-11 w-full rounded-xl border border-blush/24 bg-background/70 px-3 text-foreground outline-none focus:border-blush-strong"
+                value={skipReason}
+                onChange={(event) => setSkipReason(event.target.value)}
+              />
+            </label>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              disabled={skipDisabled}
+              onClick={() => {
+                onSkipDate(
+                  schedule.id,
+                  skipDateValue,
+                  skipReason.trim() || null,
+                );
+                setSkipReason("");
+              }}
+            >
+              <CalendarOff className="size-4" aria-hidden="true" />
+              {t("manager.scheduleActions.skipDate")}
+            </Button>
+          </div>
+        </section>
+
+        <section className="mt-5 rounded-xl border border-blush/24 bg-background/46 p-4">
+          <p className="font-serif text-xl text-foreground">
             {t("manager.scheduleGenerate.title")}
           </p>
           <p className="mt-2 text-sm leading-6 text-foreground/68">
@@ -225,15 +315,42 @@ export function ScheduleDetailPanel({
               {currentPreview.slice(0, 8).map((occurrence) => (
                 <div
                   key={`${occurrence.date}-${occurrence.starts_at}`}
-                  className="rounded-xl border border-blush/24 bg-card/72 p-3 text-sm"
+                  className="flex flex-col gap-3 rounded-xl border border-blush/24 bg-card/72 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <p className="font-semibold text-foreground">
-                    {occurrence.date}
-                  </p>
-                  <p className="mt-1 text-foreground/68">
-                    {occurrence.local_start.slice(11, 16)} ·{" "}
-                    {occurrence.timezone}
-                  </p>
+                  <div>
+                    <p className="font-semibold text-foreground">
+                      {occurrence.date}
+                    </p>
+                    <p className="mt-1 text-foreground/68">
+                      {occurrence.local_start.slice(11, 16)} ·{" "}
+                      {occurrence.timezone}
+                    </p>
+                    {occurrence.skipped && (
+                      <p className="mt-2 inline-flex rounded-full border border-blush/24 px-2 py-1 text-xs font-semibold text-foreground/68">
+                        {t("manager.schedulePreview.skipped")}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={submitting || schedule.status === "archived"}
+                    onClick={() =>
+                      occurrence.skipped
+                        ? onUnskipDate(schedule.id, occurrence.date)
+                        : onSkipDate(schedule.id, occurrence.date, null)
+                    }
+                  >
+                    {occurrence.skipped ? (
+                      <RotateCcw className="size-4" aria-hidden="true" />
+                    ) : (
+                      <CalendarOff className="size-4" aria-hidden="true" />
+                    )}
+                    {occurrence.skipped
+                      ? t("manager.scheduleActions.unskipDate")
+                      : t("manager.scheduleActions.skipDate")}
+                  </Button>
                 </div>
               ))}
             </div>
@@ -243,4 +360,3 @@ export function ScheduleDetailPanel({
     </div>
   );
 }
-

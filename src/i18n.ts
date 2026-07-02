@@ -328,6 +328,10 @@ const resources = {
           save: 'Save changes',
           preview: 'Preview dates',
           generate: 'Generate classes',
+          pause: 'Pause schedule',
+          archive: 'Archive schedule',
+          skipDate: 'Skip date',
+          unskipDate: 'Restore date',
         },
         scheduleCard: {
           unknownTemplate: 'Unknown template',
@@ -344,6 +348,16 @@ const resources = {
           dates: 'Dates',
           time: 'Time',
           timezone: 'Timezone',
+        },
+        scheduleLifecycle: {
+          title: 'Schedule lifecycle',
+          body: 'Pause future generation or archive a schedule that should no longer be used.',
+        },
+        scheduleSkips: {
+          title: 'Skipped dates',
+          body: 'Skip a specific generated date without changing the whole schedule rule.',
+          date: 'Date',
+          reason: 'Reason',
         },
         scheduleForm: {
           createTitle: 'Create schedule',
@@ -377,6 +391,7 @@ const resources = {
         },
         schedulePreview: {
           title: 'Preview dates',
+          skipped: 'Skipped',
         },
       },
       auth: {
@@ -882,6 +897,10 @@ const resources = {
           save: 'Сохранить',
           preview: 'Предпросмотр дат',
           generate: 'Создать занятия',
+          pause: 'Поставить на паузу',
+          archive: 'В архив',
+          skipDate: 'Пропустить дату',
+          unskipDate: 'Вернуть дату',
         },
         scheduleCard: {
           unknownTemplate: 'Неизвестный шаблон',
@@ -898,6 +917,16 @@ const resources = {
           dates: 'Даты',
           time: 'Время',
           timezone: 'Часовой пояс',
+        },
+        scheduleLifecycle: {
+          title: 'Жизненный цикл расписания',
+          body: 'Поставьте на паузу будущую генерацию или отправьте расписание в архив, если оно больше не используется.',
+        },
+        scheduleSkips: {
+          title: 'Пропущенные даты',
+          body: 'Пропустите конкретную дату генерации, не меняя всё правило расписания.',
+          date: 'Дата',
+          reason: 'Причина',
         },
         scheduleForm: {
           createTitle: 'Создать расписание',
@@ -931,6 +960,7 @@ const resources = {
         },
         schedulePreview: {
           title: 'Предпросмотр дат',
+          skipped: 'Пропущено',
         },
       },
       auth: {
@@ -1436,6 +1466,10 @@ const resources = {
           save: 'שמירת שינויים',
           preview: 'תצוגת תאריכים',
           generate: 'הפקת שיעורים',
+          pause: 'השהיית מערכת',
+          archive: 'העברה לארכיון',
+          skipDate: 'דילוג על תאריך',
+          unskipDate: 'החזרת תאריך',
         },
         scheduleCard: {
           unknownTemplate: 'תבנית לא ידועה',
@@ -1452,6 +1486,16 @@ const resources = {
           dates: 'תאריכים',
           time: 'שעה',
           timezone: 'אזור זמן',
+        },
+        scheduleLifecycle: {
+          title: 'מחזור חיי מערכת',
+          body: 'השהיית הפקות עתידיות או העברת מערכת לארכיון כשהיא כבר לא בשימוש.',
+        },
+        scheduleSkips: {
+          title: 'תאריכים שדולגו',
+          body: 'דילוג על תאריך הפקה מסוים בלי לשנות את כלל המערכת כולו.',
+          date: 'תאריך',
+          reason: 'סיבה',
         },
         scheduleForm: {
           createTitle: 'יצירת מערכת',
@@ -1485,6 +1529,7 @@ const resources = {
         },
         schedulePreview: {
           title: 'תצוגת תאריכים',
+          skipped: 'דולג',
         },
       },
       auth: {

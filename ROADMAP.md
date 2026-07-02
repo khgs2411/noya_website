@@ -167,16 +167,17 @@ Goal: Give managers product-scoped administration tools for users, roles, and pe
 
 Goal: Expand manager-owned schedule operations after the core manager class workflow and public class flow exist.
 
-- [ ] `next` Add schedule lifecycle and skipped-date management
+- [x] `done` Add schedule lifecycle and skipped-date management
   - Description: Give the manager a fuller schedule workspace for maintaining recurring class patterns, generated availability, skipped dates, and schedule lifecycle state.
   - Why: Schedule management is not a customer-facing feature; it is an owner workflow that supports reliable public availability. Keep this slice focused on schedule source rules, generated concrete class instantiation, and date exceptions before adding class-session attendance operations.
   - Shape: Use `management.schedules.*` for focused schedule detail, generation, pause, archive, skip, and unskip workflows. Schedules remain source rules, not customer-visible classes or registration targets. Generated classes are concrete class instances that later flow into class-session lifecycle operations. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Schedules, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Capability Map.
+  - Progress: The manager schedule detail workflow now supports focused schedule refresh, generation, pause, archive, and date skip/unskip controls through `management.schedules.*`.
 
 ## Roadmap Step 8: Class Session Lifecycle And Attendance
 
 Goal: Let managers operate concrete class sessions once schedule and class inventory exists.
 
-- [ ] `open` Add class attendance and session reporting
+- [ ] `next` Add class attendance and session reporting
   - Description: Let the manager start a concrete class session, view approved registered participants, mark attendance, add supported walk-in or trial participants, complete the class, and view the resulting class attendance report.
   - Why: This is not schedule management and it is not pending registration review. It operates on concrete class sessions after classes have been created manually or generated from schedules.
   - Shape: Use `management.attendance.*` for `listForClass`, `start`, `updateParticipant`, `addWalkIn`, `addTrial`, and `complete`. Use approved registration data only as roster context; pending approval workflows remain in Step 5. Current SDK docs expose attendance lifecycle actions, but not a separate report endpoint, so the report view should be derived from class state and attendance participants unless ClassKit adds a dedicated report API. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Attendance, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Attendance lifecycle.
