@@ -167,15 +167,21 @@ Goal: Give managers product-scoped administration tools for users, roles, and pe
 
 Goal: Expand manager-owned schedule operations after the core manager class workflow and public class flow exist.
 
-- [ ] `next` Expand schedule management
+- [ ] `next` Add schedule lifecycle and skipped-date management
   - Description: Give the manager a fuller schedule workspace for maintaining recurring class patterns, generated availability, skipped dates, and schedule lifecycle state.
-  - Why: Schedule management is not a customer-facing feature; it is an owner workflow that supports reliable public availability.
+  - Why: Schedule management is not a customer-facing feature; it is an owner workflow that supports reliable public availability. Keep this slice focused on schedule source rules, generated concrete class instantiation, and date exceptions before adding class-session attendance operations.
+  - Shape: Use `management.schedules.*` for focused schedule detail, generation, pause, archive, skip, and unskip workflows. Schedules remain source rules, not customer-visible classes or registration targets. Generated classes are concrete class instances that later flow into class-session lifecycle operations. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Schedules, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Capability Map.
 
-- [ ] `open` Add registration and attendance operations
-  - Description: Let the manager review approved registrations and manage attendance for classes after the pending-request workflow is in place.
-  - Shape: Pending approval workflows live in Step 5. Attendance remains a class-session operational workflow under `management.attendance.*`.
+## Roadmap Step 8: Class Session Lifecycle And Attendance
 
-## Roadmap Step 8: Membership Management
+Goal: Let managers operate concrete class sessions once schedule and class inventory exists.
+
+- [ ] `open` Add class attendance and session reporting
+  - Description: Let the manager start a concrete class session, view approved registered participants, mark attendance, add supported walk-in or trial participants, complete the class, and view the resulting class attendance report.
+  - Why: This is not schedule management and it is not pending registration review. It operates on concrete class sessions after classes have been created manually or generated from schedules.
+  - Shape: Use `management.attendance.*` for `listForClass`, `start`, `updateParticipant`, `addWalkIn`, `addTrial`, and `complete`. Use approved registration data only as roster context; pending approval workflows remain in Step 5. Current SDK docs expose attendance lifecycle actions, but not a separate report endpoint, so the report view should be derived from class state and attendance participants unless ClassKit adds a dedicated report API. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Attendance, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Attendance lifecycle.
+
+## Roadmap Step 9: Membership Management
 
 Goal: Expose ClassKit membership administration through the manager interface without making this website own payment processing or membership business rules.
 
@@ -187,7 +193,7 @@ Goal: Expose ClassKit membership administration through the manager interface wi
   - Description: Let authorized managers assign, update, replace, or remove a user's membership once the needed SDK facade methods are available.
   - Shape: ClassKit backend supports membership type creation, grants, upgrades, revocation, and ledger operations, but current docs identify SDK facade gaps for those mutations. Product website implementation should add/use SDK facade methods before using those operations; do not call raw Edge Functions from this website. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Function-to-SDK map.
 
-## Roadmap Step 9: Static Lessons And External Schedule Content
+## Roadmap Step 10: Static Lessons And External Schedule Content
 
 Goal: Preserve the current read-only lessons/schedule content as client-owned information while the ClassKit platform takes over managed classes.
 
@@ -199,7 +205,7 @@ Goal: Preserve the current read-only lessons/schedule content as client-owned in
   - Description: Make the retained static lessons content feel like part of the same product without confusing it with ClassKit-managed classes or manager-owned schedules.
   - Progress: The static schedule now shares a reusable card between the homepage section and the legacy read-only route.
 
-## Roadmap Step 10: Platform Polish
+## Roadmap Step 11: Platform Polish
 
 Goal: Make the platform feel cohesive after the core ClassKit workflows exist.
 
