@@ -4,7 +4,6 @@ import { FeaturedClassesSection } from "./featured-classes-section";
 import { GallerySection } from "./gallery-section";
 import { HeroSection } from "./hero-section";
 import { ImageLightbox } from "./image-lightbox";
-import { MobileMenu } from "./mobile-menu";
 import { ReadonlyScheduleSection } from "./readonly-schedule-section";
 import { ServicesSection } from "./services-section";
 
@@ -15,10 +14,7 @@ export function LandingPage({
   activeImage,
   onToggleTheme,
   onOpenAccount,
-  onOpenManager,
-  canEnterManager,
   onOpenMenu,
-  onCloseMenu,
   onToggleAbout,
   onSelectImage,
   onCloseImage,
@@ -29,10 +25,7 @@ export function LandingPage({
   activeImage: string | null;
   onToggleTheme: () => void;
   onOpenAccount: () => void;
-  onOpenManager: () => void;
-  canEnterManager: boolean;
   onOpenMenu: () => void;
-  onCloseMenu: () => void;
   onToggleAbout: () => void;
   onSelectImage: (image: string) => void;
   onCloseImage: () => void;
@@ -52,17 +45,6 @@ export function LandingPage({
       <GallerySection onSelectImage={onSelectImage} />
       <ReadonlyScheduleSection />
       <ContactSection />
-
-      {menuOpen && (
-        <MobileMenu
-          theme={theme}
-          onToggleTheme={onToggleTheme}
-          onOpenAccount={onOpenAccount}
-          onOpenManager={onOpenManager}
-          canEnterManager={canEnterManager}
-          onClose={onCloseMenu}
-        />
-      )}
 
       {activeImage && (
         <ImageLightbox image={activeImage} onClose={onCloseImage} />

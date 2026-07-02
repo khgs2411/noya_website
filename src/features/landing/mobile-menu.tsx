@@ -42,7 +42,7 @@ export function MobileMenu({
       >
         <div className="relative overflow-hidden rounded-[1.2rem] border border-blush/35 bg-background/72 p-3.5 shadow-soft">
           <div className="floral-mark opacity-15" aria-hidden="true" />
-          <a href="#top" className="relative z-10 block leading-none" onClick={onClose}>
+          <a href="./#top" className="relative z-10 block leading-none" onClick={onClose}>
             <span className="font-display block text-4xl text-blush-strong">
               {t("brand.name")}
             </span>
@@ -98,16 +98,16 @@ export function MobileMenu({
               <Settings className="size-4 opacity-55 transition group-hover:opacity-90" />
             </button>
           )}
-          <SidebarLink href="#about" onClick={onClose}>
+          <SidebarLink href="./#about" onClick={onClose}>
             {t("nav.about")}
           </SidebarLink>
-          <SidebarLink href="#work" onClick={onClose}>
+          <SidebarLink href="./#work" onClick={onClose}>
             {t("nav.work")}
           </SidebarLink>
           <SidebarLink href={lessonsPath} onClick={onClose}>
             {t("nav.classes")}
           </SidebarLink>
-          <SidebarLink href="#contact" onClick={onClose}>
+          <SidebarLink href="./#contact" onClick={onClose}>
             {t("nav.contact")}
           </SidebarLink>
         </nav>

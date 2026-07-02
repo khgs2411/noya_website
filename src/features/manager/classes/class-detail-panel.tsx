@@ -39,6 +39,8 @@ export function ClassDetailPanel({
     timeStyle: "short",
   });
   const editable = canManageClasses && !managedClass.read_only;
+  const description = managedClass.description?.trim();
+  const notes = managedClass.notes?.trim();
 
   return (
     <div
@@ -86,8 +88,14 @@ export function ClassDetailPanel({
             label={t("manager.detail.location")}
             value={managedClass.location ?? t("manager.detail.noLocation")}
           />
-          {managedClass.notes && (
-            <DetailRow label={t("manager.detail.notes")} value={managedClass.notes} />
+          {description && (
+            <DetailRow
+              label={t("manager.detail.description")}
+              value={description}
+            />
+          )}
+          {notes && (
+            <DetailRow label={t("manager.detail.notes")} value={notes} />
           )}
           {managedClass.read_only_reason && (
             <DetailRow

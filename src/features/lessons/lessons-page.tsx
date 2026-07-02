@@ -7,6 +7,7 @@ import {
 import {
   AlertCircle,
   CheckCircle2,
+  Clock,
   Loader2,
   LogIn,
   RefreshCw,
@@ -43,6 +44,21 @@ type RegistrationMutation =
 
 type DetailStatus = "idle" | "loading" | "loaded" | "error";
 
+function getCustomerStatusLabel(
+  classSummary: ClassSummary,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  const temporalStatus = classSummary.temporalStatus;
+  const classDateKey = getLocalDateKey(new Date(classSummary.startsAt));
+  const todayKey = getLocalDateKey(new Date());
+
+  if (temporalStatus === "upcoming" && classDateKey !== todayKey) {
+    return undefined;
+  }
+
+  return t(`classes.temporalStatus.${temporalStatus}`);
+}
+
 function toClassViewItem(
   classSummary: ClassSummary,
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -65,7 +81,7 @@ function toClassViewItem(
     canCancelRegistration: classSummary.canCancelRegistration,
     userRegistrationState: classSummary.userRegistrationState,
     temporalStatus: classSummary.temporalStatus,
-    statusLabel: t(`classes.temporalStatus.${classSummary.temporalStatus}`),
+    statusLabel: getCustomerStatusLabel(classSummary, t),
     capacityLabel:
       classSummary.registeredUsersCount === undefined
         ? t("classes.capacity", { count: classSummary.capacity })
@@ -379,14 +395,16 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
   }
 
   function renderClassMeta(item: ClassViewItem) {
-    if (!item.category && !item.description) return null;
+    const description = item.description?.trim();
+
+    if (!item.category && !description) return null;
 
     return (
       <div className="mt-3 grid gap-2 text-sm text-foreground/68">
         {item.category && (
           <p className="font-semibold text-foreground/72">{item.category}</p>
         )}
-        {item.description && <p className="leading-6">{item.description}</p>}
+        {description && <p className="leading-6">{description}</p>}
       </div>
     );
   }
@@ -397,12 +415,28 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     const registrationState = item.userRegistrationState?.status;
 
     if (registrationState === "approved" || registrationState === "pending") {
+      const pending = registrationState === "pending";
+
       return (
         <>
-          <span className="inline-flex items-center gap-2 rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/68">
-            <CheckCircle2 className="size-4 text-blush-strong" aria-hidden="true" />
-            {t(`classes.registrationStatus.${registrationState}`)}
-          </span>
+          <div className="grid gap-1">
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/68">
+              {pending ? (
+                <Clock className="size-4 text-blush-strong" aria-hidden="true" />
+              ) : (
+                <CheckCircle2
+                  className="size-4 text-blush-strong"
+                  aria-hidden="true"
+                />
+              )}
+              {t(`classes.registrationStatus.${registrationState}`)}
+            </span>
+            {pending && (
+              <span className="max-w-64 text-xs leading-5 text-foreground/58">
+                {t("classes.pendingRegistrationHint")}
+              </span>
+            )}
+          </div>
           <Button
             type="button"
             size="sm"
@@ -416,15 +450,10 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
             ) : (
               <XCircle className="size-4" aria-hidden="true" />
             )}
-            {item.canCancelRegistration
-              ? t("classes.cancelRegistration")
-              : t("classes.cancelRegistrationRequest")}
+            {pending
+              ? t("classes.cancelRegistrationRequest")
+              : t("classes.cancelRegistration")}
           </Button>
-          {!item.canCancelRegistration && (
-            <span className="text-xs leading-5 text-foreground/52">
-              {t("classes.cancelRegistrationFallback")}
-            </span>
-          )}
         </>
       );
     }
@@ -482,6 +511,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
   }
 
   function renderClassFacts(item: ClassViewItem) {
+    const description = item.description?.trim();
     const facts = [
       {
         label: t("classes.detail.time"),
@@ -516,6 +546,12 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
             value: t("classes.cancellationCutoff", {
               count: item.cancellationCutoffHours,
             }),
+          }
+        : null,
+      description
+        ? {
+            label: t("classes.detail.description"),
+            value: description,
           }
         : null,
     ].filter((fact): fact is { label: string; value: string } => Boolean(fact));
@@ -717,12 +753,6 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
                   {detailStatus === "error" && (
                     <p className="mt-5 rounded-xl border border-blush/24 bg-background/46 p-4 text-sm leading-6 text-blush-strong">
                       {detailError ?? t("classes.detail.error")}
-                    </p>
-                  )}
-
-                  {selectedClass.description && (
-                    <p className="mt-5 text-sm leading-6 text-foreground/68">
-                      {selectedClass.description}
                     </p>
                   )}
 

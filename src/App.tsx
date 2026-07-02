@@ -1,5 +1,5 @@
 import { useProductContext } from "@class-kit/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import {
   authPath,
@@ -10,9 +10,11 @@ import {
   managerPath,
   profilePath,
 } from "@/content/site-content";
+import { SiteHeader } from "@/components/site/site-header";
 import { AuthPage } from "@/features/account/auth-page";
 import { ProfilePage } from "@/features/account/profile-page";
 import { LandingPage } from "@/features/landing/landing-page";
+import { MobileMenu } from "@/features/landing/mobile-menu";
 import { LessonsPage } from "@/features/lessons/lessons-page";
 import { ManagerPage } from "@/features/manager/manager-page";
 import { useTheme } from "@/hooks/use-theme";
@@ -53,9 +55,13 @@ export default function App() {
   useEffect(() => {
     if (!isManagerPath(route.pathname) || loading || canEnterManager) return;
 
-    window.history.replaceState({}, "", "./");
-    setRoute(getCurrentRoute());
-    setMenuOpen(false);
+    const timeoutId = window.setTimeout(() => {
+      window.history.replaceState({}, "", "./");
+      setRoute(getCurrentRoute());
+      setMenuOpen(false);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [canEnterManager, loading, route.pathname]);
 
   function navigateTo(path: string) {
@@ -77,29 +83,61 @@ export default function App() {
       ? "signup"
       : "signin";
 
+  function renderWithMenu(page: ReactNode, showHeader: boolean) {
+    return (
+      <>
+        {showHeader && (
+          <div className="bg-background text-foreground">
+            <SiteHeader
+              theme={theme}
+              menuOpen={menuOpen}
+              onToggleTheme={toggleTheme}
+              onOpenAccount={openAccount}
+              onOpenMenu={() => setMenuOpen(true)}
+            />
+          </div>
+        )}
+        {page}
+        {menuOpen && (
+          <MobileMenu
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onOpenAccount={openAccount}
+            onOpenManager={openManager}
+            canEnterManager={canEnterManager}
+            onClose={() => setMenuOpen(false)}
+          />
+        )}
+      </>
+    );
+  }
+
   if (isAuthPath(route.pathname)) {
-    return <AuthPage requestedMode={authMode} onNavigate={navigateTo} />;
+    return renderWithMenu(
+      <AuthPage requestedMode={authMode} onNavigate={navigateTo} />,
+      true,
+    );
   }
 
   if (isProfilePath(route.pathname)) {
-    return <ProfilePage onNavigate={navigateTo} />;
+    return renderWithMenu(<ProfilePage onNavigate={navigateTo} />, true);
   }
 
   if (isManagerPath(route.pathname)) {
     if (loading) {
-      return <ManagerPage loading />;
+      return renderWithMenu(<ManagerPage loading />, true);
     }
 
     if (canEnterManager) {
-      return <ManagerPage />;
+      return renderWithMenu(<ManagerPage />, true);
     }
   }
 
   if (isLessonsPath(route.pathname)) {
-    return <LessonsPage onNavigate={navigateTo} />;
+    return renderWithMenu(<LessonsPage onNavigate={navigateTo} />, true);
   }
 
-  return (
+  return renderWithMenu(
     <LandingPage
       theme={theme}
       menuOpen={menuOpen}
@@ -107,13 +145,11 @@ export default function App() {
       activeImage={activeImage}
       onToggleTheme={toggleTheme}
       onOpenAccount={openAccount}
-      onOpenManager={openManager}
-      canEnterManager={canEnterManager}
       onOpenMenu={() => setMenuOpen(true)}
-      onCloseMenu={() => setMenuOpen(false)}
       onToggleAbout={() => setAboutExpanded((current) => !current)}
       onSelectImage={setActiveImage}
       onCloseImage={() => setActiveImage(null)}
-    />
+    />,
+    false,
   );
 }
