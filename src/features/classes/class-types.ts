@@ -1,5 +1,10 @@
 type RegistrationStatusValue = "pending" | "approved" | "rejected" | "cancelled";
 type ClassTemporalStatusValue = "upcoming" | "started" | "ended" | "cancelled";
+type ClassLifecycleStatusValue =
+  | "created"
+  | "cancelled"
+  | "in_progress"
+  | "completed";
 type MembershipRequirementValue = "none" | "required";
 type RegistrationPolicyValue =
   | "auto_approve"
@@ -25,6 +30,7 @@ export type ClassViewItem = {
   canCancelRegistration?: boolean;
   userRegistrationState?: { id: string; status: RegistrationStatusValue } | null;
   temporalStatus?: ClassTemporalStatusValue;
+  lifecycleStatus?: ClassLifecycleStatusValue;
   statusLabel?: string;
   capacityLabel?: string;
 };

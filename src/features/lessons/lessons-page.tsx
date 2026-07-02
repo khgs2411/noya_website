@@ -723,7 +723,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
 
   return (
     <main className="min-h-screen bg-background px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 text-foreground sm:px-8 md:pb-10">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto w-full max-w-6xl xl:max-w-[95vw]">
         <a
           href="./"
           className="inline-flex text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"

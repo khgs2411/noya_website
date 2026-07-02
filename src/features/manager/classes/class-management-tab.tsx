@@ -1,11 +1,15 @@
 import { useProductContext } from "@class-kit/react";
+import type { ClassKitClient, ManagedClass } from "@class-kit/react";
 import {
   AlertCircle,
   CalendarPlus,
+  CheckCircle2,
+  FileText,
   Loader2,
+  Play,
   RefreshCw,
   Send,
-  Undo2,
+  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -21,6 +25,7 @@ import type {
 import { ClassCancelDialog } from "@/features/manager/classes/class-cancel-dialog";
 import { ClassDetailPanel } from "@/features/manager/classes/class-detail-panel";
 import { ClassFormDialog } from "@/features/manager/classes/class-form-dialog";
+import { ClassAttendanceForm } from "@/features/manager/attendance/class-attendance-form";
 import { useManagedClasses } from "@/features/manager/classes/use-managed-classes";
 import { useManagedTemplates } from "@/features/manager/templates/use-managed-templates";
 
@@ -35,15 +40,109 @@ type FormSurface =
   | { mode: "edit"; classId: string }
   | null;
 
+type AttendanceSurface = { classId: string } | null;
+
 function getManagerStatusLabel(
-  managedClass: { status: string; temporal_status: string },
+  managedClass: {
+    status: string;
+    temporal_status: string;
+    lifecycle_status?: string;
+  },
   t: (key: string) => string,
 ) {
+  if (managedClass.lifecycle_status === "in_progress") {
+    return t("manager.attendance.lifecycle.inProgress");
+  }
+
+  if (managedClass.lifecycle_status === "completed") {
+    return t("manager.attendance.lifecycle.completed");
+  }
+
   if (managedClass.temporal_status !== "upcoming") {
     return t(`classes.temporalStatus.${managedClass.temporal_status}`);
   }
 
   return t(`manager.classStatus.${managedClass.status}`);
+}
+
+function getAttendanceAction(
+  managedClass: ManagedClass,
+  canManageAttendance: boolean,
+) {
+  if (!canManageAttendance || managedClass.status !== "published") return null;
+  if (managedClass.lifecycle_status === "in_progress") return "manage";
+  if (managedClass.lifecycle_status === "completed") return "report";
+  if (
+    managedClass.lifecycle_status === "created" &&
+    managedClass.temporal_status !== "ended" &&
+    managedClass.temporal_status !== "cancelled" &&
+    managedClass.read_only_reason !== "ended"
+  ) {
+    return "start";
+  }
+
+  return null;
+}
+
+function AttendanceSurfaceDialog({
+  client,
+  managedClass,
+  canManageAttendance,
+  canManageRegistrations,
+  onClose,
+  onClassChanged,
+}: {
+  client: ClassKitClient | null;
+  managedClass: ManagedClass | null;
+  canManageAttendance: boolean;
+  canManageRegistrations: boolean;
+  onClose: () => void;
+  onClassChanged: () => void | Promise<void>;
+}) {
+  const { t } = useTranslation();
+
+  if (!managedClass) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-end bg-black/50 p-0 md:place-items-center md:p-6"
+      onClick={onClose}
+    >
+      <aside
+        className="max-h-[92vh] w-full overflow-y-auto rounded-t-[1.4rem] border border-blush/24 bg-background p-5 text-foreground shadow-soft md:max-w-xl md:rounded-[1.4rem] md:bg-card/95"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <header className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
+              {t("manager.attendance.surfaceEyebrow")}
+            </p>
+            <h2 className="mt-2 break-words font-serif text-3xl text-foreground">
+              {managedClass.name}
+            </h2>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={onClose}
+            aria-label={t("actions.close")}
+          >
+            <X className="size-5" aria-hidden="true" />
+          </Button>
+        </header>
+        <ClassAttendanceForm
+          client={client}
+          managedClass={managedClass}
+          canManageAttendance={canManageAttendance}
+          canManageRegistrations={canManageRegistrations}
+          className="mt-5"
+          onClassChanged={onClassChanged}
+        />
+      </aside>
+    </div>
+  );
 }
 
 export function ClassManagementTab({
@@ -53,6 +152,8 @@ export function ClassManagementTab({
 }: ClassManagementTabProps) {
   const { t } = useTranslation();
   const [formSurface, setFormSurface] = useState<FormSurface>(null);
+  const [attendanceSurface, setAttendanceSurface] =
+    useState<AttendanceSurface>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const { client } = useProductContext();
   const managedClasses = useManagedClasses({ client, canManageClasses });
@@ -64,6 +165,12 @@ export function ClassManagementTab({
   const formClass =
     formSurface?.mode === "edit"
       ? state.classes.find((managedClass) => managedClass.id === formSurface.classId) ?? state.selectedClass
+      : null;
+  const attendanceClass =
+    attendanceSurface?.classId
+      ? state.classes.find(
+          (managedClass) => managedClass.id === attendanceSurface.classId,
+        ) ?? null
       : null;
   const classById = useMemo(
     () =>
@@ -88,6 +195,7 @@ export function ClassManagementTab({
           pendingRegistrationCount: managedClass.pendingRegistrationCount,
           registrationOpen: managedClass.registration_open,
           temporalStatus: managedClass.temporal_status,
+          lifecycleStatus: managedClass.lifecycle_status,
           statusLabel: getManagerStatusLabel(managedClass, t),
           capacityLabel: t("manager.classCard.capacity", {
             count: managedClass.capacity,
@@ -109,12 +217,12 @@ export function ClassManagementTab({
       state.canManageClasses &&
       !managedClass.read_only &&
       managedClass.status === "draft";
-    const canDraft =
-      state.canManageClasses &&
-      !managedClass.read_only &&
-      managedClass.status === "published";
+    const attendanceAction = getAttendanceAction(
+      managedClass,
+      canManageAttendance,
+    );
 
-    if (!canPublish && !canDraft) return null;
+    if (!canPublish && !attendanceAction) return null;
 
     return (
       <>
@@ -130,17 +238,24 @@ export function ClassManagementTab({
             {t("manager.classActions.publish")}
           </Button>
         )}
-        {canDraft && (
+        {attendanceAction && (
           <Button
             type="button"
             size="sm"
-            variant="outline"
             className="rounded-full"
-            disabled={state.mutationStatus !== "idle"}
-            onClick={() => actions.draftClass(item.id)}
+            variant={attendanceAction === "start" ? "default" : "outline"}
+            onClick={() => setAttendanceSurface({ classId: item.id })}
           >
-            <Undo2 className="size-4" aria-hidden="true" />
-            {t("manager.classActions.moveToDraft")}
+            {attendanceAction === "start" && (
+              <Play className="size-4" aria-hidden="true" />
+            )}
+            {attendanceAction === "manage" && (
+              <CheckCircle2 className="size-4" aria-hidden="true" />
+            )}
+            {attendanceAction === "report" && (
+              <FileText className="size-4" aria-hidden="true" />
+            )}
+            {t(`manager.attendance.cardAction.${attendanceAction}`)}
           </Button>
         )}
       </>
@@ -300,6 +415,7 @@ export function ClassManagementTab({
                     selectedClassId={state.selectedClassId}
                     labelPrefix="manager"
                     onSelectClass={actions.selectClass}
+                    renderItemActions={renderManagerClassActions}
                   />
                 ) : (
                   listView
@@ -357,6 +473,20 @@ export function ClassManagementTab({
             errorMessage={state.operationError}
             onClose={() => setCancelOpen(false)}
             onConfirm={actions.cancelClass}
+          />
+
+          <AttendanceSurfaceDialog
+            client={client}
+            managedClass={attendanceClass}
+            canManageAttendance={canManageAttendance}
+            canManageRegistrations={canManageRegistrations}
+            onClose={() => setAttendanceSurface(null)}
+            onClassChanged={async () => {
+              await actions.refreshVisibleRange({
+                preserveExistingOnFailure: true,
+                silent: true,
+              });
+            }}
           />
         </div>
       ) : (

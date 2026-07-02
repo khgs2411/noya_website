@@ -228,6 +228,7 @@ const resources = {
         },
         attendance: {
           title: 'Attendance',
+          surfaceEyebrow: 'Class operations',
           body: 'Start the class, mark attendance, and add walk-in or trial participants.',
           reportBody: 'Class attendance is complete. Review the final attendance report here.',
           refresh: 'Refresh',
@@ -239,6 +240,15 @@ const resources = {
           total: 'Total',
           present: 'Present',
           absent: 'Absent',
+          lifecycle: {
+            inProgress: 'In progress',
+            completed: 'Completed',
+          },
+          cardAction: {
+            start: 'Start attendance',
+            manage: 'Manage attendance',
+            report: 'View report',
+          },
           start: 'Start attendance',
           complete: 'Complete class',
           markPresent: 'Present',
@@ -840,6 +850,7 @@ const resources = {
         },
         attendance: {
           title: 'Посещаемость',
+          surfaceEyebrow: 'Операции занятия',
           body: 'Начните занятие, отметьте посещаемость и добавьте гостевых или пробных участников.',
           reportBody: 'Посещаемость занятия завершена. Итоговый отчет доступен здесь.',
           refresh: 'Обновить',
@@ -851,6 +862,15 @@ const resources = {
           total: 'Всего',
           present: 'Присутствуют',
           absent: 'Отсутствуют',
+          lifecycle: {
+            inProgress: 'Идет занятие',
+            completed: 'Завершено',
+          },
+          cardAction: {
+            start: 'Начать посещаемость',
+            manage: 'Управлять посещаемостью',
+            report: 'Отчет',
+          },
           start: 'Начать посещаемость',
           complete: 'Завершить занятие',
           markPresent: 'Присутствует',
@@ -1452,6 +1472,7 @@ const resources = {
         },
         attendance: {
           title: 'נוכחות',
+          surfaceEyebrow: 'תפעול שיעור',
           body: 'התחלת שיעור, סימון נוכחות והוספת משתתפות אורחות או ניסיון.',
           reportBody: 'נוכחות השיעור הושלמה. דוח הנוכחות הסופי מופיע כאן.',
           refresh: 'רענון',
@@ -1463,6 +1484,15 @@ const resources = {
           total: 'סה״כ',
           present: 'נוכחות',
           absent: 'חסרות',
+          lifecycle: {
+            inProgress: 'בתהליך',
+            completed: 'הושלם',
+          },
+          cardAction: {
+            start: 'התחלת נוכחות',
+            manage: 'ניהול נוכחות',
+            report: 'צפייה בדוח',
+          },
           start: 'התחלת נוכחות',
           complete: 'סיום שיעור',
           markPresent: 'נוכחת',

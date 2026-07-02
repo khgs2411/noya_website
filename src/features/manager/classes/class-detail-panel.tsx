@@ -3,7 +3,7 @@ import { Ban, Edit3, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { ClassAttendancePanel } from "@/features/manager/attendance/class-attendance-panel";
+import { ClassAttendanceForm } from "@/features/manager/attendance/class-attendance-form";
 import { PendingRegistrationsPanel } from "@/features/manager/registrations/pending-registrations-panel";
 
 type ClassDetailPanelProps = {
@@ -138,7 +138,7 @@ export function ClassDetailPanel({
             onChanged={onRegistrationsChanged}
           />
         </section>
-        <ClassAttendancePanel
+        <ClassAttendanceForm
           client={client}
           managedClass={managedClass}
           canManageAttendance={canManageAttendance}

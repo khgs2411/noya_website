@@ -19,6 +19,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 type MutationState = {
@@ -29,11 +30,12 @@ type MutationState = {
   updatingParticipants: Record<string, AttendanceStatus>;
 };
 
-type ClassAttendancePanelProps = {
+type ClassAttendanceFormProps = {
   client: ClassKitClient | null;
   managedClass: ManagedClass;
   canManageAttendance: boolean;
   canManageRegistrations: boolean;
+  className?: string;
   onClassChanged: () => void | Promise<void>;
 };
 
@@ -140,13 +142,14 @@ function ParticipantRow({
   );
 }
 
-export function ClassAttendancePanel({
+export function ClassAttendanceForm({
   client,
   managedClass,
   canManageAttendance,
   canManageRegistrations,
+  className,
   onClassChanged,
-}: ClassAttendancePanelProps) {
+}: ClassAttendanceFormProps) {
   const { t } = useTranslation();
   const [lifecycleOverride, setLifecycleOverride] = useState<{
     classId: string;
@@ -304,7 +307,7 @@ export function ClassAttendancePanel({
 
     try {
       const result = await client.management.attendance.start(managedClass.id, {
-        defaultAttendanceStatus: "absent",
+        defaultAttendanceStatus: "present",
       });
       setLifecycleOverride({
         classId: result.class.id,
@@ -449,7 +452,12 @@ export function ClassAttendancePanel({
   if (!canManageAttendance) return null;
 
   return (
-    <section className="mt-5 rounded-[1.2rem] border border-blush/24 bg-card/50 p-3">
+    <section
+      className={cn(
+        "mt-5 rounded-[1.2rem] border border-blush/24 bg-card/50 p-3",
+        className,
+      )}
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h3 className="font-serif text-xl text-foreground">

@@ -32,11 +32,15 @@ export function ClassCard({
   const startsAt = new Date(item.startsAt);
   const endsAt = new Date(item.endsAt);
   const actions = renderActions?.(item);
+  const isActiveClass =
+    item.lifecycleStatus === "in_progress" || item.temporalStatus === "started";
 
   return (
     <article
       className={cn(
         "rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft transition-colors hover:border-blush-strong hover:bg-blush-strong/10",
+        isActiveClass &&
+          "border-blush-strong/80 bg-blush-strong/12 ring-1 ring-blush-strong/30",
         isSelected && "border-blush-strong",
       )}
     >
@@ -67,7 +71,13 @@ export function ClassCard({
               />
             )}
             {item.statusLabel && (
-              <span className="rounded-full border border-blush/24 px-2 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-foreground/56">
+              <span
+                className={cn(
+                  "rounded-full border border-blush/24 px-2 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-foreground/56",
+                  isActiveClass &&
+                    "border-blush-strong/60 bg-blush-strong/18 text-blush-strong",
+                )}
+              >
                 {item.statusLabel}
               </span>
             )}

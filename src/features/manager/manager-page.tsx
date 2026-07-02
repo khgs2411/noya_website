@@ -42,7 +42,7 @@ export function ManagerPage({
 
   return (
     <main className="min-h-screen bg-background px-4 pb-12 pt-5 text-foreground sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[88rem]">
+      <div className="mx-auto w-full max-w-[95vw]">
         <a
           href="./"
           className="inline-flex items-center gap-2 text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"

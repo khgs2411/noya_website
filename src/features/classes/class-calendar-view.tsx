@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { Clock3, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -19,6 +19,7 @@ type ClassCalendarViewProps = {
   loadingClassId?: string | null;
   labelPrefix?: string;
   onSelectClass: (classId: string) => void;
+  renderItemActions?: (item: ClassViewItem) => ReactNode;
 };
 
 type CalendarClassButtonProps = {
@@ -28,6 +29,7 @@ type CalendarClassButtonProps = {
   pendingLabel: string;
   timeFormatter: Intl.DateTimeFormat;
   onSelect: () => void;
+  actions?: ReactNode;
 };
 
 function CalendarClassButton({
@@ -37,49 +39,73 @@ function CalendarClassButton({
   pendingLabel,
   timeFormatter,
   onSelect,
+  actions,
 }: CalendarClassButtonProps) {
   const countLabel =
     item.registeredUsersCount === undefined
       ? `${item.capacity}`
       : `${item.registeredUsersCount}/${item.capacity}`;
 
+  const isActiveClass =
+    item.lifecycleStatus === "in_progress" || item.temporalStatus === "started";
+
   return (
-    <button
-      type="button"
-      disabled={isLoading}
-      aria-busy={isLoading}
+    <article
       className={cn(
-        "w-full rounded-xl border border-blush/24 bg-background/46 p-2.5 text-start text-xs leading-5 transition-colors hover:border-blush-strong hover:bg-blush-strong/10 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blush-strong/55 xl:p-3 xl:text-sm",
+        "rounded-xl border border-blush/24 bg-background/46 p-2.5 text-xs leading-5 transition-colors hover:border-blush-strong hover:bg-blush-strong/10 hover:shadow-soft",
+        isActiveClass &&
+          "border-blush-strong/70 bg-blush-strong/12 ring-1 ring-blush-strong/25",
         item.id === selectedClassId && "border-blush-strong bg-background/70",
       )}
-      onClick={onSelect}
     >
-      <span className="flex items-center justify-between gap-2 font-semibold text-foreground">
-        <span>{timeFormatter.format(new Date(item.startsAt))}</span>
-        {isLoading && (
-          <Loader2
-            className="size-3.5 shrink-0 animate-spin text-blush-strong"
-            aria-hidden="true"
-          />
-        )}
-      </span>
-      <span className="block break-words text-foreground/68">{item.name}</span>
-      {item.statusLabel && (
-        <span className="mt-1 inline-flex rounded-full border border-blush/24 px-2 py-0.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-foreground/56">
-          {item.statusLabel}
+      <button
+        type="button"
+        disabled={isLoading}
+        aria-busy={isLoading}
+        className="block w-full text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blush-strong/55"
+        onClick={onSelect}
+      >
+        <span className="flex items-center justify-between gap-2 font-semibold text-foreground">
+          <span>{timeFormatter.format(new Date(item.startsAt))}</span>
+          {isLoading && (
+            <Loader2
+              className="size-3.5 shrink-0 animate-spin text-blush-strong"
+              aria-hidden="true"
+            />
+          )}
         </span>
-      )}
-      <span className="mt-1 block text-[0.68rem] font-semibold text-foreground/52 xl:text-xs">
-        {countLabel}
-      </span>
-      {item.pendingRegistrationCount !== undefined &&
-        item.pendingRegistrationCount > 0 && (
-          <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-blush-strong/35 px-2 py-0.5 text-[0.66rem] font-semibold text-blush-strong">
-            <Clock3 className="size-3 shrink-0" aria-hidden="true" />
-            {pendingLabel}
+        <span className="block break-words text-foreground/68">{item.name}</span>
+        {item.statusLabel && (
+          <span
+            className={cn(
+              "mt-1 inline-flex rounded-full border border-blush/24 px-2 py-0.5 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-foreground/56",
+              isActiveClass &&
+                "border-blush-strong/55 bg-blush-strong/18 text-blush-strong",
+            )}
+          >
+            {item.statusLabel}
           </span>
         )}
-    </button>
+        <span className="mt-1 block text-[0.68rem] font-semibold text-foreground/52 xl:text-xs">
+          {countLabel}
+        </span>
+        {item.pendingRegistrationCount !== undefined &&
+          item.pendingRegistrationCount > 0 && (
+            <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-blush-strong/35 px-2 py-0.5 text-[0.66rem] font-semibold text-blush-strong">
+              <Clock3 className="size-3 shrink-0" aria-hidden="true" />
+              {pendingLabel}
+            </span>
+          )}
+      </button>
+      {actions && (
+        <div
+          className="mt-2 flex flex-wrap gap-2"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {actions}
+        </div>
+      )}
+    </article>
   );
 }
 
@@ -91,6 +117,7 @@ export function ClassCalendarView({
   loadingClassId = null,
   labelPrefix = "classes",
   onSelectClass,
+  renderItemActions,
 }: ClassCalendarViewProps) {
   const { t, i18n } = useTranslation();
   const [expandedDateKey, setExpandedDateKey] = useState<string | null>(null);
@@ -135,7 +162,7 @@ export function ClassCalendarView({
   }
 
   return (
-    <div className="hidden gap-3 md:grid md:grid-cols-7">
+    <div className="hidden gap-2 md:grid md:grid-cols-7 xl:gap-3">
       {days.map((day) => {
         const dateKey = getLocalDateKey(day);
         const dayClasses = classesByDate.get(dateKey) ?? [];
@@ -152,7 +179,7 @@ export function ClassCalendarView({
           <section
             key={dateKey}
             className={cn(
-              "min-h-44 rounded-[1.5rem] border border-blush/24 bg-card/78 p-3 transition-colors hover:border-blush-strong/60 hover:bg-blush-strong/10 hover:shadow-soft lg:p-4",
+              "min-h-44 rounded-[1.5rem] border border-blush/24 bg-card/78 p-3 transition-colors hover:border-blush-strong/60 hover:bg-blush-strong/10 hover:shadow-soft",
               outsideRange && "bg-background/24 opacity-55",
               isToday && "border-blush-strong ring-1 ring-blush-strong/45",
               expanded && "border-blush-strong/70 bg-card/90",
@@ -178,6 +205,7 @@ export function ClassCalendarView({
                   })}
                   timeFormatter={timeFormatter}
                   onSelect={() => onSelectClass(item.id)}
+                  actions={renderItemActions?.(item)}
                 />
               ))}
               {hasOverflow && (
