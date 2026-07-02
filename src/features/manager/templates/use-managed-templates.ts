@@ -46,7 +46,16 @@ export function useManagedTemplates({
     [selectedTemplateId, templates],
   );
 
-  const refreshTemplates = useCallback(async () => {
+  const mergeTemplate = useCallback((template: ClassTemplate) => {
+    setTemplates((current) => {
+      const existing = current.some((item) => item.id === template.id);
+      if (!existing) return [...current, template];
+
+      return current.map((item) => (item.id === template.id ? template : item));
+    });
+  }, []);
+
+  const refreshTemplates = useCallback(async (options?: { silent?: boolean }) => {
     if (!client || !canManageTemplates) {
       setTemplates([]);
       setLoadStatus("idle");
@@ -54,14 +63,18 @@ export function useManagedTemplates({
       return;
     }
 
-    setLoadStatus("loading");
-    setErrorMessage(null);
+    if (!options?.silent) {
+      setLoadStatus("loading");
+      setErrorMessage(null);
+    }
 
     try {
       const result = await client.management.templates.list();
       setTemplates(result.templates);
       setLoadStatus("loaded");
     } catch (error) {
+      if (options?.silent) return;
+
       setErrorMessage(
         error instanceof Error ? error.message : t("manager.templates.errorBody"),
       );
@@ -92,7 +105,16 @@ export function useManagedTemplates({
 
       try {
         const result = await command();
-        await refreshTemplates();
+        if (
+          result &&
+          typeof result === "object" &&
+          "template" in result &&
+          result.template &&
+          typeof result.template === "object"
+        ) {
+          mergeTemplate(result.template as ClassTemplate);
+        }
+        void refreshTemplates({ silent: true });
         return { ok: true as const, result };
       } catch (error) {
         setOperationError(
@@ -105,7 +127,7 @@ export function useManagedTemplates({
         setMutationStatus("idle");
       }
     },
-    [canManageTemplates, client, mutationStatus, refreshTemplates, t],
+    [canManageTemplates, client, mergeTemplate, mutationStatus, refreshTemplates, t],
   );
 
   const createTemplate = useCallback(

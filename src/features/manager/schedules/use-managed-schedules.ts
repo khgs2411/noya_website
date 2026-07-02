@@ -69,7 +69,7 @@ export function useManagedSchedules({
     });
   }, []);
 
-  const refreshSchedules = useCallback(async () => {
+  const refreshSchedules = useCallback(async (options?: { silent?: boolean }) => {
     if (!client || !canManageSchedules) {
       setSchedules([]);
       setLoadStatus("idle");
@@ -77,14 +77,18 @@ export function useManagedSchedules({
       return;
     }
 
-    setLoadStatus("loading");
-    setErrorMessage(null);
+    if (!options?.silent) {
+      setLoadStatus("loading");
+      setErrorMessage(null);
+    }
 
     try {
       const result = await client.management.schedules.list();
       setSchedules(result.schedules);
       setLoadStatus("loaded");
     } catch (error) {
+      if (options?.silent) return;
+
       setErrorMessage(
         error instanceof Error ? error.message : t("manager.schedules.errorBody"),
       );
@@ -131,7 +135,7 @@ export function useManagedSchedules({
 
       try {
         const result = await command();
-        if (options.refresh) await refreshSchedules();
+        if (options.refresh) void refreshSchedules({ silent: true });
         return { ok: true as const, result };
       } catch (error) {
         setOperationError(
@@ -158,10 +162,11 @@ export function useManagedSchedules({
       if (result.ok && result.result.generation) {
         setGenerationResult(result.result.generation);
       }
+      if (result.ok) mergeSchedule(result.result.schedule);
 
       return result;
     },
-    [client, performMutation],
+    [client, mergeSchedule, performMutation],
   );
 
   const updateSchedule = useCallback(
@@ -175,10 +180,11 @@ export function useManagedSchedules({
       if (result.ok && result.result.generation) {
         setGenerationResult(result.result.generation);
       }
+      if (result.ok) mergeSchedule(result.result.schedule);
 
       return result;
     },
-    [client, performMutation],
+    [client, mergeSchedule, performMutation],
   );
 
   const previewSchedule = useCallback(
@@ -259,7 +265,7 @@ export function useManagedSchedules({
         client!.management.schedules.skipDate({ scheduleId, date, reason }),
       );
 
-      if (result.ok) await refreshPreview();
+      if (result.ok) void refreshPreview();
 
       return result;
     },
@@ -272,7 +278,7 @@ export function useManagedSchedules({
         client!.management.schedules.unskipDate({ scheduleId, date }),
       );
 
-      if (result.ok) await refreshPreview();
+      if (result.ok) void refreshPreview();
 
       return result;
     },

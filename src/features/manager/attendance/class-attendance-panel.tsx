@@ -21,13 +21,13 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
-type MutationStatus =
-  | "idle"
-  | "starting"
-  | "updating"
-  | "addingWalkIn"
-  | "addingTrial"
-  | "completing";
+type MutationState = {
+  starting: boolean;
+  completing: boolean;
+  addingWalkIn: boolean;
+  addingTrial: boolean;
+  updatingParticipants: Record<string, AttendanceStatus>;
+};
 
 type ClassAttendancePanelProps = {
   client: ClassKitClient | null;
@@ -80,11 +80,13 @@ function ParticipantRow({
   participant,
   label,
   disabled,
+  updatingStatus,
   onUpdate,
 }: {
   participant: ClassParticipant;
   label: string;
   disabled: boolean;
+  updatingStatus?: AttendanceStatus;
   onUpdate: (participantId: string, status: AttendanceStatus) => void;
 }) {
   const { t } = useTranslation();
@@ -111,7 +113,11 @@ function ParticipantRow({
           disabled={disabled}
           onClick={() => onUpdate(participant.id, "present")}
         >
-          <CheckCircle2 className="size-4" aria-hidden="true" />
+          {updatingStatus === "present" ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <CheckCircle2 className="size-4" aria-hidden="true" />
+          )}
           {t("manager.attendance.markPresent")}
         </Button>
         <Button
@@ -122,7 +128,11 @@ function ParticipantRow({
           disabled={disabled}
           onClick={() => onUpdate(participant.id, "absent")}
         >
-          <XCircle className="size-4" aria-hidden="true" />
+          {updatingStatus === "absent" ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <XCircle className="size-4" aria-hidden="true" />
+          )}
           {t("manager.attendance.markAbsent")}
         </Button>
       </div>
@@ -138,12 +148,22 @@ export function ClassAttendancePanel({
   onClassChanged,
 }: ClassAttendancePanelProps) {
   const { t } = useTranslation();
+  const [lifecycleOverride, setLifecycleOverride] = useState<{
+    classId: string;
+    lifecycleStatus: ManagedClass["lifecycle_status"];
+  } | null>(null);
   const [participants, setParticipants] = useState<ClassParticipant[]>([]);
   const [registered, setRegistered] = useState<ManagementRegistrationSummary[]>([]);
   const [users, setUsers] = useState<ProductUserListItem[]>([]);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [mutationStatus, setMutationStatus] = useState<MutationStatus>("idle");
+  const [mutationState, setMutationState] = useState<MutationState>({
+    starting: false,
+    completing: false,
+    addingWalkIn: false,
+    addingTrial: false,
+    updatingParticipants: {},
+  });
   const [walkInUserId, setWalkInUserId] = useState("");
   const [trialName, setTrialName] = useState("");
   const [trialContact, setTrialContact] = useState("");
@@ -171,21 +191,27 @@ export function ClassAttendancePanel({
   const absentCount = participants.filter(
     (participant) => participant.attendance_status === "absent",
   ).length;
-  const isCompleted = managedClass.lifecycle_status === "completed";
-  const isCancelled = managedClass.lifecycle_status === "cancelled";
-  const isInProgress = managedClass.lifecycle_status === "in_progress";
+  const lifecycleStatus =
+    lifecycleOverride?.classId === managedClass.id
+      ? lifecycleOverride.lifecycleStatus
+      : managedClass.lifecycle_status;
+  const isCompleted = lifecycleStatus === "completed";
+  const isCancelled = lifecycleStatus === "cancelled";
+  const isInProgress = lifecycleStatus === "in_progress";
   const isEnded =
     managedClass.temporal_status === "ended" ||
     managedClass.read_only_reason === "ended";
+  const attendanceLifecycleBusy =
+    mutationState.starting || mutationState.completing;
   const canStartAttendance =
     canManageAttendance &&
-    mutationStatus === "idle" &&
-    managedClass.lifecycle_status === "created" &&
+    !attendanceLifecycleBusy &&
+    lifecycleStatus === "created" &&
     !isEnded &&
     !isCancelled;
   const canEditAttendance =
     canManageAttendance &&
-    mutationStatus === "idle" &&
+    !attendanceLifecycleBusy &&
     isInProgress &&
     !isCompleted &&
     !isCancelled;
@@ -209,7 +235,7 @@ export function ClassAttendancePanel({
     [registrationById, userById],
   );
 
-  const loadAttendance = useCallback(async () => {
+  const loadAttendance = useCallback(async (options?: { silent?: boolean }) => {
     if (!client || !canManageAttendance) {
       setParticipants([]);
       setRegistered([]);
@@ -219,8 +245,10 @@ export function ClassAttendancePanel({
       return;
     }
 
-    setLoadStatus("loading");
-    setErrorMessage(null);
+    if (!options?.silent) {
+      setLoadStatus("loading");
+      setErrorMessage(null);
+    }
 
     try {
       const [attendanceResult, usersResult, registeredResult] = await Promise.all([
@@ -238,6 +266,8 @@ export function ClassAttendancePanel({
       setRegistered(registeredResult.registrations);
       setLoadStatus("loaded");
     } catch (error) {
+      if (options?.silent) return;
+
       setErrorMessage(
         getAttendanceErrorMessage(error, t, "manager.attendance.errorBody"),
       );
@@ -259,94 +289,161 @@ export function ClassAttendancePanel({
     return () => window.clearTimeout(timeoutId);
   }, [loadAttendance]);
 
-  async function runMutation(
-    status: MutationStatus,
-    command: () => Promise<unknown>,
-    options: { refreshClass?: boolean } = {},
-  ) {
-    if (!client || !canManageAttendance || mutationStatus !== "idle") return;
+  function reconcileAttendance() {
+    void loadAttendance({ silent: true });
+    void Promise.resolve(onClassChanged()).catch(() => {
+      // The local attendance mutation succeeded; broader class refresh can retry later.
+    });
+  }
 
-    setMutationStatus(status);
+  async function startAttendance() {
+    if (!client || !canStartAttendance) return;
+
+    setMutationState((current) => ({ ...current, starting: true }));
     setErrorMessage(null);
 
     try {
-      await command();
-      await loadAttendance();
-      if (options.refreshClass) await onClassChanged();
-      return true;
+      const result = await client.management.attendance.start(managedClass.id, {
+        defaultAttendanceStatus: "absent",
+      });
+      setLifecycleOverride({
+        classId: result.class.id,
+        lifecycleStatus: result.class.lifecycle_status,
+      });
+      setLoadStatus((current) => (current === "idle" ? "loaded" : current));
+      reconcileAttendance();
     } catch (error) {
       setErrorMessage(
         getAttendanceErrorMessage(error, t, "manager.attendance.actionFailed"),
       );
-      return false;
     } finally {
-      setMutationStatus("idle");
+      setMutationState((current) => ({ ...current, starting: false }));
     }
   }
 
-  function startAttendance() {
-    if (!canStartAttendance) return;
+  async function updateParticipant(
+    participantId: string,
+    attendanceStatus: AttendanceStatus,
+  ) {
+    if (
+      !client ||
+      !canEditAttendance ||
+      mutationState.updatingParticipants[participantId]
+    ) {
+      return;
+    }
 
-    void runMutation(
-      "starting",
-      () =>
-        client!.management.attendance.start(managedClass.id, {
-          defaultAttendanceStatus: "absent",
-        }),
-      { refreshClass: true },
-    );
-  }
+    setMutationState((current) => ({
+      ...current,
+      updatingParticipants: {
+        ...current.updatingParticipants,
+        [participantId]: attendanceStatus,
+      },
+    }));
+    setErrorMessage(null);
 
-  function updateParticipant(participantId: string, attendanceStatus: AttendanceStatus) {
-    void runMutation("updating", () =>
-      client!.management.attendance.updateParticipant(participantId, {
+    try {
+      const result = await client.management.attendance.updateParticipant(
         participantId,
-        attendanceStatus,
-      }),
-    );
+        {
+          participantId,
+          attendanceStatus,
+        },
+      );
+
+      setParticipants((current) =>
+        current.map((participant) =>
+          participant.id === result.participant.id ? result.participant : participant,
+        ),
+      );
+      void loadAttendance({ silent: true });
+    } catch (error) {
+      setErrorMessage(
+        getAttendanceErrorMessage(error, t, "manager.attendance.actionFailed"),
+      );
+    } finally {
+      setMutationState((current) => {
+        const updatingParticipants = { ...current.updatingParticipants };
+        delete updatingParticipants[participantId];
+        return { ...current, updatingParticipants };
+      });
+    }
   }
 
-  function addWalkIn(event: FormEvent<HTMLFormElement>) {
+  async function addWalkIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!walkInUserId) return;
+    if (!client || !canEditAttendance || !walkInUserId || mutationState.addingWalkIn) {
+      return;
+    }
 
-    void runMutation(
-      "addingWalkIn",
-      () =>
-        client!.management.attendance.addWalkIn(managedClass.id, {
-          userId: walkInUserId,
-          attendanceStatus: "present",
-        }),
-    ).then((ok) => {
-      if (ok) setWalkInUserId("");
-    });
+    setMutationState((current) => ({ ...current, addingWalkIn: true }));
+    setErrorMessage(null);
+
+    try {
+      const result = await client.management.attendance.addWalkIn(managedClass.id, {
+        userId: walkInUserId,
+        attendanceStatus: "present",
+      });
+      setParticipants((current) => [...current, result.participant]);
+      setWalkInUserId("");
+      void loadAttendance({ silent: true });
+    } catch (error) {
+      setErrorMessage(
+        getAttendanceErrorMessage(error, t, "manager.attendance.actionFailed"),
+      );
+    } finally {
+      setMutationState((current) => ({ ...current, addingWalkIn: false }));
+    }
   }
 
-  function addTrial(event: FormEvent<HTMLFormElement>) {
+  async function addTrial(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = trialName.trim();
-    if (!name) return;
+    if (!client || !canEditAttendance || !name || mutationState.addingTrial) {
+      return;
+    }
 
-    void runMutation(
-      "addingTrial",
-      () =>
-        client!.management.attendance.addTrial(managedClass.id, {
-          name,
-          contact: trialContact.trim() || null,
-        }),
-    ).then((ok) => {
-      if (!ok) return;
+    setMutationState((current) => ({ ...current, addingTrial: true }));
+    setErrorMessage(null);
+
+    try {
+      const result = await client.management.attendance.addTrial(managedClass.id, {
+        name,
+        contact: trialContact.trim() || null,
+      });
+      setParticipants((current) => [...current, result.participant]);
       setTrialName("");
       setTrialContact("");
-    });
+      void loadAttendance({ silent: true });
+    } catch (error) {
+      setErrorMessage(
+        getAttendanceErrorMessage(error, t, "manager.attendance.actionFailed"),
+      );
+    } finally {
+      setMutationState((current) => ({ ...current, addingTrial: false }));
+    }
   }
 
-  function completeAttendance() {
-    void runMutation(
-      "completing",
-      () => client!.management.attendance.complete(managedClass.id),
-      { refreshClass: true },
-    );
+  async function completeAttendance() {
+    if (!client || !canEditAttendance || mutationState.completing) return;
+
+    setMutationState((current) => ({ ...current, completing: true }));
+    setErrorMessage(null);
+
+    try {
+      const result = await client.management.attendance.complete(managedClass.id);
+      setLifecycleOverride({
+        classId: result.class.id,
+        lifecycleStatus: result.class.lifecycle_status,
+      });
+      reconcileAttendance();
+    } catch (error) {
+      setErrorMessage(
+        getAttendanceErrorMessage(error, t, "manager.attendance.actionFailed"),
+      );
+    } finally {
+      setMutationState((current) => ({ ...current, completing: false }));
+    }
   }
 
   if (!canManageAttendance) return null;
@@ -393,9 +490,14 @@ export function ClassAttendancePanel({
         <Button
           type="button"
           className="mt-4 rounded-full"
+          disabled={mutationState.starting}
           onClick={startAttendance}
         >
-          <Play className="size-4" aria-hidden="true" />
+          {mutationState.starting ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Play className="size-4" aria-hidden="true" />
+          )}
           {t("manager.attendance.start")}
         </Button>
       )}
@@ -450,7 +552,15 @@ export function ClassAttendancePanel({
                         key={participant.id}
                         participant={participant}
                         label={getParticipantLabel(participant)}
-                        disabled={!canEditAttendance}
+                        disabled={
+                          !canEditAttendance ||
+                          Boolean(
+                            mutationState.updatingParticipants[participant.id],
+                          )
+                        }
+                        updatingStatus={
+                          mutationState.updatingParticipants[participant.id]
+                        }
                         onUpdate={updateParticipant}
                       />
                     ))}
@@ -479,9 +589,17 @@ export function ClassAttendancePanel({
                   type="submit"
                   variant="outline"
                   className="w-full rounded-full"
-                  disabled={!canEditAttendance || !walkInUserId}
+                  disabled={
+                    !canEditAttendance ||
+                    !walkInUserId ||
+                    mutationState.addingWalkIn
+                  }
                 >
-                  <Plus className="size-4" aria-hidden="true" />
+                  {mutationState.addingWalkIn ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <Plus className="size-4" aria-hidden="true" />
+                  )}
                   {t("manager.attendance.addWalkIn")}
                 </Button>
               </form>
@@ -503,9 +621,17 @@ export function ClassAttendancePanel({
                   type="submit"
                   variant="outline"
                   className="w-full rounded-full"
-                  disabled={!canEditAttendance || !trialName.trim()}
+                  disabled={
+                    !canEditAttendance ||
+                    !trialName.trim() ||
+                    mutationState.addingTrial
+                  }
                 >
-                  <UserCheck className="size-4" aria-hidden="true" />
+                  {mutationState.addingTrial ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <UserCheck className="size-4" aria-hidden="true" />
+                  )}
                   {t("manager.attendance.addTrial")}
                 </Button>
               </form>
@@ -516,10 +642,14 @@ export function ClassAttendancePanel({
             <Button
               type="button"
               className="mt-4 rounded-full"
-              disabled={mutationStatus !== "idle"}
+              disabled={!canEditAttendance || mutationState.completing}
               onClick={completeAttendance}
             >
-              <CheckCircle2 className="size-4" aria-hidden="true" />
+              {mutationState.completing ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <CheckCircle2 className="size-4" aria-hidden="true" />
+              )}
               {t("manager.attendance.complete")}
             </Button>
           )}

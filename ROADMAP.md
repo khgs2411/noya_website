@@ -187,15 +187,16 @@ Goal: Let managers operate concrete class sessions once schedule and class inven
 
 Goal: Improve manager and customer workflow responsiveness by applying local UI updates with backend confirmation where ClassKit mutations already provide a clear success boundary.
 
-- [ ] `next` Review lazy async mutation opportunities
+- [x] `done` Review lazy async mutation opportunities
   - Description: Review the application for places where a successful SDK mutation can update the local UI immediately and reconcile in the background instead of forcing full-page or full-panel loading states.
   - Shape: Good candidates include pending registration approval/rejection, attendance start, participant attendance updates, walk-in and trial additions, class completion, and other repeated operational actions where one row, card, or section can own the loading state while broader data refreshes happen silently.
+  - Progress: Manager attendance, class lifecycle actions, schedule operations, template operations, user role operations, customer registration actions, and pending registration review now update local UI first and reconcile with ClassKit in the background.
 
 ## Roadmap Step 10: Membership Management
 
 Goal: Expose ClassKit membership administration through the manager interface without making this website own payment processing or membership business rules.
 
-- [ ] `open` Add membership visibility
+- [ ] `next` Add membership visibility
   - Description: Let authorized managers view a user's current membership grants, membership type, remaining quota or usage, ledger context, and membership status.
   - Shape: Use `management.memberships.listTypes()`, `management.memberships.listUserGrants(userId)`, and `management.memberships.listLedger({ userId, limit })` for product-scoped manager views. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Memberships.
 

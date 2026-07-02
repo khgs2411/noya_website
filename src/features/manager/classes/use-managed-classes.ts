@@ -41,6 +41,7 @@ type ReconciliationNotice =
 
 type RefreshVisibleRangeOptions = {
   preserveExistingOnFailure?: boolean;
+  silent?: boolean;
 };
 
 type UseManagedClassesInput = {
@@ -56,6 +57,16 @@ type ClassDateGroup = {
 
 function getClassDateKey(managedClass: ManagedClass) {
   return managedClass.starts_at.slice(0, 10);
+}
+
+function getManagedClassFromResult(result: unknown) {
+  return result &&
+    typeof result === "object" &&
+    "class" in result &&
+    result.class &&
+    typeof result.class === "object"
+    ? result.class as ManagedClass
+    : null;
 }
 
 function groupClassesByDate(
@@ -128,6 +139,45 @@ export function useManagedClasses({
     setLoadStatus(status);
   }, []);
 
+  const classIsInVisibleRange = useCallback(
+    (managedClass: ManagedClass) => {
+      const startsAt = new Date(managedClass.starts_at).getTime();
+      return (
+        startsAt >= new Date(visibleRange.start).getTime() &&
+        startsAt <= new Date(visibleRange.end).getTime()
+      );
+    },
+    [visibleRange],
+  );
+
+  const applyClassMutationResult = useCallback(
+    (managedClass: ManagedClass) => {
+      if (!classIsInVisibleRange(managedClass)) {
+        setClasses((current) =>
+          current.filter((item) => item.id !== managedClass.id),
+        );
+        setReconciliationNotice({
+          type: "moved-out-of-range",
+          classId: managedClass.id,
+        });
+        setSelectedClassId((current) =>
+          current === managedClass.id ? null : current,
+        );
+        return;
+      }
+
+      setClasses((current) => {
+        const existing = current.some((item) => item.id === managedClass.id);
+        if (!existing) return [...current, managedClass];
+
+        return current.map((item) =>
+          item.id === managedClass.id ? managedClass : item,
+        );
+      });
+    },
+    [classIsInVisibleRange],
+  );
+
   const reconcileSelectedClass = useCallback(
     (refreshedClasses: ManagedClass[], mutatedClassId?: string) => {
       setSelectedClassId((currentSelectedClassId) => {
@@ -168,8 +218,10 @@ export function useManagedClasses({
       loadStatusRef.current === "loading" ? "idle" : loadStatusRef.current;
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
-    setTrackedLoadStatus("loading");
-    setErrorMessage(null);
+    if (!options.silent) {
+      setTrackedLoadStatus("loading");
+      setErrorMessage(null);
+    }
 
     try {
       const result = await client.management.classes.list({
@@ -178,7 +230,7 @@ export function useManagedClasses({
       });
 
       if (requestIdRef.current !== requestId) {
-        if (options.preserveExistingOnFailure) {
+        if (options.preserveExistingOnFailure || options.silent) {
           setTrackedLoadStatus(preservedLoadStatus);
         }
         return { ok: false as const, classes: [] as ManagedClass[] };
@@ -191,16 +243,18 @@ export function useManagedClasses({
       return { ok: true as const, classes: result.classes };
     } catch (error) {
       if (requestIdRef.current !== requestId) {
-        if (options.preserveExistingOnFailure) {
+        if (options.preserveExistingOnFailure || options.silent) {
           setTrackedLoadStatus(preservedLoadStatus);
         }
         return { ok: false as const, classes: [] as ManagedClass[] };
       }
 
-      setErrorMessage(
-        error instanceof Error ? error.message : "Unable to load classes.",
-      );
-      if (!options.preserveExistingOnFailure) {
+      if (!options.silent) {
+        setErrorMessage(
+          error instanceof Error ? error.message : "Unable to load classes.",
+        );
+      }
+      if (!options.preserveExistingOnFailure && !options.silent) {
         setTrackedLoadStatus("error");
       } else {
         setTrackedLoadStatus(preservedLoadStatus);
@@ -282,15 +336,20 @@ export function useManagedClasses({
       setMutationStatus(nextStatus);
 
       try {
-        await command();
-        const refreshResult = await refreshVisibleRange({
+        const result = await command();
+        const managedClass = getManagedClassFromResult(result);
+        if (managedClass) applyClassMutationResult(managedClass);
+
+        void refreshVisibleRange({
           preserveExistingOnFailure: true,
+          silent: true,
+        }).then((refreshResult) => {
+          if (refreshResult.ok) {
+            reconcileSelectedClass(refreshResult.classes, mutatedClassId);
+          } else {
+            setReconciliationNotice({ type: "stale-after-mutation" });
+          }
         });
-        if (refreshResult.ok) {
-          reconcileSelectedClass(refreshResult.classes, mutatedClassId);
-        } else {
-          setReconciliationNotice({ type: "stale-after-mutation" });
-        }
       } catch (error) {
         setOperationError(
           error instanceof Error
@@ -304,6 +363,7 @@ export function useManagedClasses({
     [
       canManageClasses,
       client,
+      applyClassMutationResult,
       mutationStatus,
       reconcileSelectedClass,
       refreshVisibleRange,
@@ -355,14 +415,19 @@ export function useManagedClasses({
       try {
         const result = await command();
         const reconciledClassId = getMutatedClassId?.(result) ?? mutatedClassId;
-        const refreshResult = await refreshVisibleRange({
+        const managedClass = getManagedClassFromResult(result);
+        if (managedClass) applyClassMutationResult(managedClass);
+
+        void refreshVisibleRange({
           preserveExistingOnFailure: true,
+          silent: true,
+        }).then((refreshResult) => {
+          if (refreshResult.ok) {
+            reconcileSelectedClass(refreshResult.classes, reconciledClassId);
+          } else {
+            setReconciliationNotice({ type: "stale-after-mutation" });
+          }
         });
-        if (refreshResult.ok) {
-          reconcileSelectedClass(refreshResult.classes, reconciledClassId);
-        } else {
-          setReconciliationNotice({ type: "stale-after-mutation" });
-        }
         return { ok: true as const, result };
       } catch (error) {
         setOperationError(
@@ -378,6 +443,7 @@ export function useManagedClasses({
     [
       canManageClasses,
       client,
+      applyClassMutationResult,
       mutationStatus,
       reconcileSelectedClass,
       refreshVisibleRange,

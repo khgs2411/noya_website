@@ -261,7 +261,7 @@ export function UserRoleManagementTab({
   );
   const hasAccess = canManageRoles || canManageUsers;
 
-  const loadAdministration = useCallback(async () => {
+  const loadAdministration = useCallback(async (options?: { silent?: boolean }) => {
     if (!client || !hasAccess) {
       setUsers([]);
       setRoles([]);
@@ -270,8 +270,10 @@ export function UserRoleManagementTab({
       return;
     }
 
-    setLoadStatus("loading");
-    setErrorMessage(null);
+    if (!options?.silent) {
+      setLoadStatus("loading");
+      setErrorMessage(null);
+    }
 
     try {
       const [roleResult, permissionResult, userResult] = await Promise.all([
@@ -291,6 +293,8 @@ export function UserRoleManagementTab({
       setUsers(userResult.users);
       setLoadStatus("loaded");
     } catch (error) {
+      if (options?.silent) return;
+
       setErrorMessage(
         error instanceof Error ? error.message : t("manager.users.errorBody"),
       );
@@ -306,24 +310,72 @@ export function UserRoleManagementTab({
     return () => window.clearTimeout(timeoutId);
   }, [loadAdministration]);
 
+  const mergeRole = useCallback((role: ProductManagedRole) => {
+    setRoles((current) => {
+      const exists = current.some((item) => item.id === role.id);
+      if (!exists) return [...current, role];
+
+      return current.map((item) => (item.id === role.id ? role : item));
+    });
+  }, []);
+
+  const mergeUserRoleAssignment = useCallback(
+    (userId: string, assignment: NonNullable<ProductUserListItem["roles"]>[number]) => {
+      setUsers((current) =>
+        current.map((user) => {
+          if (user.user_id !== userId) return user;
+
+          const roles = user.roles ?? [];
+          const exists = roles.some((role) => role.role_id === assignment.role_id);
+
+          return {
+            ...user,
+            roles: exists
+              ? roles.map((role) =>
+                  role.role_id === assignment.role_id ? assignment : role,
+                )
+              : [...roles, assignment],
+          };
+        }),
+      );
+    },
+    [],
+  );
+
+  const removeUserRoleAssignment = useCallback(
+    (userId: string, roleId: string) => {
+      setUsers((current) =>
+        current.map((user) =>
+          user.user_id === userId
+            ? {
+                ...user,
+                roles: (user.roles ?? []).filter((role) => role.role_id !== roleId),
+              }
+            : user,
+        ),
+      );
+    },
+    [],
+  );
+
   const runMutation = useCallback(
-    async (status: MutationStatus, command: () => Promise<unknown>) => {
-      if (!client || mutationStatus !== "idle") return false;
+    async <T,>(status: MutationStatus, command: () => Promise<T>) => {
+      if (!client || mutationStatus !== "idle") return { ok: false as const };
 
       setOperationError(null);
       setMutationStatus(status);
 
       try {
-        await command();
-        await loadAdministration();
-        return true;
+        const result = await command();
+        void loadAdministration({ silent: true });
+        return { ok: true as const, result };
       } catch (error) {
         setOperationError(
           error instanceof Error
             ? error.message
             : t("manager.users.actionFailed"),
         );
-        return false;
+        return { ok: false as const };
       } finally {
         setMutationStatus("idle");
       }
@@ -345,6 +397,9 @@ export function UserRoleManagementTab({
       const selectedGroups = availablePermissionGroups.filter((group) =>
         roleForm.permissionGroups.includes(group.id),
       );
+      const selectedPermissionKeys = selectedGroups.flatMap(
+        (group) => group.permissionKeys,
+      );
       const created = await runMutation("creatingRole", async () => {
         const result = await client.management.roles.create({
           key: getRoleKeyFromName(roleForm.name),
@@ -360,9 +415,15 @@ export function UserRoleManagementTab({
             });
           }
         }
+
+        return {
+          ...result.role,
+          permissions: selectedPermissionKeys,
+        } satisfies ProductManagedRole;
       });
 
-      if (created) {
+      if (created.ok) {
+        mergeRole(created.result);
         setRoleForm({
           name: "",
           levelPreset: "coach",
@@ -371,7 +432,15 @@ export function UserRoleManagementTab({
         });
       }
     },
-    [availablePermissionGroups, canManageRoles, client, roleForm, runMutation, t],
+    [
+      availablePermissionGroups,
+      canManageRoles,
+      client,
+      mergeRole,
+      roleForm,
+      runMutation,
+      t,
+    ],
   );
 
   const updateRole = useCallback(
@@ -388,19 +457,26 @@ export function UserRoleManagementTab({
         return;
       }
 
-      const updated = await runMutation("updatingRole", () =>
-        client.management.roles.update({
+      const currentRole = rolesById.get(editingRole.roleId);
+      const updated = await runMutation("updatingRole", async () => {
+        const result = await client.management.roles.update({
           roleId: editingRole.roleId,
           name: editingRole.name.trim(),
           level,
-        }),
-      );
+        });
 
-      if (updated) {
+        return {
+          ...result.role,
+          permissions: currentRole?.permissions ?? [],
+        } satisfies ProductManagedRole;
+      });
+
+      if (updated.ok) {
+        mergeRole(updated.result);
         setEditingRole(null);
       }
     },
-    [canManageRoles, client, editingRole, runMutation, t],
+    [canManageRoles, client, editingRole, mergeRole, rolesById, runMutation, t],
   );
 
   const togglePermissionGroup = useCallback(
@@ -409,18 +485,26 @@ export function UserRoleManagementTab({
       const groupState = getRoleGroupState(role, group);
 
       if (groupState === "all") {
-        await runMutation("revokingPermission", async () => {
+        const revoked = await runMutation("revokingPermission", async () => {
           for (const permissionKey of group.permissionKeys) {
             await client.management.roles.revokePermission({
               roleId: role.id,
               permissionKey,
             });
           }
+
+          return {
+            ...role,
+            permissions: role.permissions.filter(
+              (permissionKey) => !group.permissionKeys.includes(permissionKey),
+            ),
+          };
         });
+        if (revoked.ok) mergeRole(revoked.result);
         return;
       }
 
-      await runMutation("grantingPermission", async () => {
+      const granted = await runMutation("grantingPermission", async () => {
         for (const permissionKey of group.permissionKeys) {
           if (!role.permissions.includes(permissionKey)) {
             await client.management.roles.grantPermission({
@@ -429,9 +513,15 @@ export function UserRoleManagementTab({
             });
           }
         }
+
+        return {
+          ...role,
+          permissions: [...new Set([...role.permissions, ...group.permissionKeys])],
+        };
       });
+      if (granted.ok) mergeRole(granted.result);
     },
-    [canManageRoles, client, runMutation],
+    [canManageRoles, client, mergeRole, runMutation],
   );
 
   const assignRole = useCallback(
@@ -444,11 +534,18 @@ export function UserRoleManagementTab({
         client.management.users.roles.assign({ userId, roleId }),
       );
 
-      if (assigned) {
+      if (assigned.ok) {
+        mergeUserRoleAssignment(userId, assigned.result.assignment);
         setAssignRoleByUserId((current) => ({ ...current, [userId]: "" }));
       }
     },
-    [assignRoleByUserId, canManageUsers, client, runMutation],
+    [
+      assignRoleByUserId,
+      canManageUsers,
+      client,
+      mergeUserRoleAssignment,
+      runMutation,
+    ],
   );
 
   const revokeRole = useCallback(
@@ -456,9 +553,11 @@ export function UserRoleManagementTab({
       if (!client || !canManageUsers) return;
       void runMutation("revokingRole", () =>
         client.management.users.roles.revoke({ userId, roleId }),
-      );
+      ).then((result) => {
+        if (result.ok) removeUserRoleAssignment(userId, roleId);
+      });
     },
-    [canManageUsers, client, runMutation],
+    [canManageUsers, client, removeUserRoleAssignment, runMutation],
   );
 
   if (!hasAccess) {

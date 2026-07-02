@@ -201,13 +201,30 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     registrationMutation?.classId ??
     (detailStatus === "loading" ? selectedClassId : null);
 
-  const refreshClasses = useCallback(async () => {
+  const updateClassLocally = useCallback((
+    classId: string,
+    updater: (classSummary: ClassSummary) => ClassSummary,
+  ) => {
+    setClasses((currentClasses) =>
+      currentClasses.map((classSummary) =>
+        classSummary.id === classId ? updater(classSummary) : classSummary,
+      ),
+    );
+    setSelectedClassDetail((currentDetail) =>
+      currentDetail?.id === classId ? updater(currentDetail) as ClassInformation : currentDetail,
+    );
+  }, []);
+
+  const refreshClasses = useCallback(async (options?: { silent?: boolean }) => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
-    setLoadStatus("loading");
-    setErrorMessage(null);
+    if (!options?.silent) {
+      setLoadStatus("loading");
+      setErrorMessage(null);
+    }
 
     if (!client) {
+      if (options?.silent) return;
       setClasses([]);
       setLoadStatus("error");
       setErrorMessage(t("classes.unavailable"));
@@ -222,6 +239,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     if (requestIdRef.current !== requestId) return;
 
     if (result.error) {
+      if (options?.silent) return;
       setClasses([]);
       setLoadStatus("error");
       setErrorMessage(result.error.message);
@@ -332,13 +350,16 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
   }
 
   const loadClassDetail = useCallback(
-    async (classId: string) => {
+    async (classId: string, options?: { silent?: boolean }) => {
       const requestId = detailRequestIdRef.current + 1;
       detailRequestIdRef.current = requestId;
-      setDetailStatus("loading");
-      setDetailError(null);
+      if (!options?.silent) {
+        setDetailStatus("loading");
+        setDetailError(null);
+      }
 
       if (!client) {
+        if (options?.silent) return null;
         setDetailStatus("error");
         setDetailError(t("classes.unavailable"));
         return null;
@@ -351,6 +372,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
       if (detailRequestIdRef.current !== requestId) return null;
 
       if (result.error) {
+        if (options?.silent) return null;
         setDetailStatus("error");
         setDetailError(result.error.message);
         return null;
@@ -367,6 +389,14 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     },
     [client, t],
   );
+
+  function reconcileClassAfterMutation(classId: string) {
+    if (selectedClassId === classId) {
+      void loadClassDetail(classId, { silent: true });
+    }
+
+    void refreshClasses({ silent: true });
+  }
 
   useEffect(() => {
     if (
@@ -428,11 +458,21 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
             : undefined,
         variant: result.data.status === "pending" ? "info" : "success",
       });
-      if (selectedClassId === item.id) {
-        await loadClassDetail(item.id);
-      } else {
-        await refreshClasses();
-      }
+      updateClassLocally(item.id, (classSummary) => ({
+        ...classSummary,
+        canRegister: false,
+        canCancelRegistration: true,
+        userRegistrationState: {
+          id: result.data.registration_id,
+          status: result.data.status,
+        },
+        registeredUsersCount:
+          result.data.status === "approved" &&
+          classSummary.registeredUsersCount !== undefined
+            ? classSummary.registeredUsersCount + 1
+            : classSummary.registeredUsersCount,
+      }));
+      reconcileClassAfterMutation(item.id);
     } finally {
       setRegistrationMutation(null);
     }
@@ -462,11 +502,18 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
         title: t("classes.toast.cancelled"),
         variant: "success",
       });
-      if (selectedClassId === item.id) {
-        await loadClassDetail(item.id);
-      } else {
-        await refreshClasses();
-      }
+      updateClassLocally(item.id, (classSummary) => ({
+        ...classSummary,
+        canRegister: classSummary.registrationOpen,
+        canCancelRegistration: false,
+        userRegistrationState: null,
+        registeredUsersCount:
+          item.userRegistrationState?.status === "approved" &&
+          classSummary.registeredUsersCount !== undefined
+            ? Math.max(0, classSummary.registeredUsersCount - 1)
+            : classSummary.registeredUsersCount,
+      }));
+      reconcileClassAfterMutation(item.id);
     } finally {
       setRegistrationMutation(null);
     }

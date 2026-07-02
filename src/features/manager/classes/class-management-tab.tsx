@@ -324,11 +324,13 @@ export function ClassManagementTab({
             onRegistrationsChanged={async () => {
               await actions.refreshVisibleRange({
                 preserveExistingOnFailure: true,
+                silent: true,
               });
             }}
             onClassChanged={async () => {
               await actions.refreshVisibleRange({
                 preserveExistingOnFailure: true,
+                silent: true,
               });
             }}
           />
