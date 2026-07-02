@@ -31,6 +31,7 @@ const resources = {
         loadingBody: 'Confirming your manager access.',
         nextTitle: 'Next up',
         nextBody: 'Class management will be added here next.',
+        refresh: 'Refresh',
         tabs: {
           classes: 'Classes',
           pending: 'Requests',
@@ -514,6 +515,7 @@ const resources = {
         errorTitle: 'Classes could not load',
         errorBody: 'Try refreshing this range.',
         retry: 'Retry',
+        refresh: 'Refresh',
         select: 'Select class',
         capacity: '{{count}} spots',
         capacityWithRegistered: '{{registered}} / {{count}} registered',
@@ -653,6 +655,7 @@ const resources = {
         loadingBody: 'Подтверждаем ваш доступ к управлению.',
         nextTitle: 'Далее',
         nextBody: 'Управление занятиями будет добавлено здесь следующим шагом.',
+        refresh: 'Обновить',
         tabs: {
           classes: 'Занятия',
           pending: 'Заявки',
@@ -1136,6 +1139,7 @@ const resources = {
         errorTitle: 'Не удалось загрузить занятия',
         errorBody: 'Попробуйте обновить этот период.',
         retry: 'Повторить',
+        refresh: 'Обновить',
         select: 'Выбрать занятие',
         capacity: '{{count}} мест',
         capacityWithRegistered: '{{registered}} / {{count}} записано',
@@ -1275,6 +1279,7 @@ const resources = {
         loadingBody: 'מאמתים את גישת הניהול שלך.',
         nextTitle: 'השלב הבא',
         nextBody: 'ניהול השיעורים יתווסף כאן בשלב הבא.',
+        refresh: 'רענון',
         tabs: {
           classes: 'שיעורים',
           pending: 'בקשות',
@@ -1757,6 +1762,7 @@ const resources = {
         errorTitle: 'לא ניתן לטעון שיעורים',
         errorBody: 'אפשר לנסות לרענן את הטווח הזה.',
         retry: 'ניסיון נוסף',
+        refresh: 'רענון',
         select: 'בחירת שיעור',
         capacity: '{{count}} מקומות',
         capacityWithRegistered: '{{registered}} / {{count}} רשומות',

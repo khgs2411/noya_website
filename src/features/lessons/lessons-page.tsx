@@ -750,12 +750,14 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
               customRange={customRange}
               visibleRangeLabel={visibleRangeLabel}
               viewMode={viewMode}
+              isRefreshing={loadStatus === "loading"}
               labelPrefix="classes"
               onScopeChange={setScope}
               onCustomRangeChange={setCustomRange}
               onPrevious={goToPreviousRange}
               onNext={goToNextRange}
               onToday={goToToday}
+              onRefresh={() => void refreshClasses()}
               onViewModeChange={setViewMode}
             />
 

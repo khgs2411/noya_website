@@ -311,12 +311,14 @@ export function ClassManagementTab({
             customRange={state.customRange}
             visibleRangeLabel={state.visibleRangeLabel}
             viewMode={state.viewMode}
+            isRefreshing={state.loadStatus === "loading"}
             labelPrefix="manager"
             onScopeChange={actions.setRangeScope}
             onCustomRangeChange={actions.setCustomRange}
             onPrevious={actions.goToPreviousRange}
             onNext={actions.goToNextRange}
             onToday={actions.goToToday}
+            onRefresh={() => void actions.refreshVisibleRange()}
             onViewModeChange={actions.setViewMode}
           />
 

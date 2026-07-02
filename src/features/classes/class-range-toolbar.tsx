@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   List,
+  RefreshCw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -19,12 +20,14 @@ type ClassRangeToolbarProps = {
   customRange: CustomRangeValue | null;
   visibleRangeLabel: string;
   viewMode: ViewMode;
+  isRefreshing?: boolean;
   labelPrefix?: string;
   onScopeChange: (scope: RangeScope) => void;
   onCustomRangeChange: (startDate: string, endDate: string) => void;
   onPrevious: () => void;
   onNext: () => void;
   onToday: () => void;
+  onRefresh?: () => void;
   onViewModeChange: (viewMode: ViewMode) => void;
 };
 
@@ -35,12 +38,14 @@ export function ClassRangeToolbar({
   customRange,
   visibleRangeLabel,
   viewMode,
+  isRefreshing = false,
   labelPrefix = "classes",
   onScopeChange,
   onCustomRangeChange,
   onPrevious,
   onNext,
   onToday,
+  onRefresh,
   onViewModeChange,
 }: ClassRangeToolbarProps) {
   const { t } = useTranslation();
@@ -132,38 +137,59 @@ export function ClassRangeToolbar({
         <p className="min-w-0 flex-1 font-serif text-lg text-foreground">
           {visibleRangeLabel}
         </p>
-        <div className="hidden shrink-0 gap-1 rounded-xl border border-blush/24 bg-card/78 p-1 md:flex">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "font-serif",
-              viewMode === "list" &&
-                "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
-            )}
-            onClick={() => onViewModeChange("list")}
-          >
-            <List className="size-4" aria-hidden="true" />
-            {t(`${labelPrefix}.view.list`)}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "font-serif",
-              viewMode === "calendar" &&
-                "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
-            )}
-            disabled={!canUseCalendar}
-            onClick={() => {
-              if (canUseCalendar) onViewModeChange("calendar");
-            }}
-          >
-            <CalendarDays className="size-4" aria-hidden="true" />
-            {t(`${labelPrefix}.view.calendar`)}
-          </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {onRefresh && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-full"
+              disabled={isRefreshing}
+              onClick={onRefresh}
+              aria-label={t(`${labelPrefix}.refresh`)}
+            >
+              <RefreshCw
+                className={cn("size-4", isRefreshing && "animate-spin")}
+                aria-hidden="true"
+              />
+              <span className="hidden sm:inline">
+                {t(`${labelPrefix}.refresh`)}
+              </span>
+            </Button>
+          )}
+          <div className="hidden shrink-0 gap-1 rounded-xl border border-blush/24 bg-card/78 p-1 md:flex">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "font-serif",
+                viewMode === "list" &&
+                  "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
+              )}
+              onClick={() => onViewModeChange("list")}
+            >
+              <List className="size-4" aria-hidden="true" />
+              {t(`${labelPrefix}.view.list`)}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "font-serif",
+                viewMode === "calendar" &&
+                  "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
+              )}
+              disabled={!canUseCalendar}
+              onClick={() => {
+                if (canUseCalendar) onViewModeChange("calendar");
+              }}
+            >
+              <CalendarDays className="size-4" aria-hidden="true" />
+              {t(`${labelPrefix}.view.calendar`)}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
