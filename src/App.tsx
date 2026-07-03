@@ -1,6 +1,6 @@
 import { useProductContext } from "@class-kit/react";
 import { Loader2 } from "lucide-react";
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -15,6 +15,7 @@ import {
 import { SiteHeader } from "@/components/site/site-header";
 import type { ManagerAccessSnapshot } from "@/features/manager/manager-page";
 import { useTheme } from "@/hooks/use-theme";
+import { captureActiveElement, restoreFocus } from "@/lib/focus";
 
 const MANAGER_ACCESS_CACHE_KEY = "noya.manager.lastAccess";
 const MANAGER_ACCESS_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -139,6 +140,8 @@ export default function App() {
   const [route, setRoute] = useState(getCurrentRoute);
   const [managerAccessSnapshot, setManagerAccessSnapshot] =
     useState<ManagerAccessSnapshot | null>(null);
+  const menuFocusReturnRef = useRef<HTMLElement | null>(null);
+  const imageFocusReturnRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     function handleNavigation() {
@@ -163,11 +166,11 @@ export default function App() {
       if (event.key !== "Escape") return;
 
       if (activeImage) {
-        setActiveImage(null);
+        closeImage();
         return;
       }
 
-      setMenuOpen(false);
+      closeMenu();
     }
 
     window.addEventListener("keydown", handleEscape);
@@ -266,7 +269,7 @@ export default function App() {
       `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
     );
     setRoute(getCurrentRoute());
-    setMenuOpen(false);
+    closeMenu({ restore: false });
 
     window.setTimeout(() => {
       if (nextUrl.hash) {
@@ -289,6 +292,28 @@ export default function App() {
     navigateTo(session ? profilePath : authPath);
   }
 
+  function openMenu() {
+    menuFocusReturnRef.current = captureActiveElement();
+    setMenuOpen(true);
+  }
+
+  function closeMenu(options: { restore?: boolean } = {}) {
+    setMenuOpen(false);
+    if (options.restore !== false) {
+      restoreFocus(menuFocusReturnRef.current);
+    }
+  }
+
+  function selectImage(image: string) {
+    imageFocusReturnRef.current = captureActiveElement();
+    setActiveImage(image);
+  }
+
+  function closeImage() {
+    setActiveImage(null);
+    restoreFocus(imageFocusReturnRef.current);
+  }
+
   const authMode =
     new URLSearchParams(route.search).get("mode") === "signup"
       ? "signup"
@@ -304,7 +329,7 @@ export default function App() {
               menuOpen={menuOpen}
               onToggleTheme={toggleTheme}
               onOpenAccount={openAccount}
-              onOpenMenu={() => setMenuOpen(true)}
+              onOpenMenu={openMenu}
             />
           </div>
         )}
@@ -317,7 +342,7 @@ export default function App() {
               onOpenAccount={openAccount}
               onOpenManager={openManager}
               canEnterManager={canEnterManager}
-              onClose={() => setMenuOpen(false)}
+              onClose={closeMenu}
               onNavigate={navigateTo}
             />
           </Suspense>
@@ -372,10 +397,10 @@ export default function App() {
       activeImage={activeImage}
       onToggleTheme={toggleTheme}
       onOpenAccount={openAccount}
-      onOpenMenu={() => setMenuOpen(true)}
+      onOpenMenu={openMenu}
       onToggleAbout={() => setAboutExpanded((current) => !current)}
-      onSelectImage={setActiveImage}
-      onCloseImage={() => setActiveImage(null)}
+      onSelectImage={selectImage}
+      onCloseImage={closeImage}
       onNavigate={navigateTo}
     />,
     false,

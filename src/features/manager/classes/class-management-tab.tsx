@@ -11,7 +11,7 @@ import {
   Send,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ import { ClassFormDialog } from "@/features/manager/classes/class-form-dialog";
 import { ClassAttendanceForm } from "@/features/manager/attendance/class-attendance-form";
 import { useManagedClasses } from "@/features/manager/classes/use-managed-classes";
 import { useManagedTemplates } from "@/features/manager/templates/use-managed-templates";
+import { captureActiveElement, restoreFocus } from "@/lib/focus";
 
 type ClassManagementTabProps = {
   canManageClasses: boolean;
@@ -158,6 +159,10 @@ export function ClassManagementTab({
   const [attendanceSurface, setAttendanceSurface] =
     useState<AttendanceSurface>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const classDetailFocusReturnRef = useRef<HTMLElement | null>(null);
+  const attendanceFocusReturnRef = useRef<HTMLElement | null>(null);
+  const formFocusReturnRef = useRef<HTMLElement | null>(null);
+  const cancelFocusReturnRef = useRef<HTMLElement | null>(null);
   const { client } = useProductContext();
   const managedClasses = useManagedClasses({ client, canManageClasses });
   const managedTemplates = useManagedTemplates({
@@ -212,6 +217,47 @@ export function ClassManagementTab({
     () => classViewGroups.flatMap((group) => group.items),
     [classViewGroups],
   );
+
+  function selectManagedClass(classId: string) {
+    classDetailFocusReturnRef.current = captureActiveElement();
+    actions.selectClass(classId);
+  }
+
+  function closeManagedClassDetail() {
+    actions.clearSelection();
+    restoreFocus(classDetailFocusReturnRef.current);
+  }
+
+  function openCreateForm() {
+    formFocusReturnRef.current = captureActiveElement();
+    setFormSurface({ mode: "create" });
+  }
+
+  function closeFormSurface() {
+    setFormSurface(null);
+    restoreFocus(formFocusReturnRef.current);
+  }
+
+  function openAttendanceSurface(classId: string) {
+    attendanceFocusReturnRef.current = captureActiveElement();
+    setAttendanceSurface({ classId });
+  }
+
+  function closeAttendanceSurface() {
+    setAttendanceSurface(null);
+    restoreFocus(attendanceFocusReturnRef.current);
+  }
+
+  function openCancelDialog() {
+    cancelFocusReturnRef.current = captureActiveElement();
+    setCancelOpen(true);
+  }
+
+  function closeCancelDialog() {
+    setCancelOpen(false);
+    restoreFocus(cancelFocusReturnRef.current);
+  }
+
   const renderManagerClassActions = (item: ClassViewItem) => {
     const managedClass = classById.get(item.id);
     if (!managedClass) return null;
@@ -247,7 +293,7 @@ export function ClassManagementTab({
             size="sm"
             className="rounded-full"
             variant={attendanceAction === "start" ? "default" : "outline"}
-            onClick={() => setAttendanceSurface({ classId: item.id })}
+            onClick={() => openAttendanceSurface(item.id)}
           >
             {attendanceAction === "start" && (
               <Play className="size-4" aria-hidden="true" />
@@ -269,7 +315,7 @@ export function ClassManagementTab({
       groups={classViewGroups}
       selectedClassId={state.selectedClassId}
       selectLabel={t("manager.classCard.select")}
-      onSelectClass={actions.selectClass}
+      onSelectClass={selectManagedClass}
       renderCardActions={renderManagerClassActions}
     />
   );
@@ -299,7 +345,7 @@ export function ClassManagementTab({
           <Button
             type="button"
             className="w-full rounded-full sm:w-auto"
-            onClick={() => setFormSurface({ mode: "create" })}
+            onClick={openCreateForm}
           >
             <CalendarPlus className="size-4" aria-hidden="true" />
             {t("manager.classActions.create")}
@@ -420,7 +466,7 @@ export function ClassManagementTab({
                     selectedClassId={state.selectedClassId}
                     labelPrefix="manager"
                     selectLabel={t("manager.classCard.select")}
-                    onSelectClass={actions.selectClass}
+                    onSelectClass={selectManagedClass}
                     renderItemActions={renderManagerClassActions}
                   />
                 ) : (
@@ -436,13 +482,15 @@ export function ClassManagementTab({
             canManageClasses={state.canManageClasses}
             canManageRegistrations={canManageRegistrations}
             canManageAttendance={canManageAttendance}
-            onClose={actions.clearSelection}
+            onClose={closeManagedClassDetail}
             onEdit={() => {
               if (!state.selectedClass) return;
+              formFocusReturnRef.current =
+                classDetailFocusReturnRef.current ?? captureActiveElement();
               setFormSurface({ mode: "edit", classId: state.selectedClass.id });
               actions.clearSelection();
             }}
-            onCancel={() => setCancelOpen(true)}
+            onCancel={openCancelDialog}
             onRegistrationsChanged={async () => {
               await actions.refreshVisibleRange({
                 preserveExistingOnFailure: true,
@@ -467,7 +515,7 @@ export function ClassManagementTab({
               state.mutationStatus === "updating"
             }
             errorMessage={state.operationError}
-            onClose={() => setFormSurface(null)}
+            onClose={closeFormSurface}
             onCreate={actions.createClass}
             onUpdate={actions.updateClass}
           />
@@ -477,7 +525,7 @@ export function ClassManagementTab({
             managedClass={state.selectedClass}
             submitting={state.mutationStatus === "cancelling"}
             errorMessage={state.operationError}
-            onClose={() => setCancelOpen(false)}
+            onClose={closeCancelDialog}
             onConfirm={actions.cancelClass}
           />
 
@@ -486,7 +534,7 @@ export function ClassManagementTab({
             managedClass={attendanceClass}
             canManageAttendance={canManageAttendance}
             canManageRegistrations={canManageRegistrations}
-            onClose={() => setAttendanceSurface(null)}
+            onClose={closeAttendanceSurface}
             onClassChanged={async () => {
               await actions.refreshVisibleRange({
                 preserveExistingOnFailure: true,

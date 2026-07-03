@@ -38,6 +38,7 @@ import type {
   ClassViewDateGroup,
   ClassViewItem,
 } from "@/features/classes/class-types";
+import { captureActiveElement, restoreFocus } from "@/lib/focus";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 type RegistrationMutation =
@@ -169,6 +170,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
   const [detailError, setDetailError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
   const detailRequestIdRef = useRef(0);
+  const classDetailFocusReturnRef = useRef<HTMLElement | null>(null);
   const toastTimeoutsRef = useRef<number[]>([]);
 
   const localRange = useMemo(
@@ -298,7 +300,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
 
   function setScope(scope: RangeScope) {
     setRangeScope(scope);
-    closeClassDetails();
+    closeClassDetails({ restore: false });
     if (scope === "custom") {
       setViewMode("list");
       const today = new Date();
@@ -314,27 +316,27 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     setRangeScope("custom");
     setViewMode("list");
     setCustomRangeState({ startDate, endDate });
-    closeClassDetails();
+    closeClassDetails({ restore: false });
   }
 
   function goToPreviousRange() {
     const next = shiftRange(rangeScope, rangeAnchorDate, customRange, -1);
     setRangeAnchorDate(next.anchorDate);
     setCustomRangeState(next.customRange);
-    closeClassDetails();
+    closeClassDetails({ restore: false });
   }
 
   function goToNextRange() {
     const next = shiftRange(rangeScope, rangeAnchorDate, customRange, 1);
     setRangeAnchorDate(next.anchorDate);
     setCustomRangeState(next.customRange);
-    closeClassDetails();
+    closeClassDetails({ restore: false });
   }
 
   function goToToday() {
     const today = new Date();
     setRangeAnchorDate(today);
-    closeClassDetails();
+    closeClassDetails({ restore: false });
 
     if (rangeScope === "custom") {
       const inputDate = toDateInput(today);
@@ -342,11 +344,14 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     }
   }
 
-  function closeClassDetails() {
+  function closeClassDetails(options: { restore?: boolean } = {}) {
     setSelectedClassId(null);
     setSelectedClassDetail(null);
     setDetailStatus("idle");
     setDetailError(null);
+    if (options.restore !== false) {
+      restoreFocus(classDetailFocusReturnRef.current);
+    }
   }
 
   const loadClassDetail = useCallback(
@@ -416,6 +421,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
   }, [client, detailStatus, loadClassDetail, selectedClassDetail?.id, selectedClassId]);
 
   function openClassDetails(classId: string) {
+    classDetailFocusReturnRef.current = captureActiveElement();
     setSelectedClassId(classId);
     setSelectedClassDetail(null);
     setOperationError(null);
@@ -859,7 +865,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
             {selectedClass && (
               <div
                 className="fixed inset-0 z-50 grid place-items-end bg-black/50 p-0 md:place-items-center md:p-6"
-                onClick={closeClassDetails}
+                onClick={() => closeClassDetails()}
               >
                 <aside
                   role="dialog"
@@ -882,7 +888,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
                       variant="ghost"
                       size="icon"
                       className="shrink-0"
-                      onClick={closeClassDetails}
+                      onClick={() => closeClassDetails()}
                       aria-label={t("actions.close")}
                     >
                       <X className="size-5" aria-hidden="true" />
