@@ -32,6 +32,11 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build
+        env:
+          VITE_SUPABASE_TARGET: ${{ vars.VITE_SUPABASE_TARGET }}
+          VITE_REMOTE_SUPABASE_URL: ${{ vars.VITE_REMOTE_SUPABASE_URL }}
+          VITE_REMOTE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_REMOTE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_AUTH_REDIRECT_URL: ${{ vars.VITE_AUTH_REDIRECT_URL }}
         run: bun run build
 
       - name: Add SPA fallback
