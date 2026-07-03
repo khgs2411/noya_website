@@ -206,11 +206,12 @@ Goal: Expose ClassKit membership administration through the manager interface wi
   - Shape: Use `management.memberships.listTypes()`, `management.memberships.createType(input)`, `management.memberships.updateType(input)`, and `management.memberships.deactivateType(membershipTypeId)`. Membership type modes, stock, duration, activation, and validation remain ClassKit-owned. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Memberships.
   - Progress: Membership type creation, editing, deactivation, focused loading states, and silent background refresh now live in the dedicated Memberships tab.
 
-- [ ] `next` Add membership grant lifecycle management
+- [x] `done` Add membership grant lifecycle management
   - Description: Let authorized managers assign, upgrade, replace, revoke, and inspect a user's membership grants from the product user management experience.
   - Shape: Use `management.memberships.grant(input)`, `management.memberships.upgrade(input)`, `management.memberships.revoke(membershipGrantId)`, `management.memberships.listUserGrants(userId)`, and `management.memberships.listLedger({ userId, limit })`. This should be driven by a scalable user lookup and focused user detail drawer/dialog rather than expanding membership administration inline for every user card. Do not call raw Edge Functions from this website; ClassKit owns active type validation, stock, validity, grant replacement, revocation, and ledger side effects. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Function-to-SDK map.
+  - Progress: The Memberships tab now includes user search, selected-user grant and upgrade actions, active grant revocation, current grant visibility, and recent membership ledger activity with focused loading states and silent reconciliation.
 
-- [ ] `open` Redesign the user administration directory
+- [ ] `next` Redesign the user administration directory
   - Description: Make the users, roles, permissions, and membership assignment workflow scale to hundreds of users.
   - Shape: Keep the Users tab as a searchable directory with compact rows and focused detail surfaces for role and permission changes. Membership assignment should connect to the dedicated Memberships workflow instead of adding heavy per-user panels to the main list.
 
