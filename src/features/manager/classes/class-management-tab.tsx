@@ -109,6 +109,9 @@ function AttendanceSurfaceDialog({
       onClick={onClose}
     >
       <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${t("manager.attendance.surfaceEyebrow")}: ${managedClass.name}`}
         className="max-h-[92vh] w-full overflow-y-auto rounded-t-[1.4rem] border border-blush/24 bg-background p-5 text-foreground shadow-soft md:max-w-xl md:rounded-[1.4rem] md:bg-card/95"
         onClick={(event) => event.stopPropagation()}
       >
@@ -416,6 +419,7 @@ export function ClassManagementTab({
                     items={classViewItems}
                     selectedClassId={state.selectedClassId}
                     labelPrefix="manager"
+                    selectLabel={t("manager.classCard.select")}
                     onSelectClass={actions.selectClass}
                     renderItemActions={renderManagerClassActions}
                   />

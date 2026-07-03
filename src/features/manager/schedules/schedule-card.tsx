@@ -43,6 +43,7 @@ export function ScheduleCard({
       <button
         type="button"
         className="block w-full min-w-0 text-start"
+        aria-pressed={isSelected}
         onClick={() => onSelect(schedule.id)}
       >
         <div className="flex min-w-0 items-start justify-between gap-3">
@@ -89,4 +90,3 @@ export function ScheduleCard({
     </article>
   );
 }
-

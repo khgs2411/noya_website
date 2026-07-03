@@ -252,6 +252,7 @@ export function UserRoleManagementTab({
   const [editingRole, setEditingRole] = useState<EditingRoleForm>(null);
   const [assignRoleByUserId, setAssignRoleByUserId] = useState<Record<string, string>>({});
   const [userSearch, setUserSearch] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const rolesById = useMemo(
     () => new Map(roles.map((role) => [role.id, role])),
     [roles],
@@ -276,8 +277,15 @@ export function UserRoleManagementTab({
       ]
         .filter((value): value is string => Boolean(value))
         .some((value) => value.toLowerCase().includes(query)),
-    );
+      );
   }, [userSearch, users]);
+  const selectedUser = useMemo(
+    () =>
+      filteredUsers.find((user) => user.user_id === selectedUserId) ??
+      filteredUsers[0] ??
+      null,
+    [filteredUsers, selectedUserId],
+  );
   const hasAccess = canManageRoles || canManageUsers;
 
   const loadAdministration = useCallback(async (options?: { silent?: boolean }) => {
@@ -600,21 +608,39 @@ export function UserRoleManagementTab({
 
   return (
     <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft sm:p-5">
-      <div className="flex items-start gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
-          <UserCog className="size-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0">
-          <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
-            {t("manager.users.eyebrow")}
-          </p>
-          <h2 className="mt-1 font-serif text-3xl text-foreground">
-            {t("manager.users.title")}
-          </h2>
-          <p className="mt-2 max-w-prose text-sm leading-6 text-foreground/68">
-            {t("manager.users.body")}
-          </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
+            <UserCog className="size-5" aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
+              {t("manager.users.eyebrow")}
+            </p>
+            <h2 className="mt-1 font-serif text-3xl text-foreground">
+              {t("manager.users.title")}
+            </h2>
+            <p className="mt-2 max-w-prose text-sm leading-6 text-foreground/68">
+              {t("manager.users.body")}
+            </p>
+          </div>
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-full sm:mt-1"
+          disabled={loadStatus === "loading"}
+          onClick={() => void loadAdministration()}
+        >
+          <RefreshCw
+            className={[
+              "size-4",
+              loadStatus === "loading" ? "animate-spin" : "",
+            ].join(" ")}
+            aria-hidden="true"
+          />
+          {t("manager.users.refresh")}
+        </Button>
       </div>
 
       <div className="mt-5 flex flex-col gap-4">
@@ -701,51 +727,66 @@ export function UserRoleManagementTab({
                       className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_1fr_auto]"
                       onSubmit={(event) => void createRole(event)}
                     >
-                  <input
-                    className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                    value={roleForm.name}
-                    placeholder={t("manager.users.roleName")}
-                    onChange={(event) =>
-                      setRoleForm((current) => ({
-                        ...current,
-                        name: event.target.value,
-                      }))
-                    }
-                    required
-                  />
-                  <div className="grid gap-2 sm:grid-cols-[1fr_7rem]">
-                    <select
+                  <label className="grid gap-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                      {t("manager.users.roleName")}
+                    </span>
+                    <input
                       className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                      value={roleForm.levelPreset}
+                      value={roleForm.name}
+                      placeholder={t("manager.users.roleName")}
                       onChange={(event) =>
                         setRoleForm((current) => ({
                           ...current,
-                          levelPreset: event.target.value as RoleLevelPreset,
+                          name: event.target.value,
                         }))
                       }
-                    >
-                      {roleLevelPresets.map((preset) => (
-                        <option key={preset.id} value={preset.id}>
-                          {t(preset.labelKey)}
-                        </option>
-                      ))}
-                    </select>
-                    {roleForm.levelPreset === "custom" && (
-                      <input
+                      required
+                    />
+                  </label>
+                  <div className="grid gap-2 sm:grid-cols-[1fr_7rem]">
+                    <label className="grid gap-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                        {t("manager.users.roleLevel")}
+                      </span>
+                      <select
                         className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={roleForm.customLevel}
-                        placeholder={t("manager.users.roleLevel")}
+                        value={roleForm.levelPreset}
                         onChange={(event) =>
                           setRoleForm((current) => ({
                             ...current,
-                            customLevel: event.target.value,
+                            levelPreset: event.target.value as RoleLevelPreset,
                           }))
                         }
-                        required
-                      />
+                      >
+                        {roleLevelPresets.map((preset) => (
+                          <option key={preset.id} value={preset.id}>
+                            {t(preset.labelKey)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {roleForm.levelPreset === "custom" && (
+                      <label className="grid gap-1.5">
+                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                          {t("manager.users.roleLevel")}
+                        </span>
+                        <input
+                          className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={roleForm.customLevel}
+                          placeholder={t("manager.users.roleLevel")}
+                          onChange={(event) =>
+                            setRoleForm((current) => ({
+                              ...current,
+                              customLevel: event.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </label>
                     )}
                   </div>
                   <Button
@@ -771,6 +812,7 @@ export function UserRoleManagementTab({
                             ? "border-blush-strong bg-blush-strong/12 text-foreground"
                             : "border-blush/24 bg-card/50 text-foreground/72 hover:border-blush-strong/55",
                         ].join(" ")}
+                        aria-pressed={selected}
                         onClick={() =>
                           setRoleForm((current) => ({
                             ...current,
@@ -887,7 +929,7 @@ export function UserRoleManagementTab({
                         ) : (
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <h4 className="break-words font-serif text-xl text-foreground">
+                              <h4 className="break-words font-serif text-xl text-foreground [overflow-wrap:anywhere]">
                                 {role.name}
                               </h4>
                               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
@@ -979,162 +1021,232 @@ export function UserRoleManagementTab({
                 </button>
 
                 {usersExpanded && (
-                  <div className="mt-4 grid gap-3">
-                    <input
-                      className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                      value={userSearch}
-                      placeholder={t("manager.users.search")}
-                      onChange={(event) => setUserSearch(event.target.value)}
-                    />
+                  <div className="mt-4 grid gap-4">
+                    <label className="grid gap-1.5">
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                        {t("manager.users.search")}
+                      </span>
+                      <input
+                        className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                        value={userSearch}
+                        placeholder={t("manager.users.search")}
+                        onChange={(event) => setUserSearch(event.target.value)}
+                      />
+                    </label>
                   {filteredUsers.length === 0 ? (
                     <p className="rounded-xl border border-blush/24 bg-card/40 p-4 text-sm leading-6 text-foreground/60">
                       {t("manager.users.noSearchResults")}
                     </p>
-                  ) : filteredUsers.map((user) => {
-                    const assignedRoleIds = getUserRoleIds(user);
-                    const assignableRoles = roles.filter(
-                      (role) => !assignedRoleIds.has(role.id),
-                    );
-                    const userPermissions = getUserPermissionKeys(user, rolesById);
-                    const userPermissionSet = new Set(userPermissions);
-                    const userPermissionGroups = availablePermissionGroups
-                      .map((group) => {
-                        const grantedCount = group.permissionKeys.filter((key) =>
-                          userPermissionSet.has(key),
-                        ).length;
+                  ) : (
+                    <div className="grid gap-4 xl:grid-cols-[minmax(18rem,0.9fr)_minmax(24rem,1.25fr)]">
+                      <div className="max-h-[34rem] overflow-auto rounded-[1.2rem] border border-blush/24 bg-card/38 p-2">
+                        <div className="grid gap-2">
+                          {filteredUsers.map((user) => {
+                            const selected = selectedUser?.user_id === user.user_id;
+                            const roleNames = (user.roles ?? [])
+                              .map((assignment) => assignment.role_name)
+                              .filter((value): value is string => Boolean(value));
 
-                        return { ...group, grantedCount };
-                      })
-                      .filter((group) => group.grantedCount > 0);
-
-                    return (
-                      <article
-                        key={user.user_id}
-                        className="rounded-[1.2rem] border border-blush/24 bg-card/60 p-4"
-                      >
-                        <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-                          <div className="min-w-0">
-                            <h4 className="break-words font-serif text-xl text-foreground">
-                              {getUserLabel(user)}
-                            </h4>
-                            {user.email && (
-                              <p className="mt-1 break-words text-sm text-foreground/60">
-                                {user.email}
-                              </p>
-                            )}
-                            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                              {user.status} · {user.scope}
-                            </p>
-                          </div>
-
-                          {canManageUsers && (
-                            <div className="min-w-0">
-                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                              {t("manager.users.assignedRoles")}
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {(user.roles ?? []).length === 0 ? (
-                                <span className="text-sm text-foreground/56">
-                                  {t("manager.users.noRoles")}
-                                </span>
-                              ) : (
-                                user.roles?.map((assignment) => (
-                                  <span
-                                    key={`${user.user_id}-${assignment.role_id}`}
-                                    className="inline-flex items-center gap-1 rounded-full border border-blush/24 px-2.5 py-1 text-xs text-foreground/68"
-                                  >
-                                    {assignment.role_name ??
-                                      getRoleLabel(
-                                        rolesById.get(assignment.role_id),
-                                        assignment.role_id,
-                                      )}
-                                    <button
-                                      type="button"
-                                      className="rounded-full text-foreground/48 hover:text-blush-strong"
-                                      disabled={mutationStatus !== "idle"}
-                                      onClick={() =>
-                                        revokeRole(
-                                          user.user_id,
-                                          assignment.role_id,
-                                        )
-                                      }
-                                      aria-label={t("manager.users.revokeRole")}
-                                    >
-                                      <X className="size-3" aria-hidden="true" />
-                                    </button>
-                                  </span>
-                                ))
-                              )}
-                            </div>
-
-                            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                              <select
-                                className="h-10 min-w-0 flex-1 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                                value={assignRoleByUserId[user.user_id] ?? ""}
-                                onChange={(event) =>
-                                  setAssignRoleByUserId((current) => ({
-                                    ...current,
-                                    [user.user_id]: event.target.value,
-                                  }))
-                                }
-                              >
-                                <option value="">
-                                  {t("manager.users.chooseRole")}
-                                </option>
-                                {assignableRoles.map((role) => (
-                                  <option key={role.id} value={role.id}>
-                                    {role.name}
-                                  </option>
-                                ))}
-                              </select>
-                              <Button
+                            return (
+                              <button
+                                key={user.user_id}
                                 type="button"
-                                size="sm"
-                                className="rounded-full"
-                                disabled={
-                                  mutationStatus !== "idle" ||
-                                  !assignRoleByUserId[user.user_id]
-                                }
-                                onClick={() => void assignRole(user.user_id)}
+                                className={[
+                                  "grid gap-2 rounded-xl border p-3 text-start transition-colors",
+                                  selected
+                                    ? "border-blush-strong/60 bg-blush-strong/12"
+                                    : "border-blush/16 bg-background/34 hover:border-blush-strong/45",
+                                ].join(" ")}
+                                aria-pressed={selected}
+                                onClick={() => setSelectedUserId(user.user_id)}
                               >
-                                <Plus className="size-4" aria-hidden="true" />
-                                {t("manager.users.assignRole")}
-                              </Button>
-                            </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {canManageUsers && (
-                          <div className="mt-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                            {t("manager.users.effectivePermissions")}
-                          </p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {userPermissionGroups.length === 0 ? (
-                              <span className="text-sm text-foreground/56">
-                                {t("manager.users.noPermissions")}
-                              </span>
-                            ) : (
-                              userPermissionGroups.map((group) => (
-                                <span
-                                  key={group.id}
-                                  className="rounded-full border border-blush/24 px-2.5 py-1 text-xs text-foreground/68"
-                                >
-                                  {t(group.labelKey)}
-                                  {group.grantedCount < group.permissionKeys.length
-                                    ? ` · ${t("manager.users.partial")}`
-                                    : ""}
+                                <span className="break-words font-serif text-lg text-foreground [overflow-wrap:anywhere]">
+                                  {getUserLabel(user)}
                                 </span>
-                              ))
-                            )}
-                          </div>
-                          </div>
-                        )}
+                                {user.email && (
+                                  <span className="break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
+                                    {user.email}
+                                  </span>
+                                )}
+                                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                                  {user.status} · {user.scope}
+                                </span>
+                                <span className="flex flex-wrap gap-1.5">
+                                  {roleNames.length === 0 ? (
+                                    <span className="text-xs text-foreground/48">
+                                      {t("manager.users.noRoles")}
+                                    </span>
+                                  ) : (
+                                    roleNames.slice(0, 3).map((roleName) => (
+                                      <span
+                                        key={`${user.user_id}-${roleName}`}
+                                        className="rounded-full border border-blush/24 px-2 py-0.5 text-xs text-foreground/62"
+                                      >
+                                        {roleName}
+                                      </span>
+                                    ))
+                                  )}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
 
-                      </article>
-                    );
-                  })}
+                      {selectedUser && (
+                        <article className="rounded-[1.2rem] border border-blush/24 bg-card/60 p-4">
+                          {(() => {
+                            const assignedRoleIds = getUserRoleIds(selectedUser);
+                            const assignableRoles = roles.filter(
+                              (role) => !assignedRoleIds.has(role.id),
+                            );
+                            const userPermissions = getUserPermissionKeys(
+                              selectedUser,
+                              rolesById,
+                            );
+                            const userPermissionSet = new Set(userPermissions);
+                            const userPermissionGroups = availablePermissionGroups
+                              .map((group) => {
+                                const grantedCount = group.permissionKeys.filter((key) =>
+                                  userPermissionSet.has(key),
+                                ).length;
+
+                                return { ...group, grantedCount };
+                              })
+                              .filter((group) => group.grantedCount > 0);
+
+                            return (
+                              <>
+                                <div className="min-w-0">
+                                  <h4 className="break-words font-serif text-2xl text-foreground [overflow-wrap:anywhere]">
+                                    {getUserLabel(selectedUser)}
+                                  </h4>
+                                  {selectedUser.email && (
+                                    <p className="mt-1 break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
+                                      {selectedUser.email}
+                                    </p>
+                                  )}
+                                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                                    {selectedUser.status} · {selectedUser.scope}
+                                  </p>
+                                </div>
+
+                                <div className="mt-5">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                                    {t("manager.users.assignedRoles")}
+                                  </p>
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {(selectedUser.roles ?? []).length === 0 ? (
+                                      <span className="text-sm text-foreground/56">
+                                        {t("manager.users.noRoles")}
+                                      </span>
+                                    ) : (
+                                      selectedUser.roles?.map((assignment) => (
+                                        <span
+                                          key={`${selectedUser.user_id}-${assignment.role_id}`}
+                                          className="inline-flex items-center gap-1 rounded-full border border-blush/24 px-2.5 py-1 text-xs text-foreground/68"
+                                        >
+                                          {assignment.role_name ??
+                                            getRoleLabel(
+                                              rolesById.get(assignment.role_id),
+                                              assignment.role_id,
+                                            )}
+                                          <button
+                                            type="button"
+                                            className="rounded-full text-foreground/48 hover:text-blush-strong"
+                                            disabled={mutationStatus !== "idle"}
+                                            onClick={() =>
+                                              revokeRole(
+                                                selectedUser.user_id,
+                                                assignment.role_id,
+                                              )
+                                            }
+                                            aria-label={t("manager.users.revokeRole")}
+                                          >
+                                            <X className="size-3" aria-hidden="true" />
+                                          </button>
+                                        </span>
+                                      ))
+                                    )}
+                                  </div>
+
+                                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                                    <label className="grid min-w-0 flex-1 gap-1.5">
+                                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                                        {t("manager.users.chooseRole")}
+                                      </span>
+                                      <select
+                                        className="h-10 min-w-0 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                                        value={
+                                          assignRoleByUserId[selectedUser.user_id] ??
+                                          ""
+                                        }
+                                        onChange={(event) =>
+                                          setAssignRoleByUserId((current) => ({
+                                            ...current,
+                                            [selectedUser.user_id]:
+                                              event.target.value,
+                                          }))
+                                        }
+                                      >
+                                        <option value="">
+                                          {t("manager.users.chooseRole")}
+                                        </option>
+                                        {assignableRoles.map((role) => (
+                                          <option key={role.id} value={role.id}>
+                                            {role.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      className="rounded-full"
+                                      disabled={
+                                        mutationStatus !== "idle" ||
+                                        !assignRoleByUserId[selectedUser.user_id]
+                                      }
+                                      onClick={() => void assignRole(selectedUser.user_id)}
+                                    >
+                                      <Plus className="size-4" aria-hidden="true" />
+                                      {t("manager.users.assignRole")}
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                <div className="mt-5">
+                                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                                    {t("manager.users.effectivePermissions")}
+                                  </p>
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {userPermissionGroups.length === 0 ? (
+                                      <span className="text-sm text-foreground/56">
+                                        {t("manager.users.noPermissions")}
+                                      </span>
+                                    ) : (
+                                      userPermissionGroups.map((group) => (
+                                        <span
+                                          key={group.id}
+                                          className="rounded-full border border-blush/24 px-2.5 py-1 text-xs text-foreground/68"
+                                        >
+                                          {t(group.labelKey)}
+                                          {group.grantedCount <
+                                          group.permissionKeys.length
+                                            ? ` · ${t("manager.users.partial")}`
+                                            : ""}
+                                        </span>
+                                      ))
+                                    )}
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </article>
+                      )}
+                    </div>
+                  )}
                   </div>
                 )}
               </section>

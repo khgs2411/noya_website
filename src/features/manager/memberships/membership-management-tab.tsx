@@ -645,13 +645,14 @@ export function MembershipManagementTab({
                           ? "border-blush-strong bg-blush-strong/12"
                           : "border-blush/24 bg-card/45 hover:border-blush-strong/55",
                       ].join(" ")}
+                      aria-pressed={selected}
                       onClick={() => setSelectedUserId(user.user_id)}
                     >
-                      <span className="block break-words font-serif text-lg text-foreground">
+                      <span className="block break-words font-serif text-lg text-foreground [overflow-wrap:anywhere]">
                         {getUserLabel(user)}
                       </span>
                       {user.email && (
-                        <span className="mt-1 block break-words text-sm text-foreground/60">
+                        <span className="mt-1 block break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
                           {user.email}
                         </span>
                       )}
@@ -678,7 +679,7 @@ export function MembershipManagementTab({
                       {getUserLabel(selectedUser)}
                     </p>
                     {selectedUser.email && (
-                      <p className="mt-1 break-words text-sm text-foreground/60">
+                      <p className="mt-1 break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
                         {selectedUser.email}
                       </p>
                     )}
@@ -866,7 +867,7 @@ export function MembershipManagementTab({
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                  <p className="break-words font-serif text-lg text-foreground">
+                                  <p className="break-words font-serif text-lg text-foreground [overflow-wrap:anywhere]">
                                     {membershipType?.name ??
                                       grant.membership_type_id}
                                   </p>
@@ -1213,7 +1214,7 @@ export function MembershipManagementTab({
                       <>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <h4 className="break-words font-serif text-xl text-foreground">
+                            <h4 className="break-words font-serif text-xl text-foreground [overflow-wrap:anywhere]">
                               {membershipType.name}
                             </h4>
                             <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">

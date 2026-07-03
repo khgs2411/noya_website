@@ -38,10 +38,14 @@ export function SiteHeader({
           variant="ghost"
           size="icon"
           className={`size-9 sm:size-10 [&_svg]:!size-4 sm:[&_svg]:!size-5 ${siteDesign.iconButton}`}
-          aria-label={t("theme.toggle")}
-          onClick={onToggleTheme}
-        >
-          {theme === "dark" ? <Moon /> : <Sun />}
+        aria-label={t("theme.toggle")}
+        onClick={onToggleTheme}
+      >
+          {theme === "dark" ? (
+            <Moon aria-hidden="true" />
+          ) : (
+            <Sun aria-hidden="true" />
+          )}
         </Button>
         <LanguageMenu buttonClassName="size-9 shadow-sm sm:size-10 [&_svg]:!size-4 sm:[&_svg]:!size-5" />
         <Button
@@ -49,10 +53,10 @@ export function SiteHeader({
           variant="ghost"
           size="icon"
           className={`size-9 sm:size-10 [&_svg]:!size-4 sm:[&_svg]:!size-5 ${siteDesign.iconButton}`}
-          aria-label={t("account.open")}
-          onClick={onOpenAccount}
-        >
-          <UserCircle />
+        aria-label={t("account.open")}
+        onClick={onOpenAccount}
+      >
+          <UserCircle aria-hidden="true" />
         </Button>
         <Button
           type="button"
@@ -60,11 +64,11 @@ export function SiteHeader({
           size="icon"
           className={`size-11 sm:size-12 [&_svg]:!size-5 sm:[&_svg]:!size-6 ${siteDesign.primaryMenuButton}`}
           aria-label={t("menu.toggle")}
-          aria-expanded={menuOpen}
-          onClick={onOpenMenu}
-        >
-          <Menu />
-        </Button>
+        aria-expanded={menuOpen}
+        onClick={onOpenMenu}
+      >
+          <Menu aria-hidden="true" />
+      </Button>
       </div>
     </header>
   );

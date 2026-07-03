@@ -18,6 +18,7 @@ type ClassCalendarViewProps = {
   selectedClassId: string | null;
   loadingClassId?: string | null;
   labelPrefix?: string;
+  selectLabel: string;
   onSelectClass: (classId: string) => void;
   renderItemActions?: (item: ClassViewItem) => ReactNode;
 };
@@ -27,6 +28,7 @@ type CalendarClassButtonProps = {
   selectedClassId: string | null;
   isLoading: boolean;
   pendingLabel: string;
+  selectLabel: string;
   timeFormatter: Intl.DateTimeFormat;
   onSelect: () => void;
   actions?: ReactNode;
@@ -37,6 +39,7 @@ function CalendarClassButton({
   selectedClassId,
   isLoading,
   pendingLabel,
+  selectLabel,
   timeFormatter,
   onSelect,
   actions,
@@ -62,6 +65,8 @@ function CalendarClassButton({
         type="button"
         disabled={isLoading}
         aria-busy={isLoading}
+        aria-pressed={item.id === selectedClassId}
+        aria-label={`${selectLabel}: ${item.name}`}
         className="block w-full text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blush-strong/55"
         onClick={onSelect}
       >
@@ -116,6 +121,7 @@ export function ClassCalendarView({
   selectedClassId,
   loadingClassId = null,
   labelPrefix = "classes",
+  selectLabel,
   onSelectClass,
   renderItemActions,
 }: ClassCalendarViewProps) {
@@ -203,6 +209,7 @@ export function ClassCalendarView({
                   pendingLabel={t("classes.pendingBadge", {
                     count: item.pendingRegistrationCount ?? 0,
                   })}
+                  selectLabel={selectLabel}
                   timeFormatter={timeFormatter}
                   onSelect={() => onSelectClass(item.id)}
                   actions={renderItemActions?.(item)}

@@ -122,8 +122,8 @@ export function useManagedClasses({
   );
   const visibleRange = useMemo(() => toVisibleRange(localRange), [localRange]);
   const visibleRangeLabel = useMemo(
-    () => getVisibleRangeLabel(localRange),
-    [localRange],
+    () => getVisibleRangeLabel(localRange, i18n.language),
+    [i18n.language, localRange],
   );
   const selectedClass = useMemo(
     () => classes.find((managedClass) => managedClass.id === selectedClassId) ?? null,

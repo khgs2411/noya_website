@@ -581,18 +581,25 @@ export function ClassAttendanceForm({
           {isInProgress && (
             <div className="mt-4 grid gap-3 border-t border-blush/24 pt-4">
               <form className="grid gap-2" onSubmit={addWalkIn}>
-                <select
-                  className="min-h-11 min-w-0 rounded-xl border border-blush/24 bg-background/70 px-3 text-foreground outline-none focus:border-blush-strong"
-                  value={walkInUserId}
-                  onChange={(event) => setWalkInUserId(event.target.value)}
-                >
-                  <option value="">{t("manager.attendance.chooseWalkIn")}</option>
-                  {users.map((user) => (
-                    <option key={user.user_id} value={user.user_id}>
-                      {getUserLabel(user)}
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                    {t("manager.attendance.chooseWalkIn")}
+                  </span>
+                  <select
+                    className="min-h-11 min-w-0 rounded-xl border border-blush/24 bg-background/70 px-3 text-foreground outline-none focus:border-blush-strong"
+                    value={walkInUserId}
+                    onChange={(event) => setWalkInUserId(event.target.value)}
+                  >
+                    <option value="">
+                      {t("manager.attendance.chooseWalkIn")}
                     </option>
-                  ))}
-                </select>
+                    {users.map((user) => (
+                      <option key={user.user_id} value={user.user_id}>
+                        {getUserLabel(user)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <Button
                   type="submit"
                   variant="outline"
@@ -613,18 +620,28 @@ export function ClassAttendanceForm({
               </form>
 
               <form className="grid gap-2" onSubmit={addTrial}>
-                <input
-                  className="min-h-11 min-w-0 rounded-xl border border-blush/24 bg-background/70 px-3 text-foreground outline-none focus:border-blush-strong"
-                  value={trialName}
-                  onChange={(event) => setTrialName(event.target.value)}
-                  placeholder={t("manager.attendance.trialName")}
-                />
-                <input
-                  className="min-h-11 min-w-0 rounded-xl border border-blush/24 bg-background/70 px-3 text-foreground outline-none focus:border-blush-strong"
-                  value={trialContact}
-                  onChange={(event) => setTrialContact(event.target.value)}
-                  placeholder={t("manager.attendance.trialContact")}
-                />
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                    {t("manager.attendance.trialName")}
+                  </span>
+                  <input
+                    className="min-h-11 min-w-0 rounded-xl border border-blush/24 bg-background/70 px-3 text-foreground outline-none focus:border-blush-strong"
+                    value={trialName}
+                    onChange={(event) => setTrialName(event.target.value)}
+                    placeholder={t("manager.attendance.trialName")}
+                  />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                    {t("manager.attendance.trialContact")}
+                  </span>
+                  <input
+                    className="min-h-11 min-w-0 rounded-xl border border-blush/24 bg-background/70 px-3 text-foreground outline-none focus:border-blush-strong"
+                    value={trialContact}
+                    onChange={(event) => setTrialContact(event.target.value)}
+                    placeholder={t("manager.attendance.trialContact")}
+                  />
+                </label>
                 <Button
                   type="submit"
                   variant="outline"

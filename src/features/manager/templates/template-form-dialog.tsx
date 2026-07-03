@@ -212,6 +212,13 @@ function TemplateFormDialogContent({
       onClick={onClose}
     >
       <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={
+          mode === "edit"
+            ? t("manager.templateForm.editTitle")
+            : t("manager.templateForm.createTitle")
+        }
         className="flex h-full w-full flex-col overflow-hidden bg-background text-foreground sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-[1.4rem] sm:border sm:border-blush/24 sm:bg-card/95 sm:shadow-soft"
         onClick={(event) => event.stopPropagation()}
       >

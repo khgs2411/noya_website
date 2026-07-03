@@ -176,8 +176,8 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     [customRange, rangeAnchorDate, rangeScope],
   );
   const visibleRangeLabel = useMemo(
-    () => getVisibleRangeLabel(localRange),
-    [localRange],
+    () => getVisibleRangeLabel(localRange, i18n.language),
+    [i18n.language, localRange],
   );
   const visibleRange = useMemo(() => toVisibleRange(localRange), [localRange]);
   const classViewItems = useMemo(
@@ -724,12 +724,13 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
   return (
     <main className="min-h-screen bg-background px-5 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 text-foreground sm:px-8 md:pb-10">
       <div className="mx-auto w-full max-w-6xl xl:max-w-[95vw]">
-        <a
-          href="./"
+        <button
+          type="button"
           className="inline-flex text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
+          onClick={() => onNavigate("./")}
         >
           {t("actions.back")}
-        </a>
+        </button>
 
         <section className="mt-6 rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft sm:p-5">
           <div className="max-w-3xl">
@@ -815,6 +816,7 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
                 selectedClassId={selectedClassId}
                 loadingClassId={loadingClassId}
                 labelPrefix="classes"
+                selectLabel={t("classes.select")}
                 onSelectClass={openClassDetails}
               />
             ) : (
@@ -860,6 +862,9 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
                 onClick={closeClassDetails}
               >
                 <aside
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={`${t("classes.detail.eyebrow")}: ${selectedClass.name}`}
                   className="max-h-[92vh] w-full overflow-y-auto rounded-t-[1.4rem] border border-blush/24 bg-background p-5 text-foreground shadow-soft md:max-w-xl md:rounded-[1.4rem] md:bg-card/95"
                   onClick={(event) => event.stopPropagation()}
                 >

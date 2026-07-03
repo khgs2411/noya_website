@@ -1,5 +1,7 @@
 import { useProductContext } from "@class-kit/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { Loader2 } from "lucide-react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 
 import {
   authPath,
@@ -11,24 +13,66 @@ import {
   profilePath,
 } from "@/content/site-content";
 import { SiteHeader } from "@/components/site/site-header";
-import { AuthPage } from "@/features/account/auth-page";
-import { ProfilePage } from "@/features/account/profile-page";
-import { LandingPage } from "@/features/landing/landing-page";
-import { MobileMenu } from "@/features/landing/mobile-menu";
-import { LessonsPage } from "@/features/lessons/lessons-page";
-import {
-  ManagerPage,
-  type ManagerAccessSnapshot,
-} from "@/features/manager/manager-page";
+import type { ManagerAccessSnapshot } from "@/features/manager/manager-page";
 import { useTheme } from "@/hooks/use-theme";
 
 const MANAGER_ACCESS_CACHE_KEY = "noya.manager.lastAccess";
 const MANAGER_ACCESS_CACHE_TTL_MS = 5 * 60 * 1000;
 
+const AuthPage = lazy(() =>
+  import("@/features/account/auth-page").then((module) => ({
+    default: module.AuthPage,
+  })),
+);
+const ProfilePage = lazy(() =>
+  import("@/features/account/profile-page").then((module) => ({
+    default: module.ProfilePage,
+  })),
+);
+const LandingPage = lazy(() =>
+  import("@/features/landing/landing-page").then((module) => ({
+    default: module.LandingPage,
+  })),
+);
+const MobileMenu = lazy(() =>
+  import("@/features/landing/mobile-menu").then((module) => ({
+    default: module.MobileMenu,
+  })),
+);
+const LessonsPage = lazy(() =>
+  import("@/features/lessons/lessons-page").then((module) => ({
+    default: module.LessonsPage,
+  })),
+);
+const ManagerPage = lazy(() =>
+  import("@/features/manager/manager-page").then((module) => ({
+    default: module.ManagerPage,
+  })),
+);
+
 type StoredManagerAccess = ManagerAccessSnapshot & {
   userId: string;
   checkedAt: number;
 };
+
+function RouteFallback() {
+  const { t } = useTranslation();
+
+  return (
+    <div
+      className="grid min-h-[45vh] place-items-center bg-background px-5 py-10 text-foreground"
+      aria-busy="true"
+    >
+      <div className="flex items-center gap-3 rounded-2xl border border-blush/24 bg-card/72 px-5 py-4 text-sm text-foreground/68 shadow-soft">
+        <Loader2
+          className="size-4 shrink-0 animate-spin text-blush-strong"
+          aria-hidden="true"
+        />
+        {t("app.loading")}
+      </div>
+    </div>
+  );
+}
 
 function getCurrentRoute() {
   return {
@@ -111,6 +155,24 @@ export default function App() {
       document.body.style.overflow = "";
     };
   }, [menuOpen, activeImage]);
+
+  useEffect(() => {
+    if (!menuOpen && !activeImage) return;
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+
+      if (activeImage) {
+        setActiveImage(null);
+        return;
+      }
+
+      setMenuOpen(false);
+    }
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [activeImage, menuOpen]);
 
   const canEnterManager = capabilities.dashboard.can_enter;
   const managerUserId = session?.user.id ?? null;
@@ -197,9 +259,26 @@ export default function App() {
   }, [canEnterManager, loading, managerAccessSnapshot, route.pathname]);
 
   function navigateTo(path: string) {
-    window.history.pushState({}, "", path);
+    const nextUrl = new URL(path, window.location.href);
+    window.history.pushState(
+      {},
+      "",
+      `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
+    );
     setRoute(getCurrentRoute());
     setMenuOpen(false);
+
+    window.setTimeout(() => {
+      if (nextUrl.hash) {
+        const target = document.getElementById(
+          decodeURIComponent(nextUrl.hash.slice(1)),
+        );
+        target?.scrollIntoView({ block: "start" });
+        return;
+      }
+
+      window.scrollTo({ top: 0 });
+    }, 0);
   }
 
   function openManager() {
@@ -229,16 +308,19 @@ export default function App() {
             />
           </div>
         )}
-        {page}
+        <Suspense fallback={<RouteFallback />}>{page}</Suspense>
         {menuOpen && (
-          <MobileMenu
-            theme={theme}
-            onToggleTheme={toggleTheme}
-            onOpenAccount={openAccount}
-            onOpenManager={openManager}
-            canEnterManager={canEnterManager}
-            onClose={() => setMenuOpen(false)}
-          />
+          <Suspense fallback={null}>
+            <MobileMenu
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onOpenAccount={openAccount}
+              onOpenManager={openManager}
+              canEnterManager={canEnterManager}
+              onClose={() => setMenuOpen(false)}
+              onNavigate={navigateTo}
+            />
+          </Suspense>
         )}
       </>
     );
@@ -259,16 +341,22 @@ export default function App() {
     if (loading) {
       if (managerAccessSnapshot) {
         return renderWithMenu(
-          <ManagerPage accessSnapshot={managerAccessSnapshot} />,
+          <ManagerPage
+            accessSnapshot={managerAccessSnapshot}
+            onNavigate={navigateTo}
+          />,
           true,
         );
       }
 
-      return renderWithMenu(<ManagerPage loading />, true);
+      return renderWithMenu(
+        <ManagerPage loading onNavigate={navigateTo} />,
+        true,
+      );
     }
 
     if (canEnterManager) {
-      return renderWithMenu(<ManagerPage />, true);
+      return renderWithMenu(<ManagerPage onNavigate={navigateTo} />, true);
     }
   }
 
@@ -288,6 +376,7 @@ export default function App() {
       onToggleAbout={() => setAboutExpanded((current) => !current)}
       onSelectImage={setActiveImage}
       onCloseImage={() => setActiveImage(null)}
+      onNavigate={navigateTo}
     />,
     false,
   );

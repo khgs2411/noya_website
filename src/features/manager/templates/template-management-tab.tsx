@@ -57,7 +57,23 @@ export function TemplateManagementTab({
 
       {canManageTemplates ? (
         <div className="mt-5 flex flex-col gap-4">
-          <div className="flex justify-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              disabled={state.loadStatus === "loading"}
+              onClick={() => void actions.refreshTemplates()}
+            >
+              <RefreshCw
+                className={[
+                  "size-4",
+                  state.loadStatus === "loading" ? "animate-spin" : "",
+                ].join(" ")}
+                aria-hidden="true"
+              />
+              {t("manager.templates.refresh")}
+            </Button>
             <Button
               type="button"
               className="rounded-full"

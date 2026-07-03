@@ -49,6 +49,8 @@ export function ClassCard({
         className="block w-full min-w-0 text-start"
         disabled={isLoading}
         aria-busy={isLoading}
+        aria-pressed={isSelected}
+        aria-label={`${selectLabel}: ${item.name}`}
         onClick={() => onSelect(item.id)}
       >
         <div className="flex min-w-0 items-start justify-between gap-3">
@@ -108,7 +110,6 @@ export function ClassCard({
           )}
 
         {renderMeta?.(item)}
-        <p className="sr-only">{selectLabel}</p>
       </button>
 
       {actions && <div className="mt-4 flex flex-wrap gap-2">{actions}</div>}

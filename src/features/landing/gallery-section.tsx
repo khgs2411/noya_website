@@ -21,11 +21,14 @@ export function GallerySection({
               key={`${image}-${index}`}
               type="button"
               className="group relative overflow-hidden rounded-xl transition duration-300 hover:z-10 hover:-translate-y-1 hover:scale-[1.04] hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={t("gallery.openImage", { count: index + 1 })}
               onClick={() => onSelectImage(image)}
             >
               <img
                 src={image}
                 alt=""
+                loading="lazy"
+                decoding="async"
                 className="h-28 w-full object-cover grayscale transition duration-300 group-hover:scale-[1.03] group-hover:grayscale-0"
               />
             </button>

@@ -103,8 +103,8 @@ export function toVisibleRange(range: LocalDateRange): VisibleRange {
   return { start: range.start.toISOString(), end: range.end.toISOString() };
 }
 
-export function getVisibleRangeLabel(range: LocalDateRange) {
-  const formatter = new Intl.DateTimeFormat(undefined, {
+export function getVisibleRangeLabel(range: LocalDateRange, locale?: string) {
+  const formatter = new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",

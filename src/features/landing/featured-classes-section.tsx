@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { MouseEvent } from "react";
 import { useProductContext, type ClassSummary } from "@class-kit/react";
 import { useTranslation } from "react-i18next";
 
@@ -23,7 +24,11 @@ function toClassHref(item: FeaturedClassCard) {
   return `${lessonsPath}?date=${date}&classId=${encodeURIComponent(item.id)}`;
 }
 
-export function FeaturedClassesSection() {
+export function FeaturedClassesSection({
+  onNavigate,
+}: {
+  onNavigate: (path: string) => void;
+}) {
   const { t, i18n } = useTranslation();
   const { client } = useProductContext();
   const [classes, setClasses] = useState<ClassSummary[]>([]);
@@ -112,6 +117,25 @@ export function FeaturedClassesSection() {
     };
   }, [client]);
 
+  function handleClassLinkClick(
+    event: MouseEvent<HTMLAnchorElement>,
+    href: string,
+  ) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    onNavigate(href);
+  }
+
   return (
     <section id="classes" className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
       <div className="mb-5 flex items-end justify-between gap-4">
@@ -122,6 +146,7 @@ export function FeaturedClassesSection() {
           href={lessonsPath}
           variant="outline"
           className="hidden min-w-48 sm:flex"
+          onNavigate={onNavigate}
         >
           {t("classes.viewAll")}
         </PillLink>
@@ -134,10 +159,22 @@ export function FeaturedClassesSection() {
           <a
             key={"id" in item ? item.id : item.date}
             href={"id" in item ? toClassHref(item) : lessonsPath}
+            onClick={(event) =>
+              handleClassLinkClick(
+                event,
+                "id" in item ? toClassHref(item) : lessonsPath,
+              )
+            }
             className="overflow-hidden rounded-[1.1rem] bg-card shadow-soft transition hover:-translate-y-1 hover:shadow-xl"
           >
             <div className="relative h-36">
-              <img src={item.image} alt="" className="size-full object-cover" />
+              <img
+                src={item.image}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="size-full object-cover"
+              />
               <div className="absolute start-4 top-4 rounded-sm bg-blush px-5 py-2 text-center text-primary-foreground">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em]">
                   {"id" in item

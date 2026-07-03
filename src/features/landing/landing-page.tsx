@@ -18,6 +18,7 @@ export function LandingPage({
   onToggleAbout,
   onSelectImage,
   onCloseImage,
+  onNavigate,
 }: {
   theme: string;
   menuOpen: boolean;
@@ -29,6 +30,7 @@ export function LandingPage({
   onToggleAbout: () => void;
   onSelectImage: (image: string) => void;
   onCloseImage: () => void;
+  onNavigate: (path: string) => void;
 }) {
   return (
     <main className="min-h-screen overflow-x-hidden bg-background text-foreground">
@@ -38,10 +40,11 @@ export function LandingPage({
         onToggleTheme={onToggleTheme}
         onOpenAccount={onOpenAccount}
         onOpenMenu={onOpenMenu}
+        onNavigate={onNavigate}
       />
       <AboutSection expanded={aboutExpanded} onToggleExpanded={onToggleAbout} />
-      <ServicesSection />
-      <FeaturedClassesSection />
+      <ServicesSection onNavigate={onNavigate} />
+      <FeaturedClassesSection onNavigate={onNavigate} />
       <GallerySection onSelectImage={onSelectImage} />
       <ReadonlyScheduleSection />
       <ContactSection />

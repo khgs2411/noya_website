@@ -53,20 +53,22 @@ export function ClassRangeToolbar({
 
   return (
     <div className="flex flex-col gap-3 rounded-[1.4rem] border border-blush/24 bg-background/46 p-3">
-      <div className="grid grid-cols-4 gap-1">
+      <div className="grid grid-cols-2 gap-1 sm:grid-cols-4">
         {scopes.map((scope) => (
           <Button
             key={scope}
             type="button"
             variant="ghost"
             className={cn(
-              "h-10 min-w-0 px-2 font-serif text-xs sm:text-sm",
+              "h-10 min-w-0 px-2 font-serif text-sm",
               rangeScope === scope &&
                 "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
             )}
             onClick={() => onScopeChange(scope)}
           >
-            <span className="truncate">{t(`${labelPrefix}.range.${scope}`)}</span>
+            <span className="whitespace-normal leading-tight">
+              {t(`${labelPrefix}.range.${scope}`)}
+            </span>
           </Button>
         ))}
       </div>

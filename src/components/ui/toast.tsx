@@ -1,4 +1,5 @@
 import { AlertCircle, CheckCircle2, Info, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,8 @@ type ToastStackProps = {
 };
 
 export function ToastStack({ toasts, dir, onDismiss }: ToastStackProps) {
+  const { t } = useTranslation();
+
   if (toasts.length === 0) return null;
 
   return (
@@ -60,7 +63,7 @@ export function ToastStack({ toasts, dir, onDismiss }: ToastStackProps) {
               variant="ghost"
               size="icon"
               className="size-7 rounded-full"
-              aria-label="Close"
+              aria-label={t("actions.close")}
               onClick={() => onDismiss(toast.id)}
             >
               <X className="size-4" aria-hidden="true" />

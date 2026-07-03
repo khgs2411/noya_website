@@ -233,8 +233,28 @@ Goal: Make the platform feel cohesive after the core ClassKit workflows exist.
 
 - [ ] `open` Align copy and localization for platform flows
   - Description: Extend the current Hebrew, English, and Russian language support across class browsing, auth, profile, registration, schedule, and manager states.
-  - Progress: Customer class browsing, detail, registration, cancellation, pending approval, and toast states now have localized copy in Hebrew, English, and Russian. Broader platform copy can continue to be tightened as more workflows land.
+  - Progress: Customer class browsing, detail, registration, cancellation, pending approval, and toast states now have localized copy in Hebrew, English, and Russian. Toast dismissal accessibility now uses the localized shared close label, lazy route loading now has localized visible copy instead of a blank screen, and the runtime document title and description now sync through i18n alongside document language and direction. Shared class range labels and date ranges now respect the active app locale, including RTL Hebrew. User and membership selection controls now expose selected state consistently. Translation key parity across English, Hebrew, and Russian has been verified. Broader platform copy can continue to be tightened as more workflows land.
+
+- [x] `done` Tighten manager form labels and accessibility state
+  - Description: Replace placeholder-only admin fields with visible localized labels where manager workflows need durable context, and ensure selected list items expose state to assistive tech.
+  - Progress: The Users manager tab now labels role creation, search, and role assignment fields. Attendance walk-in and trial participant forms now use visible labels instead of placeholder-only controls. The Users and Memberships user pickers expose selected state with `aria-pressed`, and role permission group toggles, schedule weekday toggles, template cards, and schedule cards now expose selected state as well. Long user identity values in Users and Memberships now follow the design guide's `overflow-wrap:anywhere` rule to avoid layout overflow.
 
 - [ ] `open` Tighten responsive platform navigation
   - Description: Ensure the landing page, classes page, schedule surface, auth/profile, and manager workspace are easy to move between on mobile and desktop.
-  - Progress: The shared site navigation controls now appear across the landing page, classes page, auth/profile, and manager workspace, with a compact header treatment and locale-aware menu behavior.
+  - Progress: The shared site navigation controls now appear across the landing page, classes page, auth/profile, and manager workspace, with a compact header treatment and locale-aware menu behavior. The menu and image lightbox now support Escape-key dismissal and restore page scroll correctly. Internal landing, class preview, auth/profile, lessons, manager, and mobile-menu route links now use the app navigator instead of forcing full document reloads, while external and same-page links keep native behavior. Customer class details, manager class details, manager attendance, class create/edit/cancel, template detail/create/edit/deactivate, and schedule detail surfaces now expose modal dialog semantics across drawer and desktop presentations. The image lightbox now exposes a dialog label and gallery thumbnails expose localized open-photo labels. The language menu now supports Escape and outside-click dismissal, exposes selected-language state, and shared CTA arrows mirror correctly in RTL. Decorative icons in shared navigation, back links, and overlay controls are now hidden from assistive tech when the control already has text or a label. Shared class cards, calendar cells, and auth mode controls now expose selected state, shared class card selection controls now use concise localized accessible names instead of full-card text, and the shared class range toolbar avoids truncating scope labels on mobile while preserving the single-row desktop treatment.
+
+- [x] `done` Make user administration more scalable
+  - Description: Replace the repeated card-per-user control surface with a searchable user directory and focused selected-user detail panel.
+  - Progress: The Users manager tab now keeps browsing and actions separate: managers scan a compact user list, select one user, then assign/revoke roles and review effective permissions in the detail panel.
+
+- [x] `done` Normalize manager refresh controls
+  - Description: Give manager workspaces a consistent manual refresh affordance instead of exposing refresh only after error states.
+  - Progress: Templates, schedules, and user administration now expose normal refresh controls alongside their primary actions, aligning them with classes, pending requests, memberships, and customer class browsing.
+
+- [x] `done` Split heavy feature surfaces from the initial app load
+  - Description: Lazy-load top-level routes and manager tab surfaces so public browsing and customer class viewing do not eagerly load the full manager workspace.
+  - Progress: `App` now lazy-loads landing, auth, profile, lessons, manager, and mobile menu surfaces. `ManagerPage` now lazy-loads each manager tab on demand with a localized loading fallback.
+
+- [ ] `open` Review shared runtime bundle size
+  - Description: Audit the remaining large main chunk after route splitting and decide whether to split shared runtime concerns such as ClassKit, i18n resources, or vendor chunks.
+  - Progress: Feature route chunks are now separated, and Vite/Rolldown now splits shared vendor/runtime code into cacheable chunks for ClassKit, React/i18n, icons, and other vendors. The main app chunk dropped from roughly 599KB to roughly 98KB minified. Landing imagery now declares first-viewport hero priority and lazy async decoding for below-the-fold images. Account and profile first-viewport imagery now use eager async loading hints as well. A future i18n namespace/resource split can still be considered if localization resources become the next bottleneck.

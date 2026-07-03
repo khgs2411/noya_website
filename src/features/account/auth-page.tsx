@@ -99,19 +99,23 @@ export function AuthPage({
   return (
     <main className="min-h-screen bg-background px-5 pb-12 pt-6 text-foreground sm:px-8">
       <div className="mx-auto max-w-5xl">
-        <a
-          href="./"
+        <button
+          type="button"
           className="inline-flex items-center gap-2 text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
+          onClick={() => onNavigate("./")}
         >
-          <ArrowLeft className="size-4 rtl:rotate-180" />
+          <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
           {t("actions.back")}
-        </a>
+        </button>
 
         <div className="mt-7 grid gap-5 md:grid-cols-[0.95fr_1fr] md:items-stretch">
           <section className="relative min-h-72 overflow-hidden rounded-[1.4rem] border border-blush/24 shadow-soft md:min-h-[34rem]">
             <img
               src={images.group}
               alt=""
+              fetchPriority="high"
+              loading="eager"
+              decoding="async"
               className="absolute inset-0 size-full object-cover grayscale"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/48 to-transparent" />
@@ -145,6 +149,7 @@ export function AuthPage({
                       ? "bg-blush text-primary-foreground"
                       : "text-foreground/68 hover:text-foreground"
                   }`}
+                  aria-pressed={visibleMode === "signin"}
                   onClick={() => switchMode("signin")}
                 >
                   {t("auth.signinTab")}
@@ -156,6 +161,7 @@ export function AuthPage({
                       ? "bg-blush text-primary-foreground"
                       : "text-foreground/68 hover:text-foreground"
                   }`}
+                  aria-pressed={visibleMode === "signup"}
                   onClick={() => switchMode("signup")}
                 >
                   {t("auth.signupTab")}
@@ -201,7 +207,9 @@ export function AuthPage({
                   className="mt-1 h-12 rounded-full bg-blush text-primary-foreground hover:bg-blush-strong"
                   disabled={submitting || loading}
                 >
-                  {submitting && <Loader2 className="animate-spin" />}
+                  {submitting && (
+                    <Loader2 className="animate-spin" aria-hidden="true" />
+                  )}
                   {visibleMode === "signup" ? t("auth.signupSubmit") : t("auth.signinSubmit")}
                 </Button>
               </form>

@@ -14,8 +14,14 @@ const resources = {
   en: {
     translation: {
       brand: { name: "Noya's flow", subtitle: 'Body * Dance * Movement', first: 'Noya', second: 'Dance' },
+      app: {
+        title: "Noya's Flow",
+        description:
+          "Noya's Flow offers dance, movement, and studio classes with public class browsing and booking.",
+        loading: 'Loading',
+      },
       language: { label: 'Choose language' },
-      menu: { toggle: 'Open menu', close: 'Close menu' },
+      menu: { toggle: 'Open menu', close: 'Close menu', dialog: 'Menu' },
       theme: { toggle: 'Toggle theme', light: 'Light', dark: 'Dark' },
       nav: { about: 'About', work: 'Work', classes: 'Classes', lessons: 'Lessons', contact: 'Contact' },
       actions: { readMore: 'Read more', readLess: 'Show less', close: 'Close', back: 'Go back', save: 'Save', cancel: 'Cancel' },
@@ -368,6 +374,7 @@ const resources = {
           body: 'Create reusable defaults for classes and future schedules.',
           noAccessTitle: 'Template management is not enabled',
           noAccessBody: 'Your manager account can enter the workspace, but template controls are not available.',
+          refresh: 'Refresh',
           loading: 'Loading templates.',
           errorTitle: 'Templates could not load',
           errorBody: 'Try refreshing templates.',
@@ -431,6 +438,7 @@ const resources = {
           noAccessTitle: 'Schedule management is not enabled',
           noAccessBody: 'Your manager account can enter the workspace, but schedule controls are not available.',
           noTemplates: 'Create an active template before adding schedules.',
+          refresh: 'Refresh',
           loading: 'Loading schedules.',
           errorTitle: 'Schedules could not load',
           errorBody: 'Try refreshing schedules.',
@@ -705,7 +713,11 @@ const resources = {
           threeMonths: 'Three months',
         },
       },
-      gallery: { title: 'Photo Moments' },
+      gallery: {
+        title: 'Photo Moments',
+        preview: 'Image preview',
+        openImage: 'Open photo {{count}}',
+      },
       contact: {
         title: "Let's Connect",
         body: "Have a question or want to work together? I'd love to hear from you.",
@@ -719,8 +731,14 @@ const resources = {
   ru: {
     translation: {
       brand: { name: "Noya's flow", subtitle: 'Body * Dance * Movement', first: 'Noya', second: 'Dance' },
+      app: {
+        title: "Noya's Flow",
+        description:
+          'Noya’s Flow предлагает танцевальные, двигательные и студийные занятия с открытым просмотром и записью.',
+        loading: 'Загрузка',
+      },
       language: { label: 'Выбрать язык' },
-      menu: { toggle: 'Открыть меню', close: 'Закрыть меню' },
+      menu: { toggle: 'Открыть меню', close: 'Закрыть меню', dialog: 'Меню' },
       theme: { toggle: 'Сменить тему', light: 'Светлая', dark: 'Темная' },
       nav: { about: 'Обо мне', work: 'Работы', classes: 'Занятия', lessons: 'Расписание', contact: 'Контакт' },
       actions: { readMore: 'Читать дальше', readLess: 'Свернуть', close: 'Закрыть', back: 'Назад', save: 'Сохранить', cancel: 'Отмена' },
@@ -1073,6 +1091,7 @@ const resources = {
           body: 'Создавайте повторяемые настройки для занятий и будущих расписаний.',
           noAccessTitle: 'Управление шаблонами не включено',
           noAccessBody: 'Ваш менеджерский аккаунт может войти в рабочую область, но управление шаблонами недоступно.',
+          refresh: 'Обновить',
           loading: 'Загружаем шаблоны.',
           errorTitle: 'Не удалось загрузить шаблоны',
           errorBody: 'Попробуйте обновить шаблоны.',
@@ -1136,6 +1155,7 @@ const resources = {
           noAccessTitle: 'Управление расписаниями не включено',
           noAccessBody: 'Ваш менеджерский аккаунт может войти в рабочую область, но управление расписаниями недоступно.',
           noTemplates: 'Создайте активный шаблон перед добавлением расписаний.',
+          refresh: 'Обновить',
           loading: 'Загружаем расписания.',
           errorTitle: 'Не удалось загрузить расписания',
           errorBody: 'Попробуйте обновить расписания.',
@@ -1410,7 +1430,11 @@ const resources = {
           threeMonths: '3 месяца',
         },
       },
-      gallery: { title: 'Фото моменты' },
+      gallery: {
+        title: 'Фото моменты',
+        preview: 'Просмотр изображения',
+        openImage: 'Открыть фото {{count}}',
+      },
       contact: {
         title: 'Свяжемся',
         body: 'Есть вопрос или хотите работать вместе? Я буду рада услышать вас.',
@@ -1424,8 +1448,14 @@ const resources = {
   he: {
     translation: {
       brand: { name: "Noya's flow", subtitle: 'Body * Dance * Movement', first: 'Noya', second: 'Dance' },
+      app: {
+        title: "Noya's Flow",
+        description:
+          'Noya’s Flow מציעה שיעורי ריקוד, תנועה וסטודיו עם עיון והרשמה לשיעורים.',
+        loading: 'בטעינה',
+      },
       language: { label: 'בחירת שפה' },
-      menu: { toggle: 'פתיחת תפריט', close: 'סגירת תפריט' },
+      menu: { toggle: 'פתיחת תפריט', close: 'סגירת תפריט', dialog: 'תפריט' },
       theme: { toggle: 'החלפת מצב תצוגה', light: 'בהיר', dark: 'כהה' },
       nav: { about: 'עליי', work: 'עבודות', classes: 'שיעורים', lessons: 'מערכת שיעורים', contact: 'יצירת קשר' },
       actions: { readMore: 'קראי עוד', readLess: 'סגירה', close: 'סגירה', back: 'חזרה', save: 'שמירה', cancel: 'ביטול' },
@@ -1778,6 +1808,7 @@ const resources = {
           body: 'יצירת ברירות מחדל לשיעורים ולמערכות עתידיות.',
           noAccessTitle: 'ניהול תבניות אינו זמין',
           noAccessBody: 'חשבון הניהול שלך יכול להיכנס לסביבת העבודה, אבל כלי ניהול התבניות אינם זמינים.',
+          refresh: 'רענון',
           loading: 'טוענים תבניות.',
           errorTitle: 'לא ניתן לטעון תבניות',
           errorBody: 'אפשר לנסות לרענן את התבניות.',
@@ -1841,6 +1872,7 @@ const resources = {
           noAccessTitle: 'ניהול מערכות אינו זמין',
           noAccessBody: 'חשבון הניהול שלך יכול להיכנס לסביבת העבודה, אבל כלי ניהול המערכות אינם זמינים.',
           noTemplates: 'צרי תבנית פעילה לפני הוספת מערכות.',
+          refresh: 'רענון',
           loading: 'טוענים מערכות.',
           errorTitle: 'לא ניתן לטעון מערכות',
           errorBody: 'אפשר לנסות לרענן את המערכות.',
@@ -2114,7 +2146,11 @@ const resources = {
           threeMonths: 'תקף לשלושה חודשים',
         },
       },
-      gallery: { title: 'רגעים בתמונה' },
+      gallery: {
+        title: 'רגעים בתמונה',
+        preview: 'תצוגת תמונה',
+        openImage: 'פתיחת תמונה {{count}}',
+      },
       contact: {
         title: 'בואו נדבר',
         body: 'יש לך שאלה או רצון לעבוד יחד? אשמח לשמוע ממך.',
@@ -2137,6 +2173,18 @@ function syncDocumentLanguage(language: string) {
   const languageCode = language.split('-')[0]
   document.documentElement.lang = languageCode
   document.documentElement.dir = getLanguageDirection(languageCode)
+  document.title = i18n.t('app.title')
+
+  const description = i18n.t('app.description')
+  let descriptionMeta = document.querySelector<HTMLMetaElement>('meta[name="description"]')
+
+  if (!descriptionMeta) {
+    descriptionMeta = document.createElement('meta')
+    descriptionMeta.name = 'description'
+    document.head.append(descriptionMeta)
+  }
+
+  descriptionMeta.content = description
 }
 
 i18n

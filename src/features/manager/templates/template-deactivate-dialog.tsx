@@ -36,6 +36,9 @@ export function TemplateDeactivateDialog({
       onClick={onClose}
     >
       <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("manager.templateDeactivate.title")}
         className="w-full rounded-t-[1.4rem] border border-blush/24 bg-background p-5 text-foreground shadow-soft sm:max-w-lg sm:rounded-[1.4rem]"
         onClick={(event) => event.stopPropagation()}
       >

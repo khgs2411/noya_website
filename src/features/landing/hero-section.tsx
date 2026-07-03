@@ -10,12 +10,14 @@ export function HeroSection({
   onToggleTheme,
   onOpenAccount,
   onOpenMenu,
+  onNavigate,
 }: {
   theme: string;
   menuOpen: boolean;
   onToggleTheme: () => void;
   onOpenAccount: () => void;
   onOpenMenu: () => void;
+  onNavigate: (path: string) => void;
 }) {
   const { t } = useTranslation();
 
@@ -25,6 +27,9 @@ export function HeroSection({
         <img
           src={images.hero}
           alt=""
+          fetchPriority="high"
+          loading="eager"
+          decoding="async"
           className="size-full object-cover object-[52%_18%] grayscale"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/18 to-transparent" />
@@ -54,8 +59,14 @@ export function HeroSection({
             {t("hero.body")}
           </p>
           <div className="mt-8 flex max-w-sm flex-col gap-3">
-            <PillLink href={lessonsPath}>{t("hero.classes")}</PillLink>
-            <PillLink href={lessonsPath} variant="outline">
+            <PillLink href={lessonsPath} onNavigate={onNavigate}>
+              {t("hero.classes")}
+            </PillLink>
+            <PillLink
+              href={lessonsPath}
+              variant="outline"
+              onNavigate={onNavigate}
+            >
               {t("hero.private")}
             </PillLink>
           </div>

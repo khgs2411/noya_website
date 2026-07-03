@@ -68,15 +68,42 @@ export function ScheduleManagementTab({
                 {t("manager.schedules.noTemplates")}
               </p>
             )}
-            <Button
-              type="button"
-              className="rounded-full sm:ms-auto"
-              disabled={!canCreateSchedule}
-              onClick={() => setFormSurface({ mode: "create" })}
-            >
-              <Plus className="size-4" aria-hidden="true" />
-              {t("manager.scheduleActions.create")}
-            </Button>
+            <div className="flex flex-col gap-2 sm:ms-auto sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                disabled={
+                  state.loadStatus === "loading" ||
+                  managedTemplates.state.loadStatus === "loading"
+                }
+                onClick={() => {
+                  void actions.refreshSchedules();
+                  void managedTemplates.actions.refreshTemplates();
+                }}
+              >
+                <RefreshCw
+                  className={[
+                    "size-4",
+                    state.loadStatus === "loading" ||
+                    managedTemplates.state.loadStatus === "loading"
+                      ? "animate-spin"
+                      : "",
+                  ].join(" ")}
+                  aria-hidden="true"
+                />
+                {t("manager.schedules.refresh")}
+              </Button>
+              <Button
+                type="button"
+                className="rounded-full"
+                disabled={!canCreateSchedule}
+                onClick={() => setFormSurface({ mode: "create" })}
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                {t("manager.scheduleActions.create")}
+              </Button>
+            </div>
           </div>
 
           {state.loadStatus === "loading" && (

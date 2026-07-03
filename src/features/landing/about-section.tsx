@@ -21,6 +21,8 @@ export function AboutSection({
       <img
         src={images.portrait}
         alt=""
+        loading="lazy"
+        decoding="async"
         className="h-80 w-full rounded-[1.65rem] object-cover object-top grayscale md:sticky md:top-8 md:h-[32rem]"
       />
       <div className="relative rounded-[1.8rem] bg-card/62 p-7 shadow-soft sm:p-8">

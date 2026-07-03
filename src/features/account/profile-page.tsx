@@ -38,19 +38,23 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
   return (
     <main className="min-h-screen bg-background px-5 pb-12 pt-6 text-foreground sm:px-8">
       <div className="mx-auto max-w-5xl">
-        <a
-          href="./"
+        <button
+          type="button"
           className="inline-flex items-center gap-2 text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
+          onClick={() => onNavigate("./")}
         >
-          <ArrowLeft className="size-4 rtl:rotate-180" />
+          <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
           {t("actions.back")}
-        </a>
+        </button>
 
         <div className="mt-7 grid gap-5 lg:grid-cols-[0.82fr_1.18fr] lg:items-stretch">
           <section className="relative min-h-80 overflow-hidden rounded-[1.4rem] border border-blush/24 shadow-soft lg:min-h-[34rem]">
             <img
               src={images.portrait}
               alt=""
+              fetchPriority="high"
+              loading="eager"
+              decoding="async"
               className="absolute inset-0 size-full object-cover object-[50%_20%] grayscale"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/42 to-transparent" />
@@ -82,7 +86,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
                   className="h-11 w-fit rounded-full border-blush/38 bg-background/42 px-5 text-foreground hover:bg-blush/10"
                   onClick={handleSignOut}
                 >
-                  <LogOut />
+                  <LogOut aria-hidden="true" />
                   {t("profile.signOut")}
                 </Button>
               )}
