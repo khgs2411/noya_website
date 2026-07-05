@@ -6,6 +6,9 @@ import App from './App'
 import './i18n'
 import './index.css'
 import { classKitClient } from './lib/class-kit-client'
+import { registerServiceWorker } from './register-service-worker'
+
+registerServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

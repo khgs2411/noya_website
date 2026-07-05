@@ -1,8 +1,8 @@
 # Noya Website Roadmap
 
-This roadmap guides the shift from a polished landing page into Noya's ClassKit-backed class management platform.
+This roadmap tracks the next ClassKit-backed product adoption work for Noya's website. The old platform-build roadmap is considered complete; this file now answers what we are doing next after the core class, manager, registration, membership, schedule, and attendance workflows already exist.
 
-Use this file to answer "what are we doing next?" after time away from the project. ClassKit product behavior should follow `/Users/liadgoren/Repositories/class-kit/docs/getting-started.md` and the `@class-kit/react` client SDK boundary; this website owns the visual design, page composition, copy, and product-specific interaction polish.
+Use this file to answer "what are we doing next?" after time away from the project. ClassKit product behavior should follow `/Users/liadgoren/Repositories/class-kit/docs/changelog.md`, `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md`, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md`, and the `@class-kit/react` client SDK boundary; this website owns Noya-specific visual design, page composition, copy, routing, and product-specific interaction polish.
 
 ## How To Use This Roadmap
 
@@ -26,235 +26,95 @@ Status labels:
 
 ## Always-On Guardrails
 
-- Product websites consume ClassKit through `@class-kit/react`; this app should not own ClassKit database access, RPC calls, Edge Function action names, or authorization policy.
-- Product identity is backend-owned in deployed product contexts. Local development may pass a product key only as a development convenience when ClassKit requires it.
-- Preserve the existing Noya brand and landing-page feel while turning the booking and management surfaces into real product workflows.
-- Public class discovery, customer registration, profile/auth, and manager operations should be distinct product areas rather than one overloaded page.
-- The current read-only lessons/schedule content is external client information, not the ClassKit-managed schedule system; keep it until Noya chooses to remove or reposition it.
+- Reusable product-platform behavior belongs in ClassKit first, then this website adopts it through `@class-kit/react`.
+- Noya-specific copy, page composition, visual styling, and interaction polish belong in this website.
+- Do not call Supabase, raw ClassKit Edge Functions, or ClassKit database objects from this website.
+- Do not expose manager-only SDK surfaces to ordinary students.
+- Customer-facing legal, profile, signup, waiver, and membership behavior must use customer-safe ClassKit surfaces.
+- Product-user metadata is ClassKit-owned product data. This website may use it for Noya-specific flags such as onboarding completion, but must read and write it through the supported ClassKit SDK surface and preserve unrelated metadata keys.
+- Keep the existing Noya brand, mobile-first layout, Hebrew/English/Russian localization, and RTL-safe behavior.
 
-## Roadmap Step 0: ClassKit App Foundation
+## Roadmap Step 1: Signup Links
 
-Goal: Establish the application boundary that lets the website consume ClassKit without collapsing product SDK concerns into the visual layer.
+Goal: Adopt ClassKit-managed signup links for class-specific and filtered class-discovery entry points.
 
-- ~~[x] `done` Split the landing-page monolith into domain components~~
-  - ~~Description: `App.tsx` has been reduced to route and interaction composition, with landing sections, lessons, shared site primitives, content constants, and design guide concerns separated by domain.~~
-  - ~~Why: This creates the structural boundary needed before replacing mock class content with live ClassKit data.~~
+- [ ] `next` Resolve public signup links
+  - Description: Support ClassKit signup-link slugs that resolve to either a specific class or a product-controlled filter payload.
+  - Why: This is the first active slice because ClassKit v0.1.13 now owns durable signup-link resolution, while this website owns how resolved links route into Noya's public classes experience.
+  - Shape: Public resolution should use `client.signupLinks.resolve(slug)` from `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#signup-links`. Link resolution is anonymous-safe and product-scoped by origin or localhost product-key hint. The website should not invent a hash/link store or call raw `class-kit-signup-links`; the ClassKit facade maps to `signupLinks.resolve(slug)` as documented in `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md#capability-map` and `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md#edge-function-map`.
 
-- ~~[x] `done` Add the ClassKit client/provider shell~~
-  - ~~Description: Introduce the website's ClassKit client setup and provider boundary so customer, auth, and manager pages can read product context and call the SDK facade.~~
-  - ~~Shape: Use environment-driven Supabase URL, publishable key, auth redirect URL, and an app-specific auth storage key. Do not pass product identity from the website.~~
+- [ ] `open` Route class-target signup links
+  - Description: Open the public classes page with the linked class focused and ready for the normal customer registration flow.
+  - Shape: Class-target links return `target_type: "class"` and `class_id`. The website should map that response into the existing public class-detail focus and normal `classes.*` registration flow rather than adding a separate signup page or manager-only data path.
 
-- ~~[x] `done` Define the platform route model~~
-  - ~~Description: The app direction is named product areas for classes, focused class detail, profile/auth, and manager access, while the existing read-only lessons content moves into the homepage instead of remaining the main class destination.~~
-  - ~~Shape: Append the existing read-only lessons/schedule content below Photo Moments and before contact. Public classes and manager pages become separate ClassKit-backed product areas.~~
+- [ ] `open` Route filter-target signup links
+  - Description: Open the public classes page with resolved filters applied so promotional links can expose a curated set of classes.
+  - Shape: Filter-target links return `target_type: "filter"` and a product-controlled `filters` object. The website should treat those filters as ClassKit-provided routing state for public discovery, not as a local query language with website-owned persistence.
 
-## Roadmap Step 1: Account, Authentication, And Profile
+- [ ] `open` Add manager signup-link creation affordance
+  - Description: Let managers create class-target and filter-target signup links through the ClassKit management facade.
+  - Shape: Use `client.management.signupLinks.create(input)` from manager-owned surfaces only, as documented in `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#signup-links`. Class links pass `targetType: "class"` and `classId`; filter links pass `targetType: "filter"` plus a product-controlled filter object and optional slug. The website decides the manager interaction and copy; ClassKit owns link persistence and resolution.
 
-Goal: Give students and managers a coherent identity surface backed by ClassKit product context.
+## Roadmap Step 2: Product User Identity
 
-- ~~[x] `done` Add sign-in and sign-up flows~~
-  - ~~Description: Add website-owned auth UI that uses ClassKit/Supabase session state and product policy to show the right email/password and OAuth options.~~
-  - ~~Shape: Product policy should control whether sign-up is available, whether email/password is shown, and whether Google sign-in is shown.~~
-  - ~~Progress: Sign-in supports the configured password and Google providers, while sign-up is implemented but hidden when the product is invite-only.~~
+Goal: Make display name and optional phone number first-class customer identity fields for this product.
 
-- ~~[x] `done` Add profile and session controls~~
-  - ~~Description: Add a profile surface for signed-in users to understand their current product access, registration status, and sign-out option.~~
-  - ~~Shape: Unauthorized or inactive product users need a clear state that explains why they cannot register or manage classes.~~
-  - ~~Progress: The account/profile surface is branded, mobile-first, student-facing, and avoids exposing raw ClassKit permissions or backend product language.~~
+- [ ] `next` Add profile identity fields
+  - Description: Let signed-in users provide or review their product display name and optional phone number through a customer-safe ClassKit surface.
+  - Why: Display name needs a canonical customer-safe source before manager lists and registration surfaces can rely on it.
+  - Shape: Load the signed-in user's detailed product profile through `client.profile.get()` as documented in `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-profile`. The profile should treat `user.display_name` as the primary human label and email as secondary account information. Product-user metadata and membership-grant details should come from the ClassKit profile response, not from raw Supabase or manager-only membership APIs.
 
-- ~~[x] `done` Gate manager affordance from the profile surface~~
-  - ~~Description: Use ClassKit capabilities only to reveal a future manager workspace affordance for users who can manage the product, while keeping student account and booking language focused.~~
-  - ~~Shape: Raw permission lists and internal authorization details should not be shown to students or managers on the profile page.~~
+- [ ] `open` Add first-sign-in onboarding
+  - Description: Prompt users who have not completed onboarding to provide a required display name and optional phone number.
+  - Why: The onboarding prompt creates enough structured product-user identity for later manager-facing lists, attendance, membership, and registration surfaces to show names instead of relying on email addresses.
+  - Shape: Read the onboarding state from product-user `metadata`, using a stable Noya-owned flag such as `onboarding_completed`. Keep the prompt small, localized, and non-manager-specific. Explain that the phone number is optional but improves future product workflows.
 
-## Roadmap Step 2: Manager Workspace
+- [ ] `open` Persist onboarding completion
+  - Description: Use product-user metadata as the durable onboarding flag without inventing website-owned identity state.
+  - Shape: Persist onboarding completion through the supported ClassKit product-user metadata write surface. Where the SDK contract replaces the metadata object instead of merging partial patches, first preserve existing metadata keys from the current ClassKit profile/user response and then write the full next metadata object. Relevant docs: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-profile`, `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-roles-and-users`, and `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md#capability-map`.
 
-Goal: Give the product owner the protected workspace needed to create and manage the ClassKit class inventory before exposing it to customers.
+## Roadmap Step 3: User Name Presentation
 
-- ~~[x] `done` Add manager entry and access states~~
-  - ~~Description: Add a manager page that is visible and useful only when ClassKit capabilities allow management.~~
-  - ~~Shape: Non-manager users should see a clear denied or unavailable state rather than partial manager controls.~~
-  - ~~Progress: Manager access now lives in a dedicated manager route and menu entry, gated by ClassKit dashboard capability, while the profile page remains account-focused.~~
+Goal: Prefer human display names across manager and registration surfaces after identity collection exists.
 
-- [x] `done` Add class management
-  - Description: Let the manager create, edit, publish, draft, cancel, and inspect classes through the ClassKit management facade.
-  - Progress: The manager workspace now supports one-off class inventory management with mobile-first list browsing, desktop calendar/list controls, quick publish/draft actions, create/edit/cancel surfaces, and item details presented through a mobile drawer or desktop dialog overlay instead of expanding inline.
+- [ ] `open` Normalize shared user labels
+  - Description: Use display name as the primary label and email as supporting detail wherever product users are listed.
+  - Why: This should follow the profile identity and onboarding slices so user surfaces have a reliable human label to show.
+  - Shape: Normalize labels around ClassKit product-user fields: manager `ProductUserListItem` exposes `display_name`, `email`, `phone_number`, and `metadata`; registration summaries expose `user.displayName` and `user.email`. Prefer display name, then email, then a stable fallback only where needed. Relevant docs: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-roles-and-users` and `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md#capability-map`.
 
-- [x] `done` Add template-backed class setup
-  - Description: Let the manager define reusable class templates that make repeated class creation consistent enough for public discovery.
-  - Progress: The manager workspace now supports ClassKit-backed template listing, creation, editing, deactivation, and template selection during one-off class creation.
+- [ ] `open` Update manager user surfaces
+  - Description: Apply the normalized label shape to Users, Memberships, and other manager user-selection surfaces.
+  - Shape: Apply the shared label convention to manager-owned surfaces that already use `management.users.*`, including Users and Memberships. Email should remain visible where it helps disambiguation, but should not be the main front-facing value when a display name exists. Profile and metadata edits still follow the Product User Identity step; this step is presentation consistency across existing manager lists.
 
-- [x] `done` Add initial schedule-backed class generation
-  - Description: Let the manager use ClassKit schedules enough to create real upcoming class availability for the public classes page and landing preview.
-  - Why: Public discovery should be downstream of manager-created inventory, not a mock frontend surface that later has to be rewired.
-  - Shape: Keep this to manager-side inventory creation. Broader schedule operations remain in the later manager schedule system step.
-  - Progress: The manager workspace now supports ClassKit-backed schedule listing, creation, editing, preview, and generation from active templates, while skip/unskip and broader lifecycle tools remain in the later schedule-system step.
+- [ ] `open` Update class and registration surfaces
+  - Description: Apply display names to registered-user, pending-request, attendance, and participant lists where ClassKit responses expose product-user identity.
+  - Shape: Use the identity exposed by ClassKit management registration and attendance/class participant surfaces, including `ManagementRegistrationSummary.user.displayName` where available. Keep registration counts, membership context, and manager actions unchanged; this step is presentation and identity clarity, not a registration-behavior change. Do not infer or synthesize identities outside the SDK response.
 
-## Roadmap Step 3: Public Class Discovery
+## Roadmap Step 4: Product Documents
 
-Goal: Replace mock upcoming-class content with live ClassKit classes after manager-created class inventory exists.
+Goal: Adopt ClassKit product documents for terms, policies, and public legal links without hard-coding legal-page infrastructure in this website.
 
-- [x] `done` Extract reusable class views
-  - Description: Move the manager class day, week, month, list, calendar, and card presentation into reusable domain components that can support both manager and customer class surfaces.
-  - Shape: Shared class views should receive normalized display data and action slots. Manager-only `management.*` fields and actions stay in the manager feature, while the future customer page maps `classes.*` responses into the same presentation model.
-  - Progress: Class range, toolbar, list, calendar, and card presentation now live under shared class domain components with manager-specific data mapping and actions kept in the manager feature.
+- [ ] `open` Add product document routes
+  - Description: Render published ClassKit product documents by document type and locale.
+  - Why: Product documents are reusable ClassKit infrastructure with product-specific content, so this website should consume published documents instead of owning the document system.
+  - Shape: Use public `client.productDocuments.get(documentType, { locale, fallbackLocale })` for full markdown content and `client.productDocuments.list(options?)` for published summaries, as documented in `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-documents`. Public reads are anonymous-safe, product-scoped, and cached by the SDK in memory and `localStorage` for 5 minutes. Do not hard-code legal text into website routes except for temporary content while the product document is not yet published.
 
-- [x] `done` Create the classes page
-  - Description: Add a dedicated classes page for browsing available classes, selecting a class, and entering the customer booking flow from a focused class context.
-  - Shape: "View all" should navigate to this page. Clicking a class preview should open the same page with that class focused.
-  - Progress: The existing lessons route now serves a public ClassKit-backed class browser with range controls, list/calendar views, selected-class focus, and customer registration actions that prompt unauthenticated users to sign in. It uses customer-safe `classes.*` data, targeted class refreshes, and shared class presentation components.
+- [ ] `open` Add footer and policy links
+  - Description: Link to terms, privacy, accessibility, and browser-storage/cookie notices from the Noya website shell.
+  - Shape: The footer/site shell should link to ClassKit product document types such as `terms`, `privacy`, `accessibility`, and storage/cookie notice documents. The website owns link placement, page chrome, localization labels, and RTL-safe navigation; ClassKit owns the published document versions, locale fallback, and content retrieval. Relevant docs: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-documents` and `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md#edge-function-map`.
 
-- [x] `done` Link the landing "Upcoming Classes" section to real classes
-  - Description: Use ClassKit class list data for the landing-page preview so the cards reflect actual upcoming classes rather than static May mockups.
-  - Shape: The section remains a preview; the full browsing and focused class behavior belongs on the classes page.
-  - Progress: The homepage preview now fetches the next three customer-visible upcoming classes through `classes.list`, keeps the existing card image treatment, and links each class to the customer classes page filtered to that class date with the class focused.
+- [ ] `open` Add document acceptance where needed
+  - Description: Use ClassKit document acceptances only in flows that require agreement snapshots, such as signup, booking, checkout, or future waivers.
+  - Shape: Use `client.productDocuments.accept(documentType, { locale, fallbackLocale, context })` only for authenticated active product users and only when a flow needs a durable agreement snapshot. ClassKit snapshots accepted document id, type, locale, version, title, markdown content, and context; later edits do not rewrite historical acceptances. Acceptance should be flow-specific, not a generic blocking wall across the whole public website.
 
-- [x] `done` Add class detail focus
-  - Description: Give each class a durable focused state that can show richer ClassKit data such as description, category, location, capacity, registration policy, roster visibility, and the user's registration state when available.
-  - Progress: Customer class cards now open a focused detail surface as a desktop dialog or mobile drawer, fetch focused class data through `classes.get`, and show customer-safe details and registration state without exposing manager fields.
+## Roadmap Step 5: Later ClassKit Surfaces
 
-## Roadmap Step 4: Customer Registration
+Goal: Track requested Noya features that are waiting on new customer-safe ClassKit behavior.
 
-Goal: Turn class browsing into a real customer booking experience through the ClassKit registration facade.
+- [ ] `open` Add customer-safe membership details to profile
+  - Description: Show active membership type, remaining stock, and/or validity dates once ClassKit exposes ordinary-user membership details.
+  - Why: The current membership management facade is manager-owned and should not be exposed to students.
 
-- [x] `done` Add class registration actions
-  - Description: Allow eligible signed-in customers to register for a class, see pending or approved registration state, and cancel when ClassKit says cancellation is allowed.
-  - Shape: Registration UI should respect active product membership, membership requirements, manager-user restrictions, temporal class state, and ClassKit-provided register/cancel flags.
-  - Progress: Signed-out users are routed to authentication before registering. Signed-in users can register or cancel through `classes.*`, see pending versus approved state, and receive localized toast confirmations and mapped cancellation-cutoff errors.
-
-- [x] `done` Add registration-aware class presentation
-  - Description: Show capacity, registration state, membership requirements, and roster/count information when the ClassKit response exposes those fields.
-  - Progress: Class cards and details now distinguish approved registrations from pending approval requests, show membership and registration policy context, and only display registered counts when the customer-facing response exposes them.
-
-## Roadmap Step 5: Pending Class Registration Management
-
-Goal: Give managers a focused workflow for reviewing pending class registration requests separately from approved registrations.
-
-- [x] `done` Add global pending registration review
-  - Description: Add a management surface that lists pending class registration requests across the product and lets authorized managers approve or reject requests through `management.registrations.*`.
-  - Shape: Pending requests are not registrations. They represent users waiting for approval and should be displayed separately from approved registration counts. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Registration Management, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Capability Map.
-  - Progress: The manager workspace now includes a global pending-request review surface backed by `management.registrations.listPending`, with approve and reject actions.
-
-- [x] `done` Add per-class pending registration review
-  - Description: Add pending request review to the selected class detail surface so managers can approve or reject requests without leaving the class context.
-  - Shape: Use `management.registrations.listPending(...)` scoped by class where appropriate. Keep customer self-service registration under `classes.*`. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Registration Management.
-  - Progress: Selected manager class details now include class-scoped pending request review and refresh the visible class range after approval or rejection.
-
-- [x] `done` Add pending request indicators to class views
-  - Description: Show a badge or similar visual indicator in manager list and calendar views when a class has pending registration requests.
-  - Shape: Use `pendingRegistrationCount` as pending-request state, not as part of registered user count. Approved registrations remain represented by `registeredUsersCount`. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Field Shape Notes.
-  - Progress: Shared class cards and calendar cells can display a pending-request badge when the manager adapter provides `pendingRegistrationCount`.
-
-## Roadmap Step 6: User, Role, And Permission Management
-
-Goal: Give managers product-scoped administration tools for users, roles, and permissions using the ClassKit management facade.
-
-- [x] `done` Add product user management
-  - Description: Let authorized managers view product users, inspect each user's assigned roles, and inspect effective product permissions.
-  - Shape: Use `management.users.*` for product-scoped user visibility. Do not treat product user role assignment as global Supabase identity creation. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Product Roles And Users.
-  - Progress: The manager workspace now includes a users surface backed by `management.users.list`, showing assigned roles and permissions derived from role grants.
-
-- [x] `done` Add role and permission management
-  - Description: Let authorized managers view roles, create roles, update roles, view role permissions, and grant or revoke permissions on roles.
-  - Shape: Use `management.roles.*`; role level is metadata, while permission-key grants remain explicit where backend guards require them. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Product Roles And Users, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Product Context Response.
-  - Progress: The manager workspace now lists product roles and permission catalog entries, supports role creation and update, and supports granting or revoking role permissions through `management.roles.*`.
-
-- [x] `done` Add user role assignment
-  - Description: Let authorized managers assign and revoke product roles for users through the documented user-role management facade.
-  - Shape: Role assignment should remain product-local authority and should not expose platform-admin controls. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Capability Map, `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Product Roles And Users.
-  - Progress: Product user cards now support assigning and revoking roles through `management.users.roles.*`.
-
-## Roadmap Step 7: Manager Schedule System
-
-Goal: Expand manager-owned schedule operations after the core manager class workflow and public class flow exist.
-
-- [x] `done` Add schedule lifecycle and skipped-date management
-  - Description: Give the manager a fuller schedule workspace for maintaining recurring class patterns, generated availability, skipped dates, and schedule lifecycle state.
-  - Why: Schedule management is not a customer-facing feature; it is an owner workflow that supports reliable public availability. Keep this slice focused on schedule source rules, generated concrete class instantiation, and date exceptions before adding class-session attendance operations.
-  - Shape: Use `management.schedules.*` for focused schedule detail, generation, pause, archive, skip, and unskip workflows. Schedules remain source rules, not customer-visible classes or registration targets. Generated classes are concrete class instances that later flow into class-session lifecycle operations. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Schedules, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Capability Map.
-  - Progress: The manager schedule detail workflow now supports focused schedule refresh, generation, pause, archive, and date skip/unskip controls through `management.schedules.*`.
-
-## Roadmap Step 8: Class Session Lifecycle And Attendance
-
-Goal: Let managers operate concrete class sessions once schedule and class inventory exists.
-
-- [x] `done` Add class attendance and session reporting
-  - Description: Let the manager start a concrete class session, view approved registered participants, mark attendance, add supported walk-in or trial participants, complete the class, and view the resulting class attendance report.
-  - Why: This is not schedule management and it is not pending registration review. It operates on concrete class sessions after classes have been created manually or generated from schedules.
-  - Shape: Use `management.attendance.*` for `listForClass`, `start`, `updateParticipant`, `addWalkIn`, `addTrial`, and `complete`. Use approved registration data only as roster context; pending approval workflows remain in Step 5. Current SDK docs expose attendance lifecycle actions, but not a separate report endpoint, so the report view should be derived from class state and attendance participants unless ClassKit adds a dedicated report API. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Attendance, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Attendance lifecycle.
-  - Progress: The manager class detail workflow now includes attendance loading, class start, participant present/absent updates, walk-in and trial participant creation, class completion, and an in-panel attendance report derived from participants.
-
-## Roadmap Step 9: Responsive Async Operations
-
-Goal: Improve manager and customer workflow responsiveness by applying local UI updates with backend confirmation where ClassKit mutations already provide a clear success boundary.
-
-- [x] `done` Review lazy async mutation opportunities
-  - Description: Review the application for places where a successful SDK mutation can update the local UI immediately and reconcile in the background instead of forcing full-page or full-panel loading states.
-  - Shape: Good candidates include pending registration approval/rejection, attendance start, participant attendance updates, walk-in and trial additions, class completion, and other repeated operational actions where one row, card, or section can own the loading state while broader data refreshes happen silently.
-  - Progress: Manager attendance, class lifecycle actions, schedule operations, template operations, user role operations, customer registration actions, and pending registration review now update local UI first and reconcile with ClassKit in the background.
-
-## Roadmap Step 10: Membership Management
-
-Goal: Expose ClassKit membership administration through the manager interface without making this website own payment processing or membership business rules.
-
-- [x] `done` Add a dedicated membership workspace
-  - Description: Give memberships their own manager surface instead of treating membership administration as an inline read-only detail inside every user card.
-  - Shape: Use `management.memberships.*` from the ClassKit management facade. Keep payment processing and membership business rules in ClassKit; this website owns the manager UI, localized copy, and responsive interaction polish. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Memberships.
-  - Progress: The manager workspace now has a first-class Memberships tab, while the Users tab is reduced back to user, role, and permission administration with a lightweight search path for larger user lists.
-
-- [x] `done` Add membership type management
-  - Description: Let authorized managers create, update, and deactivate product membership types without this website owning payment processing or membership business rules.
-  - Shape: Use `management.memberships.listTypes()`, `management.memberships.createType(input)`, `management.memberships.updateType(input)`, and `management.memberships.deactivateType(membershipTypeId)`. Membership type modes, stock, duration, activation, and validation remain ClassKit-owned. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/class-api-map.md` Memberships.
-  - Progress: Membership type creation, editing, deactivation, focused loading states, and silent background refresh now live in the dedicated Memberships tab.
-
-- [x] `done` Add membership grant lifecycle management
-  - Description: Let authorized managers assign, upgrade, replace, revoke, and inspect a user's membership grants from the product user management experience.
-  - Shape: Use `management.memberships.grant(input)`, `management.memberships.upgrade(input)`, `management.memberships.revoke(membershipGrantId)`, `management.memberships.listUserGrants(userId)`, and `management.memberships.listLedger({ userId, limit })`. This should be driven by a scalable user lookup and focused user detail drawer/dialog rather than expanding membership administration inline for every user card. Do not call raw Edge Functions from this website; ClassKit owns active type validation, stock, validity, grant replacement, revocation, and ledger side effects. Doc reference: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` Memberships, `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md` Function-to-SDK map.
-  - Progress: The Memberships tab now includes user search, selected-user grant and upgrade actions, active grant revocation, current grant visibility, and recent membership ledger activity with focused loading states and silent reconciliation.
-
-- [ ] `next` Redesign the user administration directory
-  - Description: Make the users, roles, permissions, and membership assignment workflow scale to hundreds of users.
-  - Shape: Keep the Users tab as a searchable directory with compact rows and focused detail surfaces for role and permission changes. Membership assignment should connect to the dedicated Memberships workflow instead of adding heavy per-user panels to the main list.
-
-## Roadmap Step 11: Static Lessons And External Schedule Content
-
-Goal: Preserve the current read-only lessons/schedule content as client-owned information while the ClassKit platform takes over managed classes.
-
-- [x] `done` Append the current read-only lessons content after Photo Moments
-  - Description: Move the existing pricing/logistics/read-only schedule content into the homepage below the Photo Moments section and before contact.
-  - Why: This content describes Noya's external client schedule and offer structure, not the classes managed inside ClassKit, so it should live as supporting homepage content rather than a ClassKit route.
-
-- [x] `done` Keep static content visually aligned with the platform
-  - Description: Make the retained static lessons content feel like part of the same product without confusing it with ClassKit-managed classes or manager-owned schedules.
-  - Progress: The static schedule now shares a reusable card between the homepage section and the legacy read-only route.
-
-## Roadmap Step 12: Platform Polish
-
-Goal: Make the platform feel cohesive after the core ClassKit workflows exist.
-
-- [ ] `open` Align copy and localization for platform flows
-  - Description: Extend the current Hebrew, English, and Russian language support across class browsing, auth, profile, registration, schedule, and manager states.
-  - Progress: Customer class browsing, detail, registration, cancellation, pending approval, and toast states now have localized copy in Hebrew, English, and Russian. Toast dismissal accessibility now uses the localized shared close label, lazy route loading now has localized visible copy instead of a blank screen, and the runtime document title and description now sync through i18n alongside document language and direction. Shared class range labels and date ranges now respect the active app locale, including RTL Hebrew. User and membership selection controls now expose selected state consistently. Translation key parity across English, Hebrew, and Russian has been verified. Broader platform copy can continue to be tightened as more workflows land.
-
-- [x] `done` Tighten manager form labels and accessibility state
-  - Description: Replace placeholder-only admin fields with visible localized labels where manager workflows need durable context, and ensure selected list items expose state to assistive tech.
-  - Progress: The Users manager tab now labels role creation, search, and role assignment fields. Attendance walk-in and trial participant forms now use visible labels instead of placeholder-only controls. The Users and Memberships user pickers expose selected state with `aria-pressed`, and role permission group toggles, schedule weekday toggles, template cards, and schedule cards now expose selected state as well. Long user identity values in Users and Memberships now follow the design guide's `overflow-wrap:anywhere` rule to avoid layout overflow.
-
-- [ ] `open` Tighten responsive platform navigation
-  - Description: Ensure the landing page, classes page, schedule surface, auth/profile, and manager workspace are easy to move between on mobile and desktop.
-  - Progress: The shared site navigation controls now appear across the landing page, classes page, auth/profile, and manager workspace, with a compact header treatment and locale-aware menu behavior. The menu and image lightbox now support Escape-key dismissal, restore page scroll correctly, and return focus to the opener after closing. Internal landing, class preview, auth/profile, lessons, manager, and mobile-menu route links now use the app navigator instead of forcing full document reloads, while external and same-page links keep native behavior. Customer class details, manager class details, manager attendance, class create/edit/cancel, template detail/create/edit/deactivate, and schedule detail surfaces now expose modal dialog semantics across drawer and desktop presentations. Customer class details, manager class details, manager attendance, and class create/edit/cancel surfaces now restore focus to the opening control after closing. The image lightbox now exposes a dialog label and gallery thumbnails expose localized open-photo labels. The language menu now supports Escape and outside-click dismissal, exposes selected-language state, and shared CTA arrows mirror correctly in RTL. Decorative icons in shared navigation, back links, and overlay controls are now hidden from assistive tech when the control already has text or a label. Shared class cards, calendar cells, and auth mode controls now expose selected state, shared class card selection controls now use concise localized accessible names instead of full-card text, and the shared class range toolbar avoids truncating scope labels on mobile while preserving the single-row desktop treatment.
-
-- [x] `done` Make user administration more scalable
-  - Description: Replace the repeated card-per-user control surface with a searchable user directory and focused selected-user detail panel.
-  - Progress: The Users manager tab now keeps browsing and actions separate: managers scan a compact user list, select one user, then assign/revoke roles and review effective permissions in the detail panel.
-
-- [x] `done` Normalize manager refresh controls
-  - Description: Give manager workspaces a consistent manual refresh affordance instead of exposing refresh only after error states.
-  - Progress: Templates, schedules, and user administration now expose normal refresh controls alongside their primary actions, aligning them with classes, pending requests, memberships, and customer class browsing.
-
-- [x] `done` Split heavy feature surfaces from the initial app load
-  - Description: Lazy-load top-level routes and manager tab surfaces so public browsing and customer class viewing do not eagerly load the full manager workspace.
-  - Progress: `App` now lazy-loads landing, auth, profile, lessons, manager, and mobile menu surfaces. `ManagerPage` now lazy-loads each manager tab on demand with a localized loading fallback.
-
-- [ ] `open` Review shared runtime bundle size
-  - Description: Audit the remaining large main chunk after route splitting and decide whether to split shared runtime concerns such as ClassKit, i18n resources, or vendor chunks.
-  - Progress: Feature route chunks are now separated, and Vite/Rolldown now splits shared vendor/runtime code into cacheable chunks for ClassKit, React/i18n, icons, and other vendors. The main app chunk dropped from roughly 599KB to roughly 98KB minified. Landing imagery now declares first-viewport hero priority and lazy async decoding for below-the-fold images. Account and profile first-viewport imagery now use eager async loading hints as well. A future i18n namespace/resource split can still be considered if localization resources become the next bottleneck.
+- [ ] `open` Add health declaration flow
+  - Description: Add Noya's health declaration after the required ClassKit document/waiver behavior exists.
+  - Why: The health declaration should be handled after product documents and after any additional ClassKit behavior needed for waiver-like flows is available.
