@@ -9,6 +9,7 @@ import { useProductContext } from "@class-kit/react";
 import {
   AlertCircle,
   Check,
+  ChevronDown,
   Loader2,
   Plus,
   RefreshCw,
@@ -20,6 +21,10 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  getUserDisplayName,
+  getUserSupportingEmail,
+} from "@/features/users/user-labels";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 
@@ -42,7 +47,10 @@ type GrantForm = {
   totalStock: string;
   validFrom: string;
   validUntil: string;
-  mode: "grant" | "upgrade";
+};
+
+type StockAdjustmentForm = {
+  stockDelta: string;
 };
 
 type EditingMembershipForm = MembershipForm & {
@@ -72,10 +80,11 @@ const initialGrantForm: GrantForm = {
   totalStock: "",
   validFrom: "",
   validUntil: "",
-  mode: "grant",
 };
 
 const membershipLedgerLimit = 8;
+const ltrIsolate = "\u2066";
+const popDirectionalIsolate = "\u2069";
 
 function supportsStock(mode: MembershipMode) {
   return mode === "stock" || mode === "limited_stock";
@@ -89,6 +98,12 @@ function parseOptionalPositiveInteger(value: string) {
   if (!value.trim()) return null;
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) return Number.NaN;
+  return parsed;
+}
+
+function parseRequiredNonZeroInteger(value: string) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed === 0) return Number.NaN;
   return parsed;
 }
 
@@ -141,8 +156,19 @@ function formatNullableNumber(value: number | null) {
   return value === null ? "" : String(value);
 }
 
+function formatStockRatio(remaining: number, total: number) {
+  return `${ltrIsolate}${remaining} / ${total}${popDirectionalIsolate}`;
+}
+
 function getUserLabel(user: ProductUserListItem) {
-  return user.display_name ?? user.email ?? user.user_id;
+  return getUserDisplayName(user);
+}
+
+function getUserInitials(user: ProductUserListItem) {
+  const label = getUserLabel(user).trim();
+  const parts = label.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return label.slice(0, 2).toUpperCase();
 }
 
 function getGrantStockLabel(
@@ -152,8 +178,7 @@ function getGrantStockLabel(
   if (grant.total_stock === null) return t("manager.memberships.notLimited");
 
   return t("manager.memberships.remainingStock", {
-    remaining: grant.remaining_stock ?? 0,
-    total: grant.total_stock,
+    stockRatio: formatStockRatio(grant.remaining_stock ?? 0, grant.total_stock),
   });
 }
 
@@ -162,6 +187,11 @@ function getDateInputValue(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getGrantDateInputValue(value: string | null) {
+  if (!value) return "";
+  return getDateInputValue(new Date(value));
 }
 
 function parseOptionalDate(value: string) {
@@ -182,6 +212,9 @@ export function MembershipManagementTab({
   const [mutatingKey, setMutatingKey] = useState<string | null>(null);
   const [form, setForm] = useState<MembershipForm>(initialForm);
   const [grantForm, setGrantForm] = useState<GrantForm>(initialGrantForm);
+  const [stockAdjustmentForms, setStockAdjustmentForms] = useState<
+    Record<string, StockAdjustmentForm>
+  >({});
   const [userSearch, setUserSearch] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedUserMembership, setSelectedUserMembership] =
@@ -232,7 +265,14 @@ export function MembershipManagementTab({
 
     return users
       .filter((user) =>
-        [user.display_name, user.email, user.user_id, user.status, user.scope]
+        [
+          user.display_name,
+          user.email,
+          user.phone_number,
+          user.user_id,
+          user.status,
+          user.scope,
+        ]
           .filter((value): value is string => Boolean(value))
           .some((value) => value.toLowerCase().includes(query)),
       )
@@ -338,6 +378,7 @@ export function MembershipManagementTab({
         errorMessage: null,
       });
       setGrantForm(initialGrantForm);
+      setStockAdjustmentForms({});
       return;
     }
 
@@ -489,11 +530,8 @@ export function MembershipManagementTab({
       };
 
       const granted = await runMembershipMutation(
-        `grant-${selectedUserId}`,
-        () =>
-          grantForm.mode === "upgrade"
-            ? client.management.memberships.upgrade(input)
-            : client.management.memberships.grant(input),
+        `set-${selectedUserId}`,
+        () => client.management.memberships.setForUser(input),
       );
 
       if (granted.ok) {
@@ -549,6 +587,62 @@ export function MembershipManagementTab({
     ],
   );
 
+  const editGrantDetails = useCallback((grant: MembershipGrant) => {
+    setGrantForm({
+      membershipTypeId: grant.membership_type_id,
+      totalStock: formatNullableNumber(grant.total_stock),
+      validFrom: getGrantDateInputValue(grant.valid_from),
+      validUntil: getGrantDateInputValue(grant.valid_until),
+    });
+  }, []);
+
+  const adjustMembershipStock = useCallback(
+    async (event: FormEvent<HTMLFormElement>, grant: MembershipGrant) => {
+      event.preventDefault();
+      if (!client || !canManageMemberships || !selectedUserId) return;
+
+      const stockDelta = parseRequiredNonZeroInteger(
+        stockAdjustmentForms[grant.id]?.stockDelta ?? "",
+      );
+      if (Number.isNaN(stockDelta)) {
+        setOperationError(t("manager.memberships.invalidStockDelta"));
+        return;
+      }
+
+      const adjusted = await runMembershipMutation(`stock-${grant.id}`, () =>
+        client.management.memberships.adjustStock({
+          membershipGrantId: grant.id,
+          stockDelta,
+        }),
+      );
+
+      if (adjusted.ok) {
+        setSelectedUserMembership((current) => ({
+          ...current,
+          loadStatus: "loaded",
+          grants: mergeMembershipGrant(
+            current.grants,
+            adjusted.result.membership_grant,
+          ),
+        }));
+        setStockAdjustmentForms((current) => ({
+          ...current,
+          [grant.id]: { stockDelta: "" },
+        }));
+        void loadUserMemberships(selectedUserId, { silent: true });
+      }
+    },
+    [
+      canManageMemberships,
+      client,
+      loadUserMemberships,
+      runMembershipMutation,
+      selectedUserId,
+      stockAdjustmentForms,
+      t,
+    ],
+  );
+
   if (!canManageMemberships) {
     return (
       <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-5 shadow-soft">
@@ -563,20 +657,20 @@ export function MembershipManagementTab({
   }
 
   return (
-    <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft sm:p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <section className="grid gap-4 rounded-[1.2rem] border border-blush/20 bg-card/58 p-3 shadow-soft sm:rounded-[1.4rem] sm:border-blush/24 sm:bg-card/78 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong text-background sm:size-11">
             <WalletCards className="size-5" aria-hidden="true" />
           </span>
           <div className="min-w-0">
-            <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
+            <p className="font-serif text-[0.65rem] uppercase tracking-[0.22em] text-foreground/48 sm:text-xs">
               {t("manager.memberships.eyebrow")}
             </p>
-            <h2 className="mt-1 font-serif text-3xl text-foreground">
+            <h2 className="mt-1 font-serif text-3xl leading-none text-foreground sm:text-4xl">
               {t("manager.memberships.title")}
             </h2>
-            <p className="mt-2 max-w-prose text-sm leading-6 text-foreground/68">
+            <p className="mt-2 hidden max-w-prose text-sm leading-6 text-foreground/68 sm:block">
               {t("manager.memberships.body")}
             </p>
           </div>
@@ -584,9 +678,11 @@ export function MembershipManagementTab({
         <Button
           type="button"
           variant="outline"
-          className="shrink-0 rounded-full"
+          size="icon"
+          className="size-10 shrink-0 rounded-full sm:h-11 sm:w-auto sm:px-4"
           disabled={loadStatus === "loading"}
           onClick={() => void loadMembershipTypes()}
+          aria-label={t("manager.memberships.refresh")}
         >
           <RefreshCw
             className={[
@@ -595,387 +691,508 @@ export function MembershipManagementTab({
             ].join(" ")}
             aria-hidden="true"
           />
-          {t("manager.memberships.refresh")}
+          <span className="hidden sm:inline">{t("manager.memberships.refresh")}</span>
         </Button>
       </div>
 
-      <section className="mt-5 rounded-[1.3rem] border border-blush/24 bg-background/34 p-4">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-blush-strong/16 text-blush-strong">
-            <UserRound className="size-4" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <h3 className="font-serif text-2xl text-foreground">
-              {t("manager.memberships.assignTitle")}
-            </h3>
-            <p className="mt-1 text-sm leading-6 text-foreground/60">
-              {t("manager.memberships.assignBody")}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(18rem,26rem)_1fr]">
-          <div className="grid gap-3">
-            <label className="grid gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+      <section className="grid gap-4 xl:grid-cols-[minmax(18rem,25rem)_minmax(0,1fr)]">
+        <aside className="rounded-[1.2rem] border border-blush/22 bg-background/30 p-3 sm:rounded-[1.3rem] sm:border-blush/24 sm:bg-background/34 sm:p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="font-serif text-3xl leading-none text-foreground sm:text-2xl">
+                {t("manager.memberships.usersTitle")}
+              </h3>
+              <p className="mt-1 text-sm text-foreground/58">
                 {t("manager.memberships.userSearch")}
-              </span>
-              <input
-                className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                value={userSearch}
-                onChange={(event) => setUserSearch(event.target.value)}
-              />
-            </label>
-            <div className="grid max-h-80 gap-2 overflow-y-auto pe-1">
-              {filteredUsers.length === 0 ? (
-                <p className="rounded-xl border border-blush/24 bg-card/40 p-3 text-sm leading-6 text-foreground/60">
-                  {t("manager.memberships.noUsers")}
-                </p>
-              ) : (
-                filteredUsers.map((user) => {
-                  const selected = user.user_id === selectedUserId;
-
-                  return (
-                    <button
-                      key={user.user_id}
-                      type="button"
-                      className={[
-                        "rounded-xl border p-3 text-start transition-colors",
-                        selected
-                          ? "border-blush-strong bg-blush-strong/12"
-                          : "border-blush/24 bg-card/45 hover:border-blush-strong/55",
-                      ].join(" ")}
-                      aria-pressed={selected}
-                      onClick={() => setSelectedUserId(user.user_id)}
-                    >
-                      <span className="block break-words font-serif text-lg text-foreground [overflow-wrap:anywhere]">
-                        {getUserLabel(user)}
-                      </span>
-                      {user.email && (
-                        <span className="mt-1 block break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
-                          {user.email}
-                        </span>
-                      )}
-                      <span className="mt-2 block text-xs font-semibold uppercase tracking-[0.16em] text-foreground/44">
-                        {user.status} · {user.scope}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
+              </p>
             </div>
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong/18 text-blush-strong">
+              <UserRound className="size-5" aria-hidden="true" />
+            </span>
           </div>
 
-          <div className="rounded-[1.1rem] border border-blush/24 bg-card/50 p-4">
-            {!selectedUser ? (
-              <p className="text-sm leading-6 text-foreground/60">
-                {t("manager.memberships.selectUser")}
+          <label className="mt-4 block">
+            <span className="sr-only">{t("manager.memberships.userSearch")}</span>
+            <input
+              className="h-11 w-full rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+              value={userSearch}
+              placeholder={t("manager.memberships.userSearchPlaceholder")}
+              onChange={(event) => setUserSearch(event.target.value)}
+            />
+          </label>
+
+          <div className="mt-3 grid max-h-none gap-2 overflow-y-visible pe-0 sm:max-h-[38rem] sm:overflow-y-auto sm:pe-1">
+            {filteredUsers.length === 0 ? (
+              <p className="rounded-xl border border-blush/24 bg-card/40 p-3 text-sm leading-6 text-foreground/60">
+                {t("manager.memberships.noUsers")}
               </p>
             ) : (
-              <div className="grid gap-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              filteredUsers.map((user) => {
+                const selected = user.user_id === selectedUserId;
+                const supportingEmail = getUserSupportingEmail(user);
+
+                return (
+                  <button
+                    key={user.user_id}
+                    type="button"
+                    className={[
+                      "grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border p-3 text-start transition-colors",
+                      selected
+                        ? "border-blush-strong bg-blush-strong/14"
+                        : "border-blush/20 bg-card/42 hover:border-blush-strong/55",
+                    ].join(" ")}
+                    aria-pressed={selected}
+                    onClick={() => setSelectedUserId(user.user_id)}
+                  >
+                    <span className="min-w-0">
+                      <span className="block break-words font-serif text-lg leading-5 text-foreground [overflow-wrap:anywhere] sm:text-lg">
+                        {getUserLabel(user)}
+                      </span>
+                      {supportingEmail && (
+                        <span className="mt-1 block break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
+                          {supportingEmail}
+                        </span>
+                      )}
+                      {user.phone_number && (
+                        <span className="mt-1 block text-sm text-foreground/50">
+                          {user.phone_number}
+                        </span>
+                      )}
+                      <span className="mt-2 inline-flex rounded-full border border-blush/18 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.14em] text-foreground/50">
+                        {user.status} · {user.scope}
+                      </span>
+                    </span>
+                    <span className="grid size-12 shrink-0 place-items-center rounded-full bg-blush-strong/24 font-serif text-lg text-foreground">
+                      {getUserInitials(user)}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </aside>
+
+        <div
+          className={[
+            selectedUser
+              ? "fixed inset-0 z-50 grid place-items-end bg-black/50 p-0 xl:static xl:block xl:bg-transparent"
+              : "hidden xl:block",
+          ].join(" ")}
+          onClick={() => {
+            if (selectedUser) setSelectedUserId("");
+          }}
+        >
+          <div
+            className="max-h-[92vh] w-full overflow-y-auto rounded-t-[1.4rem] border border-blush/24 bg-background p-4 text-foreground shadow-soft xl:max-h-none xl:rounded-[1.3rem] xl:bg-background/34"
+            onClick={(event) => event.stopPropagation()}
+          >
+          <span className="mx-auto mb-3 block h-1 w-12 rounded-full bg-blush/28 xl:hidden" />
+          {!selectedUser ? (
+            <div className="grid min-h-72 place-items-center rounded-[1.1rem] border border-blush/18 bg-card/38 p-6 text-center">
+              <div className="max-w-sm">
+                <span className="mx-auto grid size-12 place-items-center rounded-full bg-blush-strong/18 text-blush-strong">
+                  <WalletCards className="size-6" aria-hidden="true" />
+                </span>
+                <p className="mt-4 font-serif text-2xl text-foreground">
+                  {t("manager.memberships.selectUser")}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              <div className="relative flex flex-col gap-3 rounded-[1.1rem] border border-blush/18 bg-card/45 p-4 pe-12 lg:flex-row lg:items-center lg:justify-between xl:pe-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid size-14 shrink-0 place-items-center rounded-full bg-blush-strong/24 font-serif text-xl text-foreground">
+                    {getUserInitials(selectedUser)}
+                  </span>
                   <div className="min-w-0">
-                    <p className="font-serif text-xl text-foreground">
+                    <p className="break-words font-serif text-2xl text-foreground [overflow-wrap:anywhere]">
                       {getUserLabel(selectedUser)}
                     </p>
-                    {selectedUser.email && (
-                      <p className="mt-1 break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
-                        {selectedUser.email}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 rounded-full"
-                    disabled={selectedUserMembership.loadStatus === "loading"}
-                    onClick={() => void loadUserMemberships(selectedUser.user_id)}
-                  >
-                    <RefreshCw
-                      className={[
-                        "size-4",
-                        selectedUserMembership.loadStatus === "loading"
-                          ? "animate-spin"
-                          : "",
-                      ].join(" ")}
-                      aria-hidden="true"
-                    />
-                    {t("manager.memberships.refreshUser")}
-                  </Button>
-                </div>
-
-                <form
-                  className="grid gap-3 rounded-xl border border-blush/24 bg-background/36 p-3 lg:grid-cols-2"
-                  onSubmit={(event) => void grantMembership(event)}
-                >
-                  <label className="grid gap-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                      {t("manager.memberships.membershipType")}
-                    </span>
-                    <select
-                      className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                      value={grantForm.membershipTypeId}
-                      onChange={(event) => {
-                        const membershipType = membershipTypesById.get(
-                          event.target.value,
-                        );
-                        setGrantForm((current) => ({
-                          ...current,
-                          membershipTypeId: event.target.value,
-                          totalStock:
-                            membershipType?.default_stock === null ||
-                            membershipType?.default_stock === undefined
-                              ? ""
-                              : String(membershipType.default_stock),
-                        }));
-                      }}
-                      required
-                    >
-                      <option value="">
-                        {t("manager.memberships.chooseMembershipType")}
-                      </option>
-                      {activeMembershipTypes.map((membershipType) => (
-                        <option key={membershipType.id} value={membershipType.id}>
-                          {membershipType.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="grid gap-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                      {t("manager.memberships.assignmentMode")}
-                    </span>
-                    <select
-                      className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                      value={grantForm.mode}
-                      onChange={(event) =>
-                        setGrantForm((current) => ({
-                          ...current,
-                          mode: event.target.value as GrantForm["mode"],
-                        }))
-                      }
-                    >
-                      <option value="grant">
-                        {t("manager.memberships.grantMode.grant")}
-                      </option>
-                      <option value="upgrade">
-                        {t("manager.memberships.grantMode.upgrade")}
-                      </option>
-                    </select>
-                  </label>
-                  {supportsStock(
-                    membershipTypesById.get(grantForm.membershipTypeId)?.mode ??
-                      "stock",
-                  ) && (
-                    <label className="grid gap-1.5">
-                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                        {t("manager.memberships.totalStock")}
-                      </span>
-                      <input
-                        className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                        type="number"
-                        min="1"
-                        value={grantForm.totalStock}
-                        placeholder={t("manager.memberships.totalStockOverride")}
-                        onChange={(event) =>
-                          setGrantForm((current) => ({
-                            ...current,
-                            totalStock: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                  )}
-                  <label className="grid gap-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                      {t("manager.memberships.validFrom")}
-                    </span>
-                    <input
-                      className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                      type="date"
-                      value={grantForm.validFrom}
-                      onChange={(event) =>
-                        setGrantForm((current) => ({
-                          ...current,
-                          validFrom: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label className="grid gap-1.5">
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                      {t("manager.memberships.validUntil")}
-                    </span>
-                    <input
-                      className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-                      type="date"
-                      value={grantForm.validUntil}
-                      onChange={(event) =>
-                        setGrantForm((current) => ({
-                          ...current,
-                          validUntil: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <Button
-                    type="submit"
-                    className="rounded-full lg:self-end"
-                    disabled={Boolean(mutatingKey) || !grantForm.membershipTypeId}
-                  >
-                    <Plus className="size-4" aria-hidden="true" />
-                    {t(`manager.memberships.grantAction.${grantForm.mode}`)}
-                  </Button>
-                </form>
-
-                {selectedUserMembership.loadStatus === "loading" && (
-                  <p className="rounded-xl border border-blush/24 bg-background/36 p-3 text-sm text-foreground/68">
-                    <Loader2
-                      className="me-2 inline size-4 animate-spin text-blush-strong"
-                      aria-hidden="true"
-                    />
-                    {t("manager.memberships.loadingUser")}
-                  </p>
-                )}
-
-                {selectedUserMembership.loadStatus === "error" && (
-                  <p className="rounded-xl border border-blush/24 bg-background/36 p-3 text-sm leading-6 text-blush-strong">
-                    {selectedUserMembership.errorMessage ??
-                      t("manager.memberships.userErrorBody")}
-                  </p>
-                )}
-
-                {selectedUserMembership.loadStatus === "loaded" && (
-                  <div className="grid gap-3">
-                    <div className="grid gap-2 md:grid-cols-2">
-                      {selectedUserMembership.grants.length === 0 ? (
-                        <p className="rounded-xl border border-blush/24 bg-background/36 p-3 text-sm leading-6 text-foreground/60 md:col-span-2">
-                          {t("manager.memberships.noGrants")}
-                        </p>
-                      ) : (
-                        selectedUserMembership.grants.map((grant) => {
-                          const membershipType = membershipTypesById.get(
-                            grant.membership_type_id,
-                          );
-                          const isMutating = mutatingKey === grant.id;
-
-                          return (
-                            <article
-                              key={grant.id}
-                              className="rounded-xl border border-blush/24 bg-background/36 p-3"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="break-words font-serif text-lg text-foreground [overflow-wrap:anywhere]">
-                                    {membershipType?.name ??
-                                      grant.membership_type_id}
-                                  </p>
-                                  <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                                    {t(
-                                      `manager.memberships.status.${grant.status}`,
-                                    )}
-                                  </p>
-                                </div>
-                                {grant.status === "active" && (
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    className="shrink-0 rounded-full"
-                                    disabled={Boolean(mutatingKey)}
-                                    onClick={() => revokeMembership(grant.id)}
-                                  >
-                                    {isMutating ? (
-                                      <Loader2
-                                        className="size-4 animate-spin"
-                                        aria-hidden="true"
-                                      />
-                                    ) : (
-                                      <X className="size-4" aria-hidden="true" />
-                                    )}
-                                    {t("manager.memberships.revoke")}
-                                  </Button>
-                                )}
-                              </div>
-                              <dl className="mt-3 grid gap-2 text-sm text-foreground/68">
-                                <div className="flex justify-between gap-3">
-                                  <dt>{t("manager.memberships.stock")}</dt>
-                                  <dd className="text-foreground">
-                                    {getGrantStockLabel(grant, t)}
-                                  </dd>
-                                </div>
-                                <div className="flex justify-between gap-3">
-                                  <dt>{t("manager.memberships.validFrom")}</dt>
-                                  <dd className="text-foreground">
-                                    {dateFormatter.format(
-                                      new Date(grant.valid_from),
-                                    )}
-                                  </dd>
-                                </div>
-                                <div className="flex justify-between gap-3">
-                                  <dt>{t("manager.memberships.validUntil")}</dt>
-                                  <dd className="text-foreground">
-                                    {grant.valid_until
-                                      ? dateFormatter.format(
-                                          new Date(grant.valid_until),
-                                        )
-                                      : t("manager.memberships.notLimited")}
-                                  </dd>
-                                </div>
-                              </dl>
-                            </article>
-                          );
-                        })
+                    <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-foreground/60">
+                      {getUserSupportingEmail(selectedUser) && (
+                        <span className="break-words [overflow-wrap:anywhere]">
+                          {getUserSupportingEmail(selectedUser)}
+                        </span>
                       )}
-                    </div>
+                      {selectedUser.phone_number && (
+                        <span>{selectedUser.phone_number}</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-fit shrink-0 rounded-full"
+                  disabled={selectedUserMembership.loadStatus === "loading"}
+                  onClick={() => void loadUserMemberships(selectedUser.user_id)}
+                >
+                  <RefreshCw
+                    className={[
+                      "size-4",
+                      selectedUserMembership.loadStatus === "loading"
+                        ? "animate-spin"
+                        : "",
+                    ].join(" ")}
+                    aria-hidden="true"
+                  />
+                  {t("manager.memberships.refreshUser")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute end-4 top-4 size-9 rounded-full xl:hidden"
+                  onClick={() => setSelectedUserId("")}
+                  aria-label={t("actions.close")}
+                >
+                  <X className="size-5" aria-hidden="true" />
+                </Button>
+              </div>
 
-                    <div className="rounded-xl border border-blush/24 bg-background/36 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                        {t("manager.memberships.ledgerTitle")}
+              <details className="rounded-[1.1rem] border border-blush/20 bg-card/36 p-3" open>
+                <summary className="cursor-pointer list-none font-serif text-xl text-foreground">
+                  {t("manager.memberships.setMembership")}
+                </summary>
+              <form
+                className="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-[1.1fr_0.8fr_0.8fr_0.8fr_auto]"
+                onSubmit={(event) => void grantMembership(event)}
+              >
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                    {t("manager.memberships.membershipType")}
+                  </span>
+                  <select
+                    className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                    value={grantForm.membershipTypeId}
+                    onChange={(event) => {
+                      const membershipType = membershipTypesById.get(
+                        event.target.value,
+                      );
+                      setGrantForm((current) => ({
+                        ...current,
+                        membershipTypeId: event.target.value,
+                        totalStock:
+                          membershipType?.default_stock === null ||
+                          membershipType?.default_stock === undefined
+                            ? ""
+                            : String(membershipType.default_stock),
+                      }));
+                    }}
+                    required
+                  >
+                    <option value="">
+                      {t("manager.memberships.chooseMembershipType")}
+                    </option>
+                    {activeMembershipTypes.map((membershipType) => (
+                      <option key={membershipType.id} value={membershipType.id}>
+                        {membershipType.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {supportsStock(
+                  membershipTypesById.get(grantForm.membershipTypeId)?.mode ??
+                    "stock",
+                ) && (
+                  <label className="grid gap-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                      {t("manager.memberships.totalStock")}
+                    </span>
+                    <input
+                      className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                      type="number"
+                      min="1"
+                      value={grantForm.totalStock}
+                      placeholder={t("manager.memberships.totalStockShort")}
+                      onChange={(event) =>
+                        setGrantForm((current) => ({
+                          ...current,
+                          totalStock: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                )}
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                    {t("manager.memberships.validFrom")}
+                  </span>
+                  <input
+                    className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                    type="date"
+                    value={grantForm.validFrom}
+                    onChange={(event) =>
+                      setGrantForm((current) => ({
+                        ...current,
+                        validFrom: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="grid gap-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                    {t("manager.memberships.validUntil")}
+                  </span>
+                  <input
+                    className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                    type="date"
+                    value={grantForm.validUntil}
+                    onChange={(event) =>
+                      setGrantForm((current) => ({
+                        ...current,
+                        validUntil: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <Button
+                  type="submit"
+                  className="rounded-full 2xl:self-end"
+                  disabled={Boolean(mutatingKey) || !grantForm.membershipTypeId}
+                >
+                  <Plus className="size-4" aria-hidden="true" />
+                  {t("manager.memberships.setMembership")}
+                </Button>
+              </form>
+              </details>
+
+              {selectedUserMembership.loadStatus === "loading" && (
+                <p className="rounded-xl border border-blush/24 bg-card/36 p-3 text-sm text-foreground/68">
+                  <Loader2
+                    className="me-2 inline size-4 animate-spin text-blush-strong"
+                    aria-hidden="true"
+                  />
+                  {t("manager.memberships.loadingUser")}
+                </p>
+              )}
+
+              {selectedUserMembership.loadStatus === "error" && (
+                <p className="rounded-xl border border-blush/24 bg-card/36 p-3 text-sm leading-6 text-blush-strong">
+                  {selectedUserMembership.errorMessage ??
+                    t("manager.memberships.userErrorBody")}
+                </p>
+              )}
+
+              {selectedUserMembership.loadStatus === "loaded" && (
+                <div className="grid gap-4">
+                  <div className="grid gap-3 2xl:grid-cols-2">
+                    {selectedUserMembership.grants.length === 0 ? (
+                      <p className="rounded-xl border border-blush/24 bg-card/36 p-4 text-sm leading-6 text-foreground/60 2xl:col-span-2">
+                        {t("manager.memberships.noGrants")}
                       </p>
-                      {selectedUserMembership.ledger.length === 0 ? (
-                        <p className="mt-2 text-sm leading-6 text-foreground/60">
-                          {t("manager.memberships.noLedger")}
-                        </p>
-                      ) : (
-                        <div className="mt-2 grid gap-2">
-                          {selectedUserMembership.ledger.map((entry) => (
-                            <div
-                              key={entry.id}
-                              className="flex flex-col gap-1 rounded-lg border border-blush/18 bg-card/38 p-2 text-sm sm:flex-row sm:items-center sm:justify-between"
-                            >
-                              <span className="font-semibold text-foreground">
-                                {t(
-                                  `manager.memberships.event.${entry.event_type}`,
-                                )}
-                              </span>
-                              <span className="text-foreground/60">
-                                {dateTimeFormatter.format(
-                                  new Date(entry.created_at),
-                                )}
-                                {entry.stock_delta !== 0
-                                  ? ` · ${t("manager.memberships.stockDelta", {
-                                      count: entry.stock_delta,
-                                    })}`
-                                  : ""}
+                    ) : (
+                      selectedUserMembership.grants.map((grant) => {
+                        const membershipType = membershipTypesById.get(
+                          grant.membership_type_id,
+                        );
+                        const isMutating = mutatingKey === grant.id;
+                        const isAdjusting = mutatingKey === `stock-${grant.id}`;
+                        const canAdjustStock =
+                          grant.status === "active" &&
+                          supportsStock(grant.mode) &&
+                          grant.total_stock !== null;
+                        const stockAdjustmentForm =
+                          stockAdjustmentForms[grant.id] ?? {
+                            stockDelta: "",
+                          };
+
+                        return (
+                          <article
+                            key={grant.id}
+                            className="rounded-[1.1rem] border border-blush/22 bg-card/45 p-4"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="break-words font-serif text-xl text-foreground [overflow-wrap:anywhere]">
+                                  {membershipType?.name ??
+                                    grant.membership_type_id}
+                                </p>
+                                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                                  {t(
+                                    `manager.memberships.status.${grant.status}`,
+                                  )}
+                                </p>
+                              </div>
+                              <span className="rounded-full border border-blush/20 px-2.5 py-1 text-xs font-semibold text-foreground/62">
+                                {t(`manager.memberships.mode.${grant.mode}`)}
                               </span>
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+
+                            <dl className="mt-4 grid gap-2 sm:grid-cols-3">
+                              <div className="rounded-xl border border-blush/18 bg-background/42 p-3">
+                                <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/42">
+                                  {t("manager.memberships.stock")}
+                                </dt>
+                                <dd className="mt-1 font-serif text-xl text-foreground">
+                                  {getGrantStockLabel(grant, t)}
+                                </dd>
+                              </div>
+                              <div className="rounded-xl border border-blush/18 bg-background/42 p-3">
+                                <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/42">
+                                  {t("manager.memberships.validFrom")}
+                                </dt>
+                                <dd className="mt-1 text-sm text-foreground">
+                                  {dateFormatter.format(new Date(grant.valid_from))}
+                                </dd>
+                              </div>
+                              <div className="rounded-xl border border-blush/18 bg-background/42 p-3">
+                                <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/42">
+                                  {t("manager.memberships.validUntil")}
+                                </dt>
+                                <dd className="mt-1 text-sm text-foreground">
+                                  {grant.valid_until
+                                    ? dateFormatter.format(
+                                        new Date(grant.valid_until),
+                                      )
+                                    : t("manager.memberships.notLimited")}
+                                </dd>
+                              </div>
+                            </dl>
+
+                            {canAdjustStock && (
+                              <form
+                                className="mt-4 grid gap-2 rounded-xl border border-blush/18 bg-background/34 p-2 sm:grid-cols-[1fr_auto]"
+                                onSubmit={(event) =>
+                                  void adjustMembershipStock(event, grant)
+                                }
+                              >
+                                <label className="grid gap-1.5">
+                                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                                    {t("manager.memberships.stockAdjustment")}
+                                  </span>
+                                  <input
+                                    className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                                    type="number"
+                                    step="1"
+                                    value={stockAdjustmentForm.stockDelta}
+                                    placeholder={t(
+                                      "manager.memberships.stockAdjustmentPlaceholder",
+                                    )}
+                                    onChange={(event) =>
+                                      setStockAdjustmentForms((current) => ({
+                                        ...current,
+                                        [grant.id]: {
+                                          stockDelta: event.target.value,
+                                        },
+                                      }))
+                                    }
+                                  />
+                                </label>
+                                <Button
+                                  type="submit"
+                                  size="sm"
+                                  variant="outline"
+                                  className="rounded-full sm:self-end"
+                                  disabled={Boolean(mutatingKey)}
+                                >
+                                  {isAdjusting ? (
+                                    <Loader2
+                                      className="size-4 animate-spin"
+                                      aria-hidden="true"
+                                    />
+                                  ) : (
+                                    <Check className="size-4" aria-hidden="true" />
+                                  )}
+                                  {t("manager.memberships.applyStockAdjustment")}
+                                </Button>
+                              </form>
+                            )}
+
+                            {grant.status === "active" && (
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="rounded-full"
+                                  disabled={Boolean(mutatingKey)}
+                                  onClick={() => editGrantDetails(grant)}
+                                >
+                                  {t("manager.memberships.editGrantDetails")}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  className="rounded-full"
+                                  disabled={Boolean(mutatingKey)}
+                                  onClick={() => revokeMembership(grant.id)}
+                                >
+                                  {isMutating ? (
+                                    <Loader2
+                                      className="size-4 animate-spin"
+                                      aria-hidden="true"
+                                    />
+                                  ) : (
+                                    <X className="size-4" aria-hidden="true" />
+                                  )}
+                                  {t("manager.memberships.revoke")}
+                                </Button>
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })
+                    )}
                   </div>
-                )}
-              </div>
-            )}
+
+                  <div className="rounded-[1.1rem] border border-blush/22 bg-card/38 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                      {t("manager.memberships.ledgerTitle")}
+                    </p>
+                    {selectedUserMembership.ledger.length === 0 ? (
+                      <p className="mt-2 text-sm leading-6 text-foreground/60">
+                        {t("manager.memberships.noLedger")}
+                      </p>
+                    ) : (
+                      <div className="mt-3 grid gap-2">
+                        {selectedUserMembership.ledger.map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="flex flex-col gap-1 rounded-lg border border-blush/16 bg-background/36 p-2 text-sm sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <span className="font-semibold text-foreground">
+                              {t(`manager.memberships.event.${entry.event_type}`)}
+                            </span>
+                            <span className="text-foreground/60">
+                              {dateTimeFormatter.format(
+                                new Date(entry.created_at),
+                              )}
+                              {entry.stock_delta !== 0
+                                ? ` · ${t("manager.memberships.stockDelta", {
+                                    count: entry.stock_delta,
+                                  })}`
+                                : ""}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           </div>
         </div>
       </section>
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(18rem,24rem)_1fr]">
+      <details className="group mt-5 rounded-[1.3rem] border border-blush/20 bg-background/28 p-4">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-serif text-2xl text-foreground marker:hidden [&::-webkit-details-marker]:hidden">
+          <span>{t("manager.memberships.typesTitle")}</span>
+          <span className="grid size-9 shrink-0 place-items-center rounded-full border border-blush/24 bg-background/36 text-foreground/68 transition-colors group-open:text-blush-strong">
+            <ChevronDown
+              className="size-4 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </span>
+        </summary>
+        <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(18rem,24rem)_1fr]">
         <form
-          className="rounded-[1.3rem] border border-blush/24 bg-background/34 p-4"
+          className="rounded-[1.1rem] border border-blush/20 bg-card/36 p-4"
           onSubmit={(event) => void createMembershipType(event)}
         >
           <h3 className="font-serif text-2xl text-foreground">
@@ -1063,7 +1280,7 @@ export function MembershipManagementTab({
           </div>
         </form>
 
-        <div className="rounded-[1.3rem] border border-blush/24 bg-background/34 p-4">
+        <div className="rounded-[1.1rem] border border-blush/20 bg-card/36 p-4">
           <h3 className="font-serif text-2xl text-foreground">
             {t("manager.memberships.typesTitle")}
           </h3>
@@ -1309,7 +1526,8 @@ export function MembershipManagementTab({
             </div>
           )}
         </div>
-      </div>
+        </div>
+      </details>
     </section>
   );
 }

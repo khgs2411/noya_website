@@ -7,6 +7,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  getUserDisplayName,
+  getUserSupportingEmail,
+} from "@/features/users/user-labels";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 type MutationStatuses = Record<string, "approve" | "reject">;
@@ -20,11 +24,7 @@ type PendingRegistrationsPanelProps = {
 };
 
 function getRegistrationUserLabel(registration: ManagementRegistrationSummary) {
-  return (
-    registration.user.displayName ??
-    registration.user.email ??
-    registration.user.id
-  );
+  return getUserDisplayName(registration.user);
 }
 
 function getClassLabel(
@@ -268,6 +268,7 @@ export function PendingRegistrationsPanel({
             const approving = mutationStatus === "approve";
             const rejecting = mutationStatus === "reject";
             const classLabel = getClassLabel(registration, classFormatter);
+            const supportingEmail = getUserSupportingEmail(registration.user);
 
             return (
               <article
@@ -279,9 +280,9 @@ export function PendingRegistrationsPanel({
                     <p className="font-serif text-xl text-foreground">
                       {getRegistrationUserLabel(registration)}
                     </p>
-                    {registration.user.email && (
+                    {supportingEmail && (
                       <p className="mt-1 break-words text-sm text-foreground/60">
-                        {registration.user.email}
+                        {supportingEmail}
                       </p>
                     )}
                     {classLabel && (

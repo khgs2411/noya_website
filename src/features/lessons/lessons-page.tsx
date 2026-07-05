@@ -34,6 +34,10 @@ import {
   toVisibleRange,
 } from "@/features/classes/class-range";
 import { ClassRangeToolbar } from "@/features/classes/class-range-toolbar";
+import {
+  getSignupSlugFromSearch,
+  resolveSignupFilters,
+} from "@/features/classes/signup-links";
 import type {
   ClassViewDateGroup,
   ClassViewItem,
@@ -47,12 +51,13 @@ type RegistrationMutation =
   | null;
 
 type DetailStatus = "idle" | "loading" | "loaded" | "error";
+type SignupLinkStatus = "idle" | "resolving" | "resolved" | "error";
 type ClassToast = ToastItem;
 const CANCELLATION_CLOSED_MESSAGE = "Cancellation is closed for this class.";
 const dateInputPattern = /^\d{4}-\d{2}-\d{2}$/;
 
-function getInitialClassFocus() {
-  const params = new URLSearchParams(window.location.search);
+function getInitialClassFocus(search: string) {
+  const params = new URLSearchParams(search);
   const date = params.get("date");
   const classId = params.get("classId");
 
@@ -134,10 +139,16 @@ function groupClassesByDate(
   }));
 }
 
-export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void }) {
+export function LessonsPage({
+  search,
+  onNavigate,
+}: {
+  search: string;
+  onNavigate: (path: string) => void;
+}) {
   const { t, i18n } = useTranslation();
   const { client, productUser, session } = useProductContext();
-  const [initialClassFocus] = useState(getInitialClassFocus);
+  const [initialClassFocus] = useState(() => getInitialClassFocus(search));
   const [rangeScope, setRangeScope] = useState<RangeScope>(() =>
     initialClassFocus.date ? "custom" : "week",
   );
@@ -168,8 +179,12 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     useState<ClassInformation | null>(null);
   const [detailStatus, setDetailStatus] = useState<DetailStatus>("idle");
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [signupLinkStatus, setSignupLinkStatus] =
+    useState<SignupLinkStatus>("idle");
+  const [signupLinkError, setSignupLinkError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
   const detailRequestIdRef = useRef(0);
+  const resolvedSignupSlugRef = useRef<string | null>(null);
   const classDetailFocusReturnRef = useRef<HTMLElement | null>(null);
   const toastTimeoutsRef = useRef<number[]>([]);
 
@@ -394,6 +409,117 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
     },
     [client, t],
   );
+
+  useEffect(() => {
+    const slug = getSignupSlugFromSearch(search);
+    if (!slug || resolvedSignupSlugRef.current === slug) return;
+
+    if (!client) {
+      return;
+    }
+
+    const activeClient = client;
+    const activeSlug = slug;
+
+    let cancelled = false;
+
+    async function resolveSignupLink() {
+      resolvedSignupSlugRef.current = activeSlug;
+      setSignupLinkStatus("resolving");
+      setSignupLinkError(null);
+
+      const result = await activeClient.signupLinks.resolve(activeSlug);
+
+      if (cancelled) return;
+
+      if (result.error) {
+        setSignupLinkStatus("error");
+        setSignupLinkError(result.error.message);
+        return;
+      }
+
+      const { link } = result.data;
+
+      if (link.target_type === "class" && link.class_id) {
+        setDetailStatus("loading");
+        setDetailError(null);
+        const classResult = await activeClient.classes.get(link.class_id, {
+          fields: ["membershipRequirement", "registeredUsersCount"],
+        });
+
+        if (cancelled) return;
+
+        if (classResult.error) {
+          setDetailStatus("error");
+          setSignupLinkStatus("error");
+          setSignupLinkError(classResult.error.message);
+          return;
+        }
+
+        const linkedClass = classResult.data.class;
+        const linkedClassDate = toDateInput(new Date(linkedClass.startsAt));
+        setRangeScope("custom");
+        setRangeAnchorDate(parseDateInput(linkedClassDate));
+        setCustomRangeState({
+          startDate: linkedClassDate,
+          endDate: linkedClassDate,
+        });
+        setViewMode("list");
+        setSelectedClassId(linkedClass.id);
+        setSelectedClassDetail(linkedClass);
+        setClasses((currentClasses) => {
+          const existing = currentClasses.some(
+            (classSummary) => classSummary.id === linkedClass.id,
+          );
+
+          if (!existing) return [...currentClasses, linkedClass];
+
+          return currentClasses.map((classSummary) =>
+            classSummary.id === linkedClass.id ? linkedClass : classSummary,
+          );
+        });
+        setOperationError(null);
+        setDetailStatus("loaded");
+        setSignupLinkStatus("resolved");
+        return;
+      }
+
+      if (link.target_type === "filter") {
+        const resolvedFilters = resolveSignupFilters(link.filters);
+
+        if (resolvedFilters.type === "range") {
+          setRangeScope("custom");
+          setRangeAnchorDate(parseDateInput(
+            toDateInput(new Date(resolvedFilters.range.start)),
+          ));
+          setCustomRangeState({
+            startDate: toDateInput(new Date(resolvedFilters.range.start)),
+            endDate: toDateInput(new Date(resolvedFilters.range.end)),
+          });
+          setSelectedClassId(null);
+          setSelectedClassDetail(null);
+          setViewMode("list");
+          setSignupLinkStatus("resolved");
+          return;
+        }
+      }
+
+      setSignupLinkStatus("error");
+      setSignupLinkError(t("classes.signupLink.unsupportedFilter"));
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void resolveSignupLink();
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      if (resolvedSignupSlugRef.current === activeSlug) {
+        resolvedSignupSlugRef.current = null;
+      }
+    };
+  }, [client, search, t]);
 
   function reconcileClassAfterMutation(classId: string) {
     if (selectedClassId === classId) {
@@ -811,6 +937,24 @@ export function LessonsPage({ onNavigate }: { onNavigate: (path: string) => void
             {operationError && (
               <p className="rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-blush-strong">
                 {operationError}
+              </p>
+            )}
+
+            {signupLinkStatus === "resolving" && (
+              <div className="rounded-xl border border-blush/24 bg-background/46 p-4">
+                <div className="flex items-center gap-3 text-sm text-foreground/68">
+                  <Loader2
+                    className="size-4 shrink-0 animate-spin text-blush-strong"
+                    aria-hidden="true"
+                  />
+                  {t("classes.signupLink.resolving")}
+                </div>
+              </div>
+            )}
+
+            {signupLinkStatus === "error" && (
+              <p className="rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-blush-strong">
+                {signupLinkError ?? t("classes.signupLink.error")}
               </p>
             )}
 

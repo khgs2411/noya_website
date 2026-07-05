@@ -1,0 +1,22 @@
+{
+  "name": "Noya's Flow",
+  "short_name": "Noya",
+  "description": "Dance, movement, and studio classes with public class browsing and booking.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f8f1e6",
+  "theme_color": "#9b5a4d",
+  "icons": [
+    {
+      "src": "icons/noya-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/noya-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

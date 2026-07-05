@@ -12,6 +12,8 @@ import {
   managerPath,
   profilePath,
 } from "@/content/site-content";
+import { BrowserStorageNotice } from "@/components/site/browser-storage-notice";
+import { InstallAppPrompt } from "@/components/site/install-app-prompt";
 import { SiteHeader } from "@/components/site/site-header";
 import type { ManagerAccessSnapshot } from "@/features/manager/manager-page";
 import { useTheme } from "@/hooks/use-theme";
@@ -351,21 +353,31 @@ export default function App() {
     );
   }
 
+  function renderPage(page: ReactNode, showHeader: boolean) {
+    return (
+      <>
+        {renderWithMenu(page, showHeader)}
+        <InstallAppPrompt />
+        <BrowserStorageNotice />
+      </>
+    );
+  }
+
   if (isAuthPath(route.pathname)) {
-    return renderWithMenu(
+    return renderPage(
       <AuthPage requestedMode={authMode} onNavigate={navigateTo} />,
       true,
     );
   }
 
   if (isProfilePath(route.pathname)) {
-    return renderWithMenu(<ProfilePage onNavigate={navigateTo} />, true);
+    return renderPage(<ProfilePage onNavigate={navigateTo} />, true);
   }
 
   if (isManagerPath(route.pathname)) {
     if (loading) {
       if (managerAccessSnapshot) {
-        return renderWithMenu(
+        return renderPage(
           <ManagerPage
             accessSnapshot={managerAccessSnapshot}
             onNavigate={navigateTo}
@@ -374,22 +386,25 @@ export default function App() {
         );
       }
 
-      return renderWithMenu(
+      return renderPage(
         <ManagerPage loading onNavigate={navigateTo} />,
         true,
       );
     }
 
     if (canEnterManager) {
-      return renderWithMenu(<ManagerPage onNavigate={navigateTo} />, true);
+      return renderPage(<ManagerPage onNavigate={navigateTo} />, true);
     }
   }
 
   if (isLessonsPath(route.pathname)) {
-    return renderWithMenu(<LessonsPage onNavigate={navigateTo} />, true);
+    return renderPage(
+      <LessonsPage search={route.search} onNavigate={navigateTo} />,
+      true,
+    );
   }
 
-  return renderWithMenu(
+  return renderPage(
     <LandingPage
       theme={theme}
       menuOpen={menuOpen}

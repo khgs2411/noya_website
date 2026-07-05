@@ -1,5 +1,5 @@
 import type { ClassKitClient, ManagedClass } from "@class-kit/react";
-import { Ban, Edit3, X } from "lucide-react";
+import { Ban, Edit3, Link2, Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -15,8 +15,11 @@ type ClassDetailPanelProps = {
   onClose: () => void;
   onEdit: () => void;
   onCancel: () => void;
+  onCreateSignupLink: (classId: string) => void;
   onRegistrationsChanged: () => void | Promise<void>;
   onClassChanged: () => void | Promise<void>;
+  signupLinkBusy: boolean;
+  signupLinkNotice: string | null;
 };
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -39,8 +42,11 @@ export function ClassDetailPanel({
   onClose,
   onEdit,
   onCancel,
+  onCreateSignupLink,
   onRegistrationsChanged,
   onClassChanged,
+  signupLinkBusy,
+  signupLinkNotice,
 }: ClassDetailPanelProps) {
   const { t, i18n } = useTranslation();
 
@@ -148,6 +154,39 @@ export function ClassDetailPanel({
           canManageRegistrations={canManageRegistrations}
           onClassChanged={onClassChanged}
         />
+        {canManageClasses && (
+          <section className="mt-5 rounded-[1.2rem] border border-blush/24 bg-card/50 p-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <h3 className="font-serif text-xl text-foreground">
+                  {t("manager.signupLinks.detailTitle")}
+                </h3>
+                <p className="mt-1 text-sm leading-6 text-foreground/68">
+                  {t("manager.signupLinks.detailBody")}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full shrink-0 rounded-full sm:w-auto"
+                disabled={signupLinkBusy}
+                onClick={() => onCreateSignupLink(managedClass.id)}
+              >
+                {signupLinkBusy ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Link2 className="size-4" aria-hidden="true" />
+                )}
+                {t("manager.signupLinks.classAction")}
+              </Button>
+            </div>
+            {signupLinkNotice && (
+              <p className="mt-3 rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-foreground/68">
+                {signupLinkNotice}
+              </p>
+            )}
+          </section>
+        )}
         {editable && (
           <div className="mt-5 flex flex-wrap gap-2">
             <Button type="button" className="rounded-full" onClick={onEdit}>
