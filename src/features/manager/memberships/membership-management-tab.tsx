@@ -20,6 +20,10 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  getUserDisplayName,
+  getUserSupportingEmail,
+} from "@/features/users/user-labels";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 
@@ -43,6 +47,10 @@ type GrantForm = {
   validFrom: string;
   validUntil: string;
   mode: "grant" | "upgrade";
+};
+
+type StockAdjustmentForm = {
+  stockDelta: string;
 };
 
 type EditingMembershipForm = MembershipForm & {
@@ -89,6 +97,12 @@ function parseOptionalPositiveInteger(value: string) {
   if (!value.trim()) return null;
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed <= 0) return Number.NaN;
+  return parsed;
+}
+
+function parseRequiredNonZeroInteger(value: string) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed === 0) return Number.NaN;
   return parsed;
 }
 
@@ -142,7 +156,7 @@ function formatNullableNumber(value: number | null) {
 }
 
 function getUserLabel(user: ProductUserListItem) {
-  return user.display_name ?? user.email ?? user.user_id;
+  return getUserDisplayName(user);
 }
 
 function getGrantStockLabel(
@@ -164,6 +178,11 @@ function getDateInputValue(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function getGrantDateInputValue(value: string | null) {
+  if (!value) return "";
+  return getDateInputValue(new Date(value));
+}
+
 function parseOptionalDate(value: string) {
   if (!value) return null;
   return new Date(`${value}T00:00:00`).toISOString();
@@ -182,6 +201,9 @@ export function MembershipManagementTab({
   const [mutatingKey, setMutatingKey] = useState<string | null>(null);
   const [form, setForm] = useState<MembershipForm>(initialForm);
   const [grantForm, setGrantForm] = useState<GrantForm>(initialGrantForm);
+  const [stockAdjustmentForms, setStockAdjustmentForms] = useState<
+    Record<string, StockAdjustmentForm>
+  >({});
   const [userSearch, setUserSearch] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedUserMembership, setSelectedUserMembership] =
@@ -232,7 +254,14 @@ export function MembershipManagementTab({
 
     return users
       .filter((user) =>
-        [user.display_name, user.email, user.user_id, user.status, user.scope]
+        [
+          user.display_name,
+          user.email,
+          user.phone_number,
+          user.user_id,
+          user.status,
+          user.scope,
+        ]
           .filter((value): value is string => Boolean(value))
           .some((value) => value.toLowerCase().includes(query)),
       )
@@ -338,6 +367,7 @@ export function MembershipManagementTab({
         errorMessage: null,
       });
       setGrantForm(initialGrantForm);
+      setStockAdjustmentForms({});
       return;
     }
 
@@ -549,6 +579,63 @@ export function MembershipManagementTab({
     ],
   );
 
+  const editGrantDetails = useCallback((grant: MembershipGrant) => {
+    setGrantForm({
+      membershipTypeId: grant.membership_type_id,
+      totalStock: formatNullableNumber(grant.total_stock),
+      validFrom: getGrantDateInputValue(grant.valid_from),
+      validUntil: getGrantDateInputValue(grant.valid_until),
+      mode: "upgrade",
+    });
+  }, []);
+
+  const adjustMembershipStock = useCallback(
+    async (event: FormEvent<HTMLFormElement>, grant: MembershipGrant) => {
+      event.preventDefault();
+      if (!client || !canManageMemberships || !selectedUserId) return;
+
+      const stockDelta = parseRequiredNonZeroInteger(
+        stockAdjustmentForms[grant.id]?.stockDelta ?? "",
+      );
+      if (Number.isNaN(stockDelta)) {
+        setOperationError(t("manager.memberships.invalidStockDelta"));
+        return;
+      }
+
+      const adjusted = await runMembershipMutation(`stock-${grant.id}`, () =>
+        client.management.memberships.adjustStock({
+          membershipGrantId: grant.id,
+          stockDelta,
+        }),
+      );
+
+      if (adjusted.ok) {
+        setSelectedUserMembership((current) => ({
+          ...current,
+          loadStatus: "loaded",
+          grants: mergeMembershipGrant(
+            current.grants,
+            adjusted.result.membership_grant,
+          ),
+        }));
+        setStockAdjustmentForms((current) => ({
+          ...current,
+          [grant.id]: { stockDelta: "" },
+        }));
+        void loadUserMemberships(selectedUserId, { silent: true });
+      }
+    },
+    [
+      canManageMemberships,
+      client,
+      loadUserMemberships,
+      runMembershipMutation,
+      selectedUserId,
+      stockAdjustmentForms,
+      t,
+    ],
+  );
+
   if (!canManageMemberships) {
     return (
       <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-5 shadow-soft">
@@ -634,6 +721,7 @@ export function MembershipManagementTab({
               ) : (
                 filteredUsers.map((user) => {
                   const selected = user.user_id === selectedUserId;
+                  const supportingEmail = getUserSupportingEmail(user);
 
                   return (
                     <button
@@ -651,9 +739,9 @@ export function MembershipManagementTab({
                       <span className="block break-words font-serif text-lg text-foreground [overflow-wrap:anywhere]">
                         {getUserLabel(user)}
                       </span>
-                      {user.email && (
+                      {supportingEmail && (
                         <span className="mt-1 block break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
-                          {user.email}
+                          {supportingEmail}
                         </span>
                       )}
                       <span className="mt-2 block text-xs font-semibold uppercase tracking-[0.16em] text-foreground/44">
@@ -678,9 +766,9 @@ export function MembershipManagementTab({
                     <p className="font-serif text-xl text-foreground">
                       {getUserLabel(selectedUser)}
                     </p>
-                    {selectedUser.email && (
+                    {getUserSupportingEmail(selectedUser) && (
                       <p className="mt-1 break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
-                        {selectedUser.email}
+                        {getUserSupportingEmail(selectedUser)}
                       </p>
                     )}
                   </div>
@@ -859,6 +947,15 @@ export function MembershipManagementTab({
                             grant.membership_type_id,
                           );
                           const isMutating = mutatingKey === grant.id;
+                          const isAdjusting = mutatingKey === `stock-${grant.id}`;
+                          const canAdjustStock =
+                            grant.status === "active" &&
+                            supportsStock(grant.mode) &&
+                            grant.total_stock !== null;
+                          const stockAdjustmentForm =
+                            stockAdjustmentForms[grant.id] ?? {
+                              stockDelta: "",
+                            };
 
                           return (
                             <article
@@ -878,24 +975,36 @@ export function MembershipManagementTab({
                                   </p>
                                 </div>
                                 {grant.status === "active" && (
-                                  <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    className="shrink-0 rounded-full"
-                                    disabled={Boolean(mutatingKey)}
-                                    onClick={() => revokeMembership(grant.id)}
-                                  >
-                                    {isMutating ? (
-                                      <Loader2
-                                        className="size-4 animate-spin"
-                                        aria-hidden="true"
-                                      />
-                                    ) : (
-                                      <X className="size-4" aria-hidden="true" />
-                                    )}
-                                    {t("manager.memberships.revoke")}
-                                  </Button>
+                                  <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="rounded-full"
+                                      disabled={Boolean(mutatingKey)}
+                                      onClick={() => editGrantDetails(grant)}
+                                    >
+                                      {t("manager.memberships.editGrantDetails")}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      className="rounded-full"
+                                      disabled={Boolean(mutatingKey)}
+                                      onClick={() => revokeMembership(grant.id)}
+                                    >
+                                      {isMutating ? (
+                                        <Loader2
+                                          className="size-4 animate-spin"
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <X className="size-4" aria-hidden="true" />
+                                      )}
+                                      {t("manager.memberships.revoke")}
+                                    </Button>
+                                  </div>
                                 )}
                               </div>
                               <dl className="mt-3 grid gap-2 text-sm text-foreground/68">
@@ -924,6 +1033,54 @@ export function MembershipManagementTab({
                                   </dd>
                                 </div>
                               </dl>
+                              {canAdjustStock && (
+                                <form
+                                  className="mt-3 grid gap-2 rounded-xl border border-blush/18 bg-card/38 p-2 sm:grid-cols-[1fr_auto]"
+                                  onSubmit={(event) =>
+                                    void adjustMembershipStock(event, grant)
+                                  }
+                                >
+                                  <label className="grid gap-1.5">
+                                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                                      {t("manager.memberships.stockAdjustment")}
+                                    </span>
+                                    <input
+                                      className="h-10 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                                      type="number"
+                                      step="1"
+                                      value={stockAdjustmentForm.stockDelta}
+                                      placeholder={t(
+                                        "manager.memberships.stockAdjustmentPlaceholder",
+                                      )}
+                                      onChange={(event) =>
+                                        setStockAdjustmentForms((current) => ({
+                                          ...current,
+                                          [grant.id]: {
+                                            stockDelta: event.target.value,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                  </label>
+                                  <Button
+                                    type="submit"
+                                    size="sm"
+                                    variant="outline"
+                                    className="rounded-full sm:self-end"
+                                    disabled={Boolean(mutatingKey)}
+                                  >
+                                    {isAdjusting ? (
+                                      <Loader2
+                                        className="size-4 animate-spin"
+                                        aria-hidden="true"
+                                      />
+                                    ) : (
+                                      <Check className="size-4" aria-hidden="true" />
+                                    )}
+                                    {t("manager.memberships.applyStockAdjustment")}
+                                  </Button>
+                                </form>
+                              )}
                             </article>
                           );
                         })

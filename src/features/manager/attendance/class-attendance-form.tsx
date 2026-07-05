@@ -19,6 +19,10 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  getUserDisplayName,
+  getUserSupportingEmail,
+} from "@/features/users/user-labels";
 import { cn } from "@/lib/utils";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
@@ -40,16 +44,11 @@ type ClassAttendanceFormProps = {
 };
 
 function getUserLabel(user?: ProductUserListItem | null) {
-  return user?.display_name ?? user?.email ?? user?.user_id ?? "";
+  return getUserDisplayName(user);
 }
 
 function getRegistrationLabel(registration?: ManagementRegistrationSummary) {
-  return (
-    registration?.user.displayName ??
-    registration?.user.email ??
-    registration?.user.id ??
-    ""
-  );
+  return getUserDisplayName(registration?.user);
 }
 
 function getAttendanceErrorMessage(
@@ -595,7 +594,10 @@ export function ClassAttendanceForm({
                     </option>
                     {users.map((user) => (
                       <option key={user.user_id} value={user.user_id}>
-                        {getUserLabel(user)}
+                        {[
+                          getUserLabel(user),
+                          getUserSupportingEmail(user),
+                        ].filter(Boolean).join(" · ")}
                       </option>
                     ))}
                   </select>
