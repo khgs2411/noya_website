@@ -13,7 +13,7 @@
         "@tailwindcss/vite": "^4.3.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
-        "@class-kit/react": "git@github.com:khgs2411/class-kit-sdk.git#v0.1.13",
+        "@class-kit/react": "git@github.com:khgs2411/class-kit-sdk.git#v0.1.14",
         "i18next": "^26.2.0",
         "i18next-browser-languagedetector": "^8.2.1",
         "lucide-react": "^1.16.0",
@@ -75,7 +75,7 @@
 
     "@babel/types": ["@babel/types@7.29.7", "", { "dependencies": { "@babel/helper-string-parser": "^7.29.7", "@babel/helper-validator-identifier": "^7.29.7" } }, "sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA=="],
 
-    "@class-kit/react": ["@class-kit/react@git+ssh://git@github.com:khgs2411/class-kit-sdk.git#3440298fffdb8a98b17f2c84726257f40d236d6f", { "peerDependencies": { "@supabase/supabase-js": "^2.106.1", "react": "^19.2.6", "react-dom": "^19.2.6" } }, "3440298fffdb8a98b17f2c84726257f40d236d6f"],
+    "@class-kit/react": ["@class-kit/react@git+ssh://git@github.com:khgs2411/class-kit-sdk.git#448439119dd159e994724b9f3d8efc6e2e3a7221", { "peerDependencies": { "@supabase/supabase-js": "^2.106.1", "react": "^19.2.6", "react-dom": "^19.2.6" } }, "448439119dd159e994724b9f3d8efc6e2e3a7221"],
 
     "@emnapi/core": ["@emnapi/core@1.10.0", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.1", "tslib": "^2.4.0" } }, "sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw=="],
 

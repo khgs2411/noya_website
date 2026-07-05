@@ -398,7 +398,10 @@ export default function App() {
   }
 
   if (isLessonsPath(route.pathname)) {
-    return renderPage(<LessonsPage onNavigate={navigateTo} />, true);
+    return renderPage(
+      <LessonsPage search={route.search} onNavigate={navigateTo} />,
+      true,
+    );
   }
 
   return renderPage(

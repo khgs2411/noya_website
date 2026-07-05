@@ -5,6 +5,7 @@ import {
   CalendarPlus,
   CheckCircle2,
   FileText,
+  Link2,
   Loader2,
   Play,
   RefreshCw,
@@ -18,6 +19,10 @@ import { Button } from "@/components/ui/button";
 import { ClassCalendarView } from "@/features/classes/class-calendar-view";
 import { ClassListView } from "@/features/classes/class-list-view";
 import { ClassRangeToolbar } from "@/features/classes/class-range-toolbar";
+import {
+  getRangeSignupFilters,
+  getSignupLinkUrl,
+} from "@/features/classes/signup-links";
 import type {
   ClassViewDateGroup,
   ClassViewItem,
@@ -159,6 +164,8 @@ export function ClassManagementTab({
   const [attendanceSurface, setAttendanceSurface] =
     useState<AttendanceSurface>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [signupLinkBusyKey, setSignupLinkBusyKey] = useState<string | null>(null);
+  const [signupLinkNotice, setSignupLinkNotice] = useState<string | null>(null);
   const classDetailFocusReturnRef = useRef<HTMLElement | null>(null);
   const attendanceFocusReturnRef = useRef<HTMLElement | null>(null);
   const formFocusReturnRef = useRef<HTMLElement | null>(null);
@@ -258,10 +265,64 @@ export function ClassManagementTab({
     restoreFocus(cancelFocusReturnRef.current);
   }
 
+  async function copySignupLink(slug: string) {
+    await navigator.clipboard.writeText(getSignupLinkUrl(slug));
+    setSignupLinkNotice(t("manager.signupLinks.copied"));
+  }
+
+  async function createClassSignupLink(classId: string) {
+    if (!client || !canManageClasses) {
+      setSignupLinkNotice(t("manager.signupLinks.unavailable"));
+      return;
+    }
+
+    setSignupLinkBusyKey(`class:${classId}`);
+    setSignupLinkNotice(null);
+
+    try {
+      const result = await client.management.signupLinks.create({
+        targetType: "class",
+        classId,
+      });
+      await copySignupLink(result.link.slug);
+    } catch (error) {
+      setSignupLinkNotice(
+        error instanceof Error ? error.message : t("manager.signupLinks.failed"),
+      );
+    } finally {
+      setSignupLinkBusyKey(null);
+    }
+  }
+
+  async function createRangeSignupLink() {
+    if (!client || !canManageClasses) {
+      setSignupLinkNotice(t("manager.signupLinks.unavailable"));
+      return;
+    }
+
+    setSignupLinkBusyKey("range");
+    setSignupLinkNotice(null);
+
+    try {
+      const result = await client.management.signupLinks.create({
+        targetType: "filter",
+        filters: getRangeSignupFilters(state.visibleRange),
+      });
+      await copySignupLink(result.link.slug);
+    } catch (error) {
+      setSignupLinkNotice(
+        error instanceof Error ? error.message : t("manager.signupLinks.failed"),
+      );
+    } finally {
+      setSignupLinkBusyKey(null);
+    }
+  }
+
   const renderManagerClassActions = (item: ClassViewItem) => {
     const managedClass = classById.get(item.id);
     if (!managedClass) return null;
 
+    const canCreateSignupLink = state.canManageClasses;
     const canPublish =
       state.canManageClasses &&
       !managedClass.read_only &&
@@ -271,10 +332,27 @@ export function ClassManagementTab({
       canManageAttendance,
     );
 
-    if (!canPublish && !attendanceAction) return null;
+    if (!canPublish && !attendanceAction && !canCreateSignupLink) return null;
 
     return (
       <>
+        {canCreateSignupLink && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="rounded-full"
+            disabled={signupLinkBusyKey !== null}
+            onClick={() => void createClassSignupLink(item.id)}
+          >
+            {signupLinkBusyKey === `class:${item.id}` ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Link2 className="size-4" aria-hidden="true" />
+            )}
+            {t("manager.signupLinks.classAction")}
+          </Button>
+        )}
         {canPublish && (
           <Button
             type="button"
@@ -342,14 +420,30 @@ export function ClassManagementTab({
           </div>
         </div>
         {canManageClasses && (
-          <Button
-            type="button"
-            className="w-full rounded-full sm:w-auto"
-            onClick={openCreateForm}
-          >
-            <CalendarPlus className="size-4" aria-hidden="true" />
-            {t("manager.classActions.create")}
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full rounded-full sm:w-auto"
+              disabled={signupLinkBusyKey !== null}
+              onClick={() => void createRangeSignupLink()}
+            >
+              {signupLinkBusyKey === "range" ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Link2 className="size-4" aria-hidden="true" />
+              )}
+              {t("manager.signupLinks.rangeAction")}
+            </Button>
+            <Button
+              type="button"
+              className="w-full rounded-full sm:w-auto"
+              onClick={openCreateForm}
+            >
+              <CalendarPlus className="size-4" aria-hidden="true" />
+              {t("manager.classActions.create")}
+            </Button>
+          </div>
         )}
       </div>
 
@@ -414,6 +508,12 @@ export function ClassManagementTab({
           {state.operationError && (
             <p className="rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-blush-strong">
               {state.operationError}
+            </p>
+          )}
+
+          {signupLinkNotice && (
+            <p className="rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-foreground/68">
+              {signupLinkNotice}
             </p>
           )}
 
@@ -491,6 +591,7 @@ export function ClassManagementTab({
               actions.clearSelection();
             }}
             onCancel={openCancelDialog}
+            onCreateSignupLink={(classId) => void createClassSignupLink(classId)}
             onRegistrationsChanged={async () => {
               await actions.refreshVisibleRange({
                 preserveExistingOnFailure: true,
@@ -503,6 +604,12 @@ export function ClassManagementTab({
                 silent: true,
               });
             }}
+            signupLinkBusy={
+              state.selectedClass
+                ? signupLinkBusyKey === `class:${state.selectedClass.id}`
+                : false
+            }
+            signupLinkNotice={signupLinkNotice}
           />
 
           <ClassFormDialog
