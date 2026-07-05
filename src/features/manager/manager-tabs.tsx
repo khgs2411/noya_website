@@ -34,7 +34,7 @@ export function ManagerTabs({ activeTab, onChange }: ManagerTabsProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-2 gap-2 rounded-[1.4rem] border border-blush/24 bg-card/78 p-1 sm:grid-cols-3 lg:grid-cols-6">
+    <div className="flex max-w-full gap-1 overflow-x-auto rounded-[1.2rem] border border-blush/24 bg-card/78 p-1 lg:grid lg:grid-cols-6 lg:gap-2 lg:overflow-visible">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = tab.id === activeTab;
@@ -45,14 +45,17 @@ export function ManagerTabs({ activeTab, onChange }: ManagerTabsProps) {
             type="button"
             variant="ghost"
             className={cn(
-              "h-11 min-w-0 gap-2 rounded-xl px-2 font-serif text-sm",
+              "h-10 min-w-12 shrink-0 gap-2 rounded-xl px-3 font-serif text-sm lg:min-w-0",
+              active ? "min-w-28" : "w-12 px-0 lg:w-auto lg:px-3",
               active && "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
             )}
             aria-pressed={active}
             onClick={() => onChange(tab.id)}
           >
             <Icon className="size-4 shrink-0" aria-hidden="true" />
-            <span className="truncate">{t(tab.labelKey)}</span>
+            <span className={cn("truncate", !active && "sr-only lg:not-sr-only")}>
+              {t(tab.labelKey)}
+            </span>
           </Button>
         );
       })}

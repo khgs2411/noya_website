@@ -16,7 +16,14 @@ import {
   UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +34,7 @@ type ProductProfileResponse = NonNullable<
   Awaited<ReturnType<ClassKitClient["profile"]["get"]>>["data"]
 >;
 type ProductProfileMembershipGrant =
-  ProductProfileResponse["memberships"]["grants"][number];
+ProductProfileResponse["memberships"]["grants"][number];
 
 function MetricTile({
   icon: Icon,
@@ -36,7 +43,7 @@ function MetricTile({
 }: {
   icon: LucideIcon;
   label: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
     <div className="min-w-0 rounded-xl border border-blush/20 bg-background/38 p-4">
@@ -64,7 +71,7 @@ function InlineFact({
 }: {
   icon: LucideIcon;
   label: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
@@ -124,16 +131,20 @@ function formatMembershipValidity(
   );
 }
 
-function getMembershipStockLabel(
+function getMembershipStockValue(
   grant: ProductProfileMembershipGrant,
   t: (key: string, options?: Record<string, unknown>) => string,
 ) {
   if (grant.total_stock === null) return t("profile.memberships.unlimited");
 
-  return t("profile.memberships.remaining", {
-    remaining: grant.remaining_stock ?? 0,
-    total: grant.total_stock,
-  });
+  return (
+    <span className="inline-flex flex-wrap items-baseline gap-x-1">
+      <span dir="ltr" className="inline-block">
+        {grant.remaining_stock ?? 0} / {grant.total_stock}
+      </span>
+      <span>{t("profile.memberships.remainingSuffix")}</span>
+    </span>
+  );
 }
 
 export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void }) {
@@ -222,7 +233,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
       {
         icon: UsersRound,
         label: t("profile.memberships.stock"),
-        value: getMembershipStockLabel(activeGrant, t),
+        value: getMembershipStockValue(activeGrant, t),
       },
       {
         icon: CalendarDays,
