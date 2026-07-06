@@ -6,6 +6,7 @@ import {
 } from "@class-kit/react";
 import {
   AlertCircle,
+  CalendarDays,
   CheckCircle2,
   Clock,
   Loader2,
@@ -43,6 +44,7 @@ import type {
   ClassViewItem,
 } from "@/features/classes/class-types";
 import { captureActiveElement, restoreFocus } from "@/lib/focus";
+import { cn } from "@/lib/utils";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 type RegistrationMutation =
@@ -359,6 +361,13 @@ export function LessonsPage({
     }
   }
 
+  function showMoreLessons() {
+    setRangeScope("week");
+    setRangeAnchorDate(new Date());
+    setCustomRangeState(null);
+    closeClassDetails({ restore: false });
+  }
+
   function closeClassDetails(options: { restore?: boolean } = {}) {
     setSelectedClassId(null);
     setSelectedClassDetail(null);
@@ -666,10 +675,26 @@ export function LessonsPage({
     );
   }
 
-  function renderClassActions(item: ClassViewItem) {
+  function renderClassActions(
+    item: ClassViewItem,
+    options?: { prominence?: "compact" | "primary" },
+  ) {
     const mutationActive = registrationMutation?.classId === item.id;
     const actionBusy = mutationActive || loadingClassId === item.id;
     const registrationState = item.userRegistrationState?.status;
+    const primary = options?.prominence === "primary";
+    const primaryButtonClass = cn(
+      "rounded-full",
+      primary && "min-h-12 w-full px-5 text-base font-semibold sm:w-auto",
+    );
+    const statusClass = cn(
+      "inline-flex w-fit items-center gap-2 rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/68",
+      primary && "min-h-12 px-4 text-base",
+    );
+    const fallbackClass = cn(
+      "rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/58",
+      primary && "inline-flex min-h-12 items-center px-4 text-base",
+    );
 
     if (registrationState === "approved" || registrationState === "pending") {
       const pending = registrationState === "pending";
@@ -677,7 +702,7 @@ export function LessonsPage({
       return (
         <>
           <div className="grid gap-1">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/68">
+            <span className={statusClass}>
               {pending ? (
                 <Clock className="size-4 text-blush-strong" aria-hidden="true" />
               ) : (
@@ -698,7 +723,7 @@ export function LessonsPage({
             type="button"
             size="sm"
             variant="outline"
-            className="rounded-full"
+            className={primaryButtonClass}
             disabled={actionBusy}
             onClick={() => void cancelRegistration(item)}
           >
@@ -720,7 +745,7 @@ export function LessonsPage({
         <Button
           type="button"
           size="sm"
-          className="rounded-full"
+          className={primaryButtonClass}
           onClick={() => void registerForClass(item)}
         >
           <LogIn className="size-4" aria-hidden="true" />
@@ -735,7 +760,7 @@ export function LessonsPage({
       !productUser?.has_active_membership
     ) {
       return (
-        <span className="rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/58">
+        <span className={fallbackClass}>
           {t("classes.membershipRequiredShort")}
         </span>
       );
@@ -746,7 +771,7 @@ export function LessonsPage({
         <Button
           type="button"
           size="sm"
-          className="rounded-full"
+          className={primaryButtonClass}
           disabled={actionBusy}
           onClick={() => void registerForClass(item)}
         >
@@ -761,7 +786,7 @@ export function LessonsPage({
     }
 
     return (
-      <span className="rounded-full border border-blush/24 px-3 py-2 text-sm font-semibold text-foreground/58">
+      <span className={fallbackClass}>
         {t("classes.registrationClosed")}
       </span>
     );
@@ -814,42 +839,21 @@ export function LessonsPage({
     ].filter((fact): fact is { label: string; value: string } => Boolean(fact));
 
     return (
-      <dl className="mt-5 grid gap-3 text-sm">
+      <dl className="mt-4 grid gap-2 text-sm">
         {facts.map((fact) => (
           <div
             key={fact.label}
-            className="grid gap-1 rounded-xl border border-blush/24 bg-background/46 p-3 sm:grid-cols-[9rem_1fr]"
+            className="grid gap-1 rounded-xl border border-blush/18 bg-background/34 px-3 py-2.5 sm:grid-cols-[8rem_1fr]"
           >
-            <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+            <dt className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-foreground/46">
               {fact.label}
             </dt>
-            <dd className="break-words text-foreground/72">{fact.value}</dd>
+            <dd className="break-words leading-5 text-foreground/70">
+              {fact.value}
+            </dd>
           </div>
         ))}
       </dl>
-    );
-  }
-
-  function renderClassDetailCta(item: ClassViewItem) {
-    if (session || !item.registrationOpen) return null;
-
-    return (
-      <div className="mt-5 rounded-xl border border-blush/24 bg-background/46 p-4">
-        <p className="font-serif text-lg text-foreground">
-          {t("classes.detail.signInForMoreTitle")}
-        </p>
-        <p className="mt-2 text-sm leading-6 text-foreground/68">
-          {t("classes.detail.signInForMoreBody")}
-        </p>
-        <Button
-          type="button"
-          className="mt-4 rounded-full"
-          onClick={() => onNavigate(authPath)}
-        >
-          <LogIn className="size-4" aria-hidden="true" />
-          {t("classes.detail.signInForMoreAction")}
-        </Button>
-      </div>
     );
   }
 
@@ -1019,13 +1023,22 @@ export function LessonsPage({
                   onClick={(event) => event.stopPropagation()}
                 >
                   <header className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
-                        {t("classes.detail.eyebrow")}
-                      </p>
-                      <h2 className="mt-2 break-words font-serif text-3xl text-foreground">
-                        {selectedClass.name}
-                      </h2>
+                    <div className="min-w-0 flex-1">
+                      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+                        <div className="min-w-0">
+                          <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
+                            {t("classes.detail.eyebrow")}
+                          </p>
+                          <h2 className="mt-2 break-words font-serif text-3xl text-foreground">
+                            {selectedClass.name}
+                          </h2>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                          {renderClassActions(selectedClass, {
+                            prominence: "primary",
+                          })}
+                        </div>
+                      </div>
                     </div>
                     <Button
                       type="button"
@@ -1063,10 +1076,16 @@ export function LessonsPage({
 
                   {renderClassFacts(selectedClass)}
 
-                  {renderClassDetailCta(selectedClass)}
-
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {renderClassActions(selectedClass)}
+                  <div className="mt-5 border-t border-blush/18 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full rounded-full sm:w-auto"
+                      onClick={showMoreLessons}
+                    >
+                      <CalendarDays className="size-4" aria-hidden="true" />
+                      {t("classes.moreLessons")}
+                    </Button>
                   </div>
                 </aside>
               </div>
