@@ -30,9 +30,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          npm run version:patch
-          git add package.json bun.lock
-          git commit -m "Bump app version [skip ci]"
+          npm version patch --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
+          git add package.json
+          git commit -m "Bump app version to v${VERSION} [skip ci]"
           git push
 
       - name: Setup Bun

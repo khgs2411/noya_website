@@ -8,10 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "version:patch": "npm version patch --no-git-tag-version && npm run version:sync-lock",
-    "version:minor": "npm version minor --no-git-tag-version && npm run version:sync-lock",
-    "version:major": "npm version major --no-git-tag-version && npm run version:sync-lock",
-    "version:sync-lock": "node scripts/sync-bun-lock-version.mjs"
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version"
   },
   "dependencies": {
     "@class-kit/react": "git+ssh://git@github.com/khgs2411/class-kit-sdk.git#v0.1.17",

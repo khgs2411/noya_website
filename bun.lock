@@ -4,7 +4,6 @@
   "workspaces": {
     "": {
       "name": "noya_website",
-      "version": "1.1.1",
       "dependencies": {
         "@fontsource/allura": "^5.2.8",
         "@fontsource/cormorant-garamond": "^5.2.11",
