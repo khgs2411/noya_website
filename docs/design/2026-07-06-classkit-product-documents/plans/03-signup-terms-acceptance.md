@@ -8,7 +8,7 @@
 
 ## Goal
 
-Add flow-specific Terms agreement to signup. `AuthPage` must require Terms confirmation before password or Google signup begins and write a small pending marker. A stable app-level component, rendered outside route-specific lazy pages, must complete ClassKit Terms acceptance with context `"signup"` after the user is authenticated and active.
+Add flow-specific Terms agreement to signup. `AuthPage` must require Terms confirmation before password or Google signup begins and write a small pending marker. Signup-mode initiation must use `classKitClient.auth.signUp(...)` and `classKitClient.auth.signInWithGoogle()` directly so typed SDK initiation errors can clear the marker deterministically. A stable app-level component, rendered outside route-specific lazy pages, must complete ClassKit Terms acceptance with context `"signup"` after the user is authenticated and active.
 
 ## Source Artifacts
 
@@ -19,14 +19,16 @@ Add flow-specific Terms agreement to signup. `AuthPage` must require Terms confi
 - `src/features/documents/product-document-types.ts`
 - `src/content/site-content.ts`
 - `src/i18n.ts`
+- `src/lib/class-kit-client.ts`
 - `src/components/ui/toast.tsx`
 - `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-documents`
+- `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#authentication-methods`
 
 ## Relationships
 
 - **Depends on:** document constants, `termsPath`, localized Terms agreement copy, and product document fallback locale.
 - **Enables:** reusable acceptance helper for class registration.
-- **Shared contracts:** `acceptProductDocument(client, documentType, locale, context)`, `markPendingSignupTermsAcceptance()`, `clearPendingSignupTermsAcceptance()`, `PendingSignupTermsAcceptance`.
+- **Shared contracts:** `acceptProductDocument(client, documentType, locale, context)`, `markPendingSignupTermsAcceptance()`, `clearPendingSignupTermsAcceptance()`, `PendingSignupTermsAcceptance`, direct signup initiation through `classKitClient.auth.*`.
 - **Integration points:** `AuthPage`, `App`, ClassKit auth context, `sessionStorage`, Terms document route, existing toast visual pattern.
 
 ## File Responsibility Map
@@ -36,7 +38,7 @@ Add flow-specific Terms agreement to signup. `AuthPage` must require Terms confi
 - `src/features/documents/pending-signup-terms-acceptance.tsx` - pending marker helpers, stable post-auth acceptance effect, retry UI.
 
 **Modify:**
-- `src/features/account/auth-page.tsx` - signup checkbox gating and pending marker writing before password/Google signup.
+- `src/features/account/auth-page.tsx` - signup checkbox gating, direct signup initiation through the shared ClassKit client, pending marker writing and failed-initiation cleanup before password/Google signup.
 - `src/App.tsx` - render the stable pending acceptance component once inside the app shell.
 - `src/i18n.ts` - add any missing signup acceptance/retry keys from chunk 2.
 
@@ -328,6 +330,21 @@ import {
   clearPendingSignupTermsAcceptance,
   markPendingSignupTermsAcceptance,
 } from "@/features/documents/pending-signup-terms-acceptance";
+import { classKitClient } from "@/lib/class-kit-client";
+```
+
+- [ ] Update the `useProductContext()` destructuring. Keep `signIn` and `signInWithGoogle` for existing sign-in behavior, add `refreshProductContext`, and stop using the context `signUp` wrapper in signup mode because its contract is `Promise<void>`.
+
+```ts
+const {
+  product,
+  session,
+  loading,
+  error,
+  signIn,
+  signInWithGoogle,
+  refreshProductContext,
+} = useProductContext();
 ```
 
 - [ ] Add state:
@@ -335,9 +352,35 @@ import {
 ```ts
 const [termsAccepted, setTermsAccepted] = useState(false);
 const [termsAcceptanceError, setTermsAcceptanceError] = useState<string | null>(null);
+const [authActionError, setAuthActionError] = useState<string | null>(null);
 ```
 
-- [ ] In `handleSubmit`, reject unchecked signup before `setSubmitting(true)` and before calling `signUp`.
+- [ ] Add a local typed-error extractor inside `AuthPage`, before `handleSubmit`. This avoids truthiness-checking `void` provider wrapper results and works with the direct SDK calls.
+
+```ts
+function getSdkErrorMessage(result: unknown) {
+  if (!result || typeof result !== "object" || !("error" in result)) {
+    return null;
+  }
+
+  const { error: sdkError } = result as { error?: unknown };
+  if (!sdkError) return null;
+  if (typeof sdkError === "string") return sdkError;
+
+  if (
+    typeof sdkError === "object" &&
+    sdkError !== null &&
+    "message" in sdkError &&
+    typeof (sdkError as { message?: unknown }).message === "string"
+  ) {
+    return (sdkError as { message: string }).message;
+  }
+
+  return t("auth.unavailable");
+}
+```
+
+- [ ] In `handleSubmit`, reject unchecked signup before `setSubmitting(true)` and before starting password signup initiation.
 
 ```ts
 if (visibleMode === "signup" && !termsAccepted) {
@@ -347,26 +390,36 @@ if (visibleMode === "signup" && !termsAccepted) {
 }
 ```
 
-- [ ] For password signup, write the pending marker immediately before `signUp(email, password)`, then clear it if the signup call throws or returns a typed error. Keep the marker only when signup initiation appears successful or when the SDK redirects/authenticates before returning.
+- [ ] For password signup, write the pending marker immediately before `classKitClient.auth.signUp(email, password)`, then clear it if that direct SDK call throws or returns a typed error. Keep the marker only when signup initiation succeeds. After successful no-redirect password signup, call `refreshProductContext()` so the provider hydrates the new session/product user and the app-level pending acceptance component can run.
 
 ```ts
 if (visibleMode === "signup") {
   markPendingSignupTermsAcceptance();
   try {
-    const result = await signUp(email, password);
-    if (result && "error" in result && result.error) {
+    const result = await classKitClient.auth.signUp(email, password);
+    const sdkErrorMessage = getSdkErrorMessage(result);
+
+    if (sdkErrorMessage) {
       clearPendingSignupTermsAcceptance();
+      setAuthActionError(sdkErrorMessage);
+      return;
     }
+
+    setAuthActionError(null);
+    await refreshProductContext();
   } catch (error) {
     clearPendingSignupTermsAcceptance();
-    throw error;
+    setAuthActionError(
+      error instanceof Error ? error.message : t("auth.unavailable"),
+    );
+    return;
   }
 } else {
   await signIn(email, password);
 }
 ```
 
-- [ ] In `handleGoogle`, require Terms in signup mode and write the pending marker before `signInWithGoogle()`. Clear the marker if OAuth initiation throws or returns a typed error before redirecting.
+- [ ] In `handleGoogle`, require Terms in signup mode and write the pending marker before direct `classKitClient.auth.signInWithGoogle()`. Clear the marker if OAuth initiation throws or returns a typed error before redirecting. Keep the existing context `signInWithGoogle()` call for sign-in mode because no pending marker cleanup is involved there.
 
 ```ts
 if (visibleMode === "signup" && !termsAccepted) {
@@ -375,19 +428,46 @@ if (visibleMode === "signup" && !termsAccepted) {
   return;
 }
 
-if (visibleMode === "signup") markPendingSignupTermsAcceptance();
-try {
-  const result = await signInWithGoogle();
-  if (result && "error" in result && result.error) {
+if (visibleMode === "signup") {
+  markPendingSignupTermsAcceptance();
+  try {
+    const result = await classKitClient.auth.signInWithGoogle();
+    const sdkErrorMessage = getSdkErrorMessage(result);
+
+    if (sdkErrorMessage) {
+      clearPendingSignupTermsAcceptance();
+      setAuthActionError(sdkErrorMessage);
+      return;
+    }
+
+    setAuthActionError(null);
+  } catch (error) {
     clearPendingSignupTermsAcceptance();
+    setAuthActionError(
+      error instanceof Error ? error.message : t("auth.unavailable"),
+    );
+    return;
   }
-} catch (error) {
-  if (visibleMode === "signup") clearPendingSignupTermsAcceptance();
-  throw error;
+
+  return;
 }
+
+await signInWithGoogle();
 ```
 
 Do not add an acceptance `useEffect` to `AuthPage`.
+
+- [ ] Render direct SDK initiation errors alongside the existing provider error.
+
+```tsx
+{submitted && (authActionError || error) && (
+  <p className="mt-5 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm leading-6 text-red-700 dark:text-red-200">
+    {authActionError ?? error}
+  </p>
+)}
+```
+
+Replace the existing `{submitted && error && (...)}` block with this combined condition.
 
 ### Task 5: Render Terms Agreement In Signup Mode
 
@@ -442,6 +522,10 @@ If `actions.retry` does not already exist in all three locales, add it near exis
   - Expected: `App` renders `PendingSignupTermsAcceptance`; `AuthPage` imports `markPendingSignupTermsAcceptance` and `clearPendingSignupTermsAcceptance`; marker helpers live only in `pending-signup-terms-acceptance.tsx`; agreement helper exists.
 - Run: `rtk rg -n "acceptProductDocument|productDocuments\\.accept" src/features/account/auth-page.tsx`
   - Expected: no matches. `AuthPage` must not own post-auth acceptance.
+- Run: `rtk rg -n "const result = await (signUp|signInWithGoogle)\\(|result && \"error\" in result|result\\.error" src/features/account/auth-page.tsx`
+  - Expected: no matches. `AuthPage` must not inspect return values from `useProductContext()` auth wrappers.
+- Run: `rtk rg -n "classKitClient\\.auth\\.(signUp|signInWithGoogle)|refreshProductContext|authActionError" src/features/account/auth-page.tsx`
+  - Expected: signup mode uses `classKitClient.auth.signUp`, Google signup uses `classKitClient.auth.signInWithGoogle`, successful password signup refreshes product context, and direct SDK errors render through `authActionError`.
 - Run: `rtk rg -n "sessionStorage" src/features/account src/features/documents`
   - Expected: pending marker only; no document content or personal data stored.
 - Run: `rtk rg -n "functions\\.invoke|\\.rpc\\(|supabase|management\\.productDocuments" src/features/account src/features/documents`
@@ -463,10 +547,10 @@ If `actions.retry` does not already exist in all three locales, add it near exis
 
 ## Risks And Rollback
 
-- Risk: `signUp` may not immediately create a session. Mitigation: pending marker component handles delayed auth.
+- Risk: password signup may not immediately create a session. Mitigation: successful direct password signup calls `refreshProductContext()`, and the pending marker component handles delayed auth if hydration is asynchronous.
 - Risk: repeated acceptance attempts if SDK returns a persistent failure. Mitigation: one automatic attempt per authenticated user/locale/mount transition, then explicit retry.
 - Risk: pending marker remains after a permanent server-side failure. Mitigation: retry notice keeps the failure visible to the authenticated user; clearing happens only after successful acceptance.
-- Risk: pending marker survives a failed signup initiation. Mitigation: clear the marker when password signup or Google OAuth initiation throws or returns a typed error.
+- Risk: pending marker survives a failed signup initiation. Mitigation: signup mode uses direct `classKitClient.auth.*` initiation calls and clears the marker when password signup or Google OAuth initiation throws or returns a typed error.
 - Rollback: remove `PendingSignupTermsAcceptance` from `App`, remove agreement rendering and marker import from `AuthPage`, and remove the two documents feature files created in this chunk.
 
 ## Non-Goals
@@ -478,4 +562,4 @@ If `actions.retry` does not already exist in all three locales, add it near exis
 
 ## Type And Name Consistency
 
-Before finalizing, verify that `client`, `session`, `productUser`, `i18n`, and `t` are in scope where used; that all i18n keys exist in three languages; and that `AuthPage` only writes the pending marker while `PendingSignupTermsAcceptance` owns acceptance completion.
+Before finalizing, verify that `client`, `session`, `productUser`, `i18n`, and `t` are in scope where used; that all i18n keys exist in three languages; that `AuthPage` imports `classKitClient`; that `AuthPage` does not inspect `void` context auth wrapper results; and that `AuthPage` only writes/clears the pending marker while `PendingSignupTermsAcceptance` owns acceptance completion.

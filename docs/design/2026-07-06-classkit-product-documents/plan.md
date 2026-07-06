@@ -55,6 +55,7 @@ Implement ClassKit product-document adoption in the Noya website: public Terms a
   - Use a tiny safe markdown renderer instead of adding a dependency unless implementation proves published documents need richer formatting.
   - Use `sessionStorage` only for pending post-auth signup acceptance intent, never for document content or personal data.
   - Complete pending signup Terms acceptance from a stable app-level document feature component rendered by `App`, not from `AuthPage`, because `AuthPage` currently redirects to profile as soon as `session` exists and can unmount before `productUser?.status === "active"`.
+  - Use `classKitClient.auth.signUp(...)` and `classKitClient.auth.signInWithGoogle()` for signup initiation inside `AuthPage` because the `useProductContext()` auth wrappers are `Promise<void>` and do not return typed SDK errors for pending-marker cleanup.
 - Blockers: None.
 
 ## Unresolved Decision Ownership
@@ -65,7 +66,7 @@ Implement ClassKit product-document adoption in the Noya website: public Terms a
 | SDK document response property names | Deferred implementation decision | `01-document-routes-and-rendering.md` | Implementation steps in owning chunk | Verify installed SDK types before coding the document page. |
 | Tiny markdown renderer sufficiency | Non-blocking risk | `01-document-routes-and-rendering.md` | Implementation steps in owning chunk | Implement headings, paragraphs, unordered lists; avoid dependency unless clearly needed. |
 | Signup pending acceptance retry and cleanup | Deferred implementation decision | `03-signup-terms-acceptance.md` | Implementation steps in owning chunk | `AuthPage` writes the marker; an app-level pending acceptance component completes acceptance after auth, avoids repeated loops, and shows recoverable failure UI. Marker must contain no content/personal data. |
-| Signup pending marker cleanup after failed signup initiation | Failure-handling invariant | `03-signup-terms-acceptance.md` | Implementation steps in owning chunk | Clear the pending marker if password signup or Google OAuth initiation throws or returns a typed error, so a later unrelated authenticated session does not record a stale `"signup"` acceptance. |
+| Signup pending marker cleanup after failed signup initiation | Failure-handling invariant | `03-signup-terms-acceptance.md` | Implementation steps in owning chunk | Use direct `classKitClient.auth.*` signup initiation calls, clear the pending marker if password signup or Google OAuth initiation throws or returns a typed error, and call `refreshProductContext()` after successful no-redirect password signup. Do not inspect return values from the `useProductContext()` auth wrappers. |
 | Agreement control placement and card/list entry coverage | Deferred implementation decision | `04-registration-health-declaration-acceptance.md` | Implementation steps in owning chunk | Controls must be near the primary register action and reset safely when selected class changes. Compact signed-in eligible card/list register buttons must open/focus detail instead of submitting invisibly. |
 | Registration acceptance pending guard | Concurrency invariant | `04-registration-health-declaration-acceptance.md` | Implementation steps in owning chunk | Preserve the existing `registrationMutation`/`actionBusy` duplicate-submit guard by setting a pending mutation before any awaited document acceptance call. |
 
@@ -108,7 +109,8 @@ Chunk `04` depends on chunk `03` because it reuses `DocumentAgreement` and `acce
   - storage: `window.sessionStorage`
   - content: document type/context intent only.
   - writer: `AuthPage` before password signup or Google signup begins.
-  - cleanup: clear the marker if signup or OAuth initiation fails before an authenticated product user can accept Terms.
+  - signup initiation boundary: `AuthPage` should import the existing `classKitClient` from `src/lib/class-kit-client.ts` and call `classKitClient.auth.signUp(...)` / `classKitClient.auth.signInWithGoogle()` for signup mode, while still using context state and `refreshProductContext()` from `useProductContext()`.
+  - cleanup: clear the marker if direct signup or OAuth initiation fails before an authenticated product user can accept Terms.
   - completion owner: `PendingSignupTermsAcceptance` rendered by `App`, outside route-specific lazy pages.
   - retry policy: at most one automatic attempt per authenticated user/locale/mount transition; explicit retry button after failure.
 - Localization:
@@ -148,7 +150,7 @@ Chunk `04` depends on chunk `03` because it reuses `DocumentAgreement` and `acce
 
 - Document response type names must be checked against installed SDK types before implementing the renderer.
 - Health declaration type may need product-configuration correction; keep the constant obvious.
-- Signup acceptance has redirect lifecycle risk. Keep `AuthPage` responsible only for gating/writing the marker, clear the marker when signup/OAuth initiation fails, and keep app-level pending acceptance completion tiny with deterministic cleanup and explicit retry after failure.
+- Signup acceptance has redirect lifecycle risk. Keep `AuthPage` responsible only for gating/writing the marker and direct signup/OAuth initiation; clear the marker when those direct initiation calls fail; call `refreshProductContext()` after successful no-redirect password signup; and keep app-level pending acceptance completion tiny with deterministic cleanup and explicit retry after failure.
 - Registration document acceptance must not weaken the existing duplicate-submit guard. Validate unchecked agreement controls synchronously, then set `registrationMutation` before the first awaited `productDocuments.accept(...)` call and keep the existing `finally` cleanup.
 - Registration UI should not clutter class cards. Compact card/list register buttons for signed-in eligible users should open/focus the selected class detail surface; only the detail primary action should submit agreement-gated registration.
 - The tiny markdown renderer should stay safe and small; do not use `dangerouslySetInnerHTML`.

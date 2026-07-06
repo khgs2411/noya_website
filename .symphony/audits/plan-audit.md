@@ -1,25 +1,30 @@
-# ClassKit Product Documents Plan Audit
+# Plan Audit: ClassKit Product Documents
 
-## Audit Mode: Standard
+## Audit Mode: Full
 
-Rationale: The target is a multi-chunk implementation plan touching routing, localization, auth/signup lifecycle, document acceptance, and class registration behavior.
+Rationale: Multi-chunk implementation plan spanning routing, shell links, auth/signup lifecycle, registration behavior, SDK calls, localization, and verification.
+
+## Summary
+
+Audited `docs/design/2026-07-06-classkit-product-documents/plan.md` against the approved design/spec at `docs/design/2026-07-06-classkit-product-documents/spec.md`, plus `agenda.md` and all four referenced chunk plans. I also checked repository instructions, current route/auth/registration source files, package metadata, and the referenced ClassKit docs.
+
+The reworked plan addresses the prior blocking review comment. Chunk 03 now explicitly avoids inspecting `useProductContext()` signup wrapper return values, uses the shared `classKitClient.auth.signUp(...)` / `classKitClient.auth.signInWithGoogle()` boundary for signup initiation, clears pending markers on typed SDK errors or thrown initiation failures, and keeps durable acceptance completion in an app-level component that survives the existing auth redirect.
 
 ## Plan Overview
 
-Objective: Audit `docs/design/2026-07-06-classkit-product-documents/plan.md` and all referenced chunk plans against the approved spec for adding ClassKit-backed Terms and health declaration pages plus flow-specific acceptances.
+Objective: Add ClassKit-backed public Terms and health declaration document pages, localized shell links, signup Terms acceptance, and registration Terms plus health declaration acceptance.
 
-Scope: Reviewed the approved spec, agenda, implementation plan, all four chunk plans, repository instructions, roadmap/design guide, related source files, and the ClassKit docs cited by the task. No implementation work was performed.
+Scope: Includes document route constants/pages, footer/mobile links, localized agreement copy, a reusable agreement helper, pending signup Terms marker lifecycle, app-level post-auth signup acceptance, and registration acceptance-before-register behavior. Excludes manager document authoring, global legal walls, profile metadata waiver flags, raw Supabase/Edge Function calls, and embedded legal/health content.
 
 Target Audience: AI agents and human developers.
 
 Readiness Level: Ready for Development.
 
 Key Technical Decisions:
-
-- Public Terms and health declaration routes use `client.productDocuments.get(...)` with active locale and English fallback; long legal or health text remains outside this repo.
-- Signup acceptance is split between pre-signup checkbox gating in `AuthPage` and an app-level pending acceptance component that survives the existing post-session redirect.
-- Registration acceptance is flow-specific, records Terms and health declaration snapshots before `client.classes.register(...)`, and preserves the existing mutation guard across async acceptance calls.
-- `health_declaration` is centralized as an adjustable initial document type because ClassKit docs do not name a canonical health declaration type.
+- Use `client.productDocuments.get(...)` for public document reads and `client.productDocuments.accept(...)` for flow-specific acceptance snapshots.
+- Centralize the uncertain health declaration type as `health_declaration`.
+- Use a small safe markdown subset instead of adding a markdown dependency.
+- Use direct `classKitClient.auth.*` signup initiation only where typed initiation errors are needed, while preserving context auth methods for existing sign-in.
 
 ## File Path Verification
 
@@ -27,137 +32,139 @@ Verified using local codebase inspection:
 
 | Referenced Path | Status | Notes |
 | --- | --- | --- |
-| `docs/design/2026-07-06-classkit-product-documents/spec.md` | Exists | Approved design target read. |
-| `docs/design/2026-07-06-classkit-product-documents/agenda.md` | Exists | Decisions are resolved. |
-| `docs/design/2026-07-06-classkit-product-documents/plan.md` | Exists | Primary audit target read. |
-| `docs/design/2026-07-06-classkit-product-documents/plans/01-document-routes-and-rendering.md` | Exists | Chunk plan read. |
-| `docs/design/2026-07-06-classkit-product-documents/plans/02-shell-links-and-localization.md` | Exists | Chunk plan read. |
-| `docs/design/2026-07-06-classkit-product-documents/plans/03-signup-terms-acceptance.md` | Exists | Chunk plan read. |
-| `docs/design/2026-07-06-classkit-product-documents/plans/04-registration-health-declaration-acceptance.md` | Exists | Chunk plan read. |
-| `AGENTS.md` | Exists | Local instructions read. |
-| `ROADMAP.md` | Exists | Product document and health declaration roadmap context verified. |
-| `DESIGN_GUIDE.md` | Exists | Styling and verification constraints verified. |
-| `src/App.tsx` | Exists | Current route model, global notices, and `renderPage` verified. |
-| `src/content/site-content.ts` | Exists | Current path constants and path predicates verified. |
-| `src/i18n.ts` | Exists | Existing three-language translation object shape verified. |
-| `src/components/site/site-header.tsx` | Exists | Shell context exists. |
-| `src/features/landing/mobile-menu.tsx` | Exists | Existing `SidebarLink` use verified. |
-| `src/features/landing/contact-section.tsx` | Exists | Footer insertion point verified. |
-| `src/components/site/sidebar-link.tsx` | Exists | Client navigation behavior verified. |
-| `src/components/ui/button.tsx` | Exists | Planned UI primitive exists. |
-| `src/components/ui/toast.tsx` | Exists | Toast source artifact exists. |
-| `src/lib/utils.ts` | Exists | `cn` helper exists. |
-| `src/features/account/auth-page.tsx` | Exists | Current signup flow and session redirect verified. |
-| `src/features/lessons/lessons-page.tsx` | Exists | Current class detail, card/list register entry points, and mutation guard verified. |
-| `src/features/classes/class-card.tsx` | Exists | Referenced implementation path exists. |
-| `src/features/classes/class-list-view.tsx` | Exists | Referenced implementation path exists. |
-| `src/features/classes/class-calendar-view.tsx` | Exists | Referenced implementation path exists. |
-| `src/features/classes/signup-links.ts` | Exists | Referenced implementation path exists. |
-| `src/features/account/profile-page.tsx` | Exists | Referenced implementation path exists. |
-| `package.json` | Exists | `@class-kit/react` v0.1.17 dependency and scripts verified. |
-| `node_modules/@class-kit/react` | Not Found | Installed SDK types were unavailable in this worker; the plan explicitly requires type verification before coding. |
-| `/Users/liadgoren/Repositories/class-kit/docs/getting-started.md` | Exists | Frontend SDK boundary confirmed. |
-| `/Users/liadgoren/Repositories/class-kit/docs/changelog.md` | Exists | Product document feature confirmed. |
-| `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` | Exists | Product document method contract confirmed. |
+| `docs/design/2026-07-06-classkit-product-documents/spec.md` | Exists | Approved design target. |
+| `docs/design/2026-07-06-classkit-product-documents/agenda.md` | Exists | Decisions resolved. |
+| `docs/design/2026-07-06-classkit-product-documents/plan.md` | Exists | Primary audit target. |
+| `docs/design/2026-07-06-classkit-product-documents/plans/01-document-routes-and-rendering.md` | Exists | Chunk 01. |
+| `docs/design/2026-07-06-classkit-product-documents/plans/02-shell-links-and-localization.md` | Exists | Chunk 02. |
+| `docs/design/2026-07-06-classkit-product-documents/plans/03-signup-terms-acceptance.md` | Exists | Chunk 03, reworked. |
+| `docs/design/2026-07-06-classkit-product-documents/plans/04-registration-health-declaration-acceptance.md` | Exists | Chunk 04. |
+| `AGENTS.md` | Exists | Requires `@class-kit/react`, localized copy, Tailwind/shadcn patterns, no direct Supabase/raw Edge Functions. |
+| `ROADMAP.md` | Exists | Step 4 product documents and Step 5 health declaration align with plan scope. |
+| `DESIGN_GUIDE.md` | Exists | Mobile-first, localized, theme-token UI constraints. |
+| `src/App.tsx` | Exists | Lightweight route branches and global notice placement verified. |
+| `src/content/site-content.ts` | Exists | Current route constants/helpers verified. |
+| `src/i18n.ts` | Exists | Localization target verified. |
+| `src/features/account/auth-page.tsx` | Exists | Current signup uses context wrappers and redirects on session; plan updates this correctly. |
+| `src/lib/class-kit-client.ts` | Exists | Shared direct SDK client exists and is created from `@class-kit/react`. |
+| `src/features/lessons/lessons-page.tsx` | Exists | Registration mutation and class detail action path verified. |
+| `src/features/landing/mobile-menu.tsx` | Exists | Shell link target. |
+| `src/features/landing/contact-section.tsx` | Exists | Footer/contact link target. |
+| `src/components/site/sidebar-link.tsx` | Exists | Mobile menu link primitive. |
+| `src/components/ui/button.tsx` | Exists | Planned button usage target. |
+| `src/components/ui/toast.tsx` | Exists | Existing visual reference. |
+| `src/features/documents/product-document-types.ts` | New File | Planned create. |
+| `src/features/documents/product-document-page.tsx` | New File | Planned create. |
+| `src/features/documents/document-agreement.tsx` | New File | Planned create. |
+| `src/features/documents/pending-signup-terms-acceptance.tsx` | New File | Planned create. |
+| `/Users/liadgoren/Repositories/class-kit/docs/getting-started.md` | Exists | Confirms product websites use `@class-kit/react` and not direct ClassKit data access. |
+| `/Users/liadgoren/Repositories/class-kit/docs/changelog.md` | Exists | Confirms v0.1.13 product document APIs. |
+| `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md` | Exists | Confirms auth methods and product document methods/acceptance behavior. |
 
-No `CONTEXT.md` or ADR files exist in the planning folder; the plan marks them absent by design.
+`CONTEXT.md` and ADR files were searched for under `docs/` and this design folder; none were present, matching the plan's statement that no glossary/ADR artifact is needed.
 
 ## Strengths
 
-### 1. Strong Boundary Discipline
+### 1. Prior Rejection Is Directly Addressed
 
-The plan keeps all product-document behavior behind `@class-kit/react`, forbids Supabase/RPC/raw Edge Function access, and separates website presentation from ClassKit-owned content, authorization, and acceptance persistence.
+The top-level plan states that `useProductContext()` auth wrappers are not suitable for typed signup initiation errors and assigns direct `classKitClient.auth.*` use to Chunk 03. Chunk 03 gives concrete implementation snippets for clearing pending markers on returned SDK errors or thrown failures.
 
-### 2. Correct Signup Lifecycle Shape
+Evidence:
+- `plan.md:53-59` records the direct-client reconciliation.
+- `plan.md:68-69` makes failed-initiation cleanup an invariant.
+- `plans/03-signup-terms-acceptance.md:336-347` removes the context `signUp` wrapper from signup mode.
+- `plans/03-signup-terms-acceptance.md:393-420` and `:422-430` define deterministic password and Google initiation cleanup.
 
-The plan accounts for the current `AuthPage` redirect on `session` and moves durable Terms acceptance to a stable app-level component. That directly addresses the main auth lifecycle risk in the existing code.
+### 2. Scope Matches Repository Boundaries
 
-### 3. Registration Entry Points Are Covered
+The plan uses `@class-kit/react` and the existing shared client, keeps ClassKit as the owner of auth/data/document persistence, localizes visible copy in `src/i18n.ts`, and avoids direct Supabase/RPC/raw Edge Function calls. This matches `AGENTS.md` product boundaries.
 
-The registration chunk recognizes that compact card/list actions currently call `registerForClass(item)` and changes signed-in eligible compact actions to open the detail surface first, so agreement controls are visible before submission.
+### 3. Registration Risk Is Well Controlled
 
-### 4. Concurrency Guard Is Preserved
+Chunk 04 preserves the existing duplicate-submit guard by validating checkbox state synchronously, setting `registrationMutation` before awaited acceptance calls, and calling `client.classes.register(...)` only after both document acceptances succeed.
 
-The top-level plan and chunk 04 both require setting `registrationMutation` before awaiting `productDocuments.accept(...)`, preserving the existing duplicate-submit guard while adding acceptance calls.
+Evidence:
+- `plans/04-registration-health-declaration-acceptance.md:117-170`
+- `plans/04-registration-health-declaration-acceptance.md:264-319`
+
+### 4. Verification Is Focused And Repo-Appropriate
+
+The plan prefers focused `rg` inspections, lint, and browser smoke only when a dev server exists. It does not default to `npm run build`, matching local verification guidance.
 
 ## Critical Issues
 
-No critical issues found. The plan is specific, internally consistent, scoped to the assigned task, and actionable from the current repository context.
+No critical issues found. The plan is actionable for development.
+
+## Non-Blocking Notes
+
+- `node_modules` is not installed in this worktree, so I could not directly re-check installed SDK source/types during the audit. This is not a blocker because `package.json` pins `@class-kit/react` v0.1.17, ClassKit docs confirm the required APIs, and the plan explicitly instructs implementers to verify installed SDK response/type shapes before coding and stop on missing SDK types.
+- Chunk 03's `DocumentAgreement` snippet starts with `import type { ClassKitClient } from "@class-kit/react"`, but includes a fallback instruction to derive the type locally if that export is unavailable. That is sufficient for implementation readiness.
 
 ## Questions for Plan Author
 
-No author-only questions remain. The remaining uncertainties are implementation-time checks already called out by the plan.
+No blocking questions.
 
 ## Recommendations
 
-### Implementation
-
-- Treat the installed SDK type check in chunk 01 as mandatory before writing `ProductDocumentPage` or `acceptProductDocument`, because `node_modules` is absent in this worker and the exact export/response shape could not be verified here.
-- When adding the pending signup acceptance component, keep `sessionStorage` reads guarded to browser runtime only. This app is Vite/browser-only today, so this is not blocking.
-- Prefer one shared registration document error below the agreement block, as chunk 04 shows, to avoid duplicating the same flow-level failure under both checkboxes.
-
-### Verification
-
-- Follow the repository instruction not to start a dev server without explicit approval. Browser smoke should use an already-running localhost server if available.
-- Run `npm run lint` after implementation as planned because the changes introduce new SDK calls, route branches, and shared components.
+- During implementation, run the Chunk 03 verification grep exactly as written to ensure no `AuthPage` code inspects `void` wrapper results.
+- If dependencies are absent in the executor worktree, install or otherwise hydrate them before final TypeScript/lint verification so SDK type fallback decisions are based on real package exports.
+- Keep the health declaration document type as a single constant edit point until product content configuration confirms the final type.
 
 ## Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation |
 | --- | --- | --- | --- |
-| SDK response/export shape differs from snippets | Medium | Medium | Verify installed SDK types before coding; normalize response fields in one function. |
-| Health declaration document type differs from `health_declaration` | Medium | Low | Keep the centralized constant as the single adjustment point. |
-| Signup pending marker survives an unusual auth initiation failure | Low | Medium | Chunk 03 clears the marker on thrown or typed signup/OAuth initiation errors and shows explicit retry after post-auth failure. |
-| Tiny markdown renderer misses rich formatting | Low | Low | Start with safe headings/paragraphs/lists; revisit only with real published content evidence. |
+| SDK response/type shape differs from snippets | Medium | Medium | Chunk 01 and execution handoff require installed SDK type verification before coding. |
+| Signup acceptance marker survives a failed initiation | Low | High | Chunk 03 now uses direct SDK calls and clears on returned typed errors or thrown failures. |
+| OAuth redirects before cleanup can run | Low | Medium | Marker is intentionally kept only after successful initiation/redirect and resolved post-auth by app-level component. |
+| Registration buttons bypass visible agreement controls | Low | High | Chunk 04 changes compact signed-in register actions to open class detail; only primary detail action submits. |
+| Health declaration document type differs from `health_declaration` | Medium | Low | Centralized constant makes later correction small. |
 
-Highest Risk: SDK type drift, because local `node_modules` was unavailable for this audit. The plan already makes type verification an implementation gate, so this does not block development readiness.
+Highest Risk: Signup pending-marker lifecycle remains the highest-risk area because it spans unauthenticated UI state, auth initiation, redirects, authenticated product-user hydration, and document acceptance. The revised plan is concrete enough to manage that risk.
 
 ## Pre-Development Checklist
 
-Before implementation starts:
-
-- [x] All planning artifacts requested by the audit phase were read.
-- [x] Referenced repository paths were verified or explicitly marked unavailable.
-- [x] ClassKit docs cited by the task were checked.
+- [x] All referenced planning artifacts read.
+- [x] Applicable repo instructions, roadmap, and design guide checked.
+- [x] Referenced source paths verified or marked new.
+- [x] ClassKit docs checked for auth and product document contracts.
+- [x] Prior rejection issue checked against the revised plan.
 - [x] Acceptance criteria are testable.
-- [x] AI autonomy boundaries and stop conditions are defined in the plan.
-- [ ] Verify installed `@class-kit/react` product document types before coding.
+- [x] AI autonomy boundaries and stop conditions are defined.
 
 ## Next Steps
 
-1. Execute chunks in the planned order: 01, 02, 03, 04.
-2. Stop if installed SDK types contradict the documented product document contract.
-3. Complete focused inspections and lint after implementation; browser smoke only on an existing approved dev server.
+1. Execute chunks in order: 01, 02, 03, 04.
+2. In Chunk 03, verify real SDK types before committing to the `ClassKitClient` import and auth result handling.
+3. Run the focused verification commands and `npm run lint`; use browser smoke only on an existing approved dev server.
 
 ## Evaluation Matrix
 
 | Dimension | Weight | Raw Score | Weighted Score | Notes |
 | --- | --- | --- | --- | --- |
-| Completeness | x3 | 5/5 | 15/15 | Covers document routes, shell links, localization, signup gating/post-auth acceptance, registration Terms plus health declaration acceptance, errors, and verification. |
-| Feasibility | x3 | 4/5 | 12/15 | Technically feasible against current code and docs; SDK type verification remains an implementation-time gate. |
-| Clarity | x2 | 5/5 | 10/10 | Clear chunk boundaries, file maps, code shapes, contexts, and acceptance criteria. |
-| Logical Flow | x2 | 5/5 | 10/10 | Dependency order is sound: routes/constants, links/copy, signup, then registration/final verification. |
-| Scope & Risk | x2 | 5/5 | 10/10 | Scope stays within requested Terms and health declaration behavior and avoids global legal walls or manager authoring. |
-| Developer Experience | x1 | 5/5 | 5/5 | Executor has concrete paths, snippets, verification commands, and stop conditions. |
-| AI Readiness | x1 | 5/5 | 5/5 | Autonomy boundaries, ambiguity handling, path verification, and objective checks are explicit. |
+| Completeness | x3 | 5/5 | 15/15 | Covers routes, links, i18n, signup lifecycle, registration acceptances, error states, and verification. |
+| Feasibility | x3 | 4/5 | 12/15 | Feasible against repo shape and docs; SDK type check deferred to implementation because dependencies are not hydrated here. |
+| Clarity | x2 | 5/5 | 10/10 | Explicit file maps, snippets, contexts, constants, and flow ownership. |
+| Logical Flow | x2 | 5/5 | 10/10 | Chunks are dependency-ordered from document primitives to links, signup, then registration/final verification. |
+| Scope & Risk | x2 | 5/5 | 10/10 | Avoids global legal wall, manager authoring, direct backend calls, and embedded legal content; risks are named. |
+| Developer Experience | x1 | 5/5 | 5/5 | Executor has clear starting points, verification commands, rollback notes, and stop conditions. |
+| AI Readiness | x1 | 5/5 | 5/5 | Plan is agent-executable with concrete paths, invariants, forbidden calls, and objectively checkable outcomes. |
 
 Overall: 67/70 -> Ready for Development
 
-Critical Dimension Check: Pass; no x3 dimension scored 1.
+Critical Dimension Check: Pass. No x3 dimension scored 1.
 
 ## Handoff
 
 PLAN APPROVED FOR IMPLEMENTATION
 
 Key constraints:
+- Use `@class-kit/react` and the shared `classKitClient`; do not call Supabase, RPCs, raw Edge Functions, or manager/admin document APIs from website UI.
+- Do not inspect return values from `useProductContext()` signup wrappers; use direct `classKitClient.auth.*` calls for signup initiation cleanup.
+- Keep document acceptance flow-specific and localized; no global blocking wall.
 
-- Use only `@class-kit/react`; do not call Supabase, RPCs, raw Edge Functions, admin APIs, or manager-only document APIs.
-- Keep agreement acceptance flow-specific; do not add a global blocking legal wall.
-- Keep all visible copy localized in English, Hebrew, and Russian.
-- Do not start a dev server without explicit approval; use an existing localhost server for smoke checks when available.
+Suggested starting point: `docs/design/2026-07-06-classkit-product-documents/plans/01-document-routes-and-rendering.md`
 
-Suggested starting point: `docs/design/2026-07-06-classkit-product-documents/plans/01-document-routes-and-rendering.md`.
-
-First milestone: Terms and health declaration routes load anonymous-safe ClassKit document states without unsafe markdown rendering.
+First milestone: Anonymous `/terms` and `/health-declaration` routes compile and render non-crashing localized states through `client.productDocuments.get(...)`.
 
 Verdict: Ready for Development

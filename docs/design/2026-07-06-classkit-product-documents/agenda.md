@@ -13,6 +13,7 @@
 
 - Product websites must use `@class-kit/react` and must not call Supabase, ClassKit tables, RPCs, or raw Edge Functions directly.
 - ClassKit product document APIs are available in the installed SDK tag.
+- The repo's shared `classKitClient` from `src/lib/class-kit-client.ts` is the direct ClassKit SDK client instance passed to `ProductProvider`; it is an allowed `@class-kit/react` boundary.
 - Public document reads are anonymous-safe and product-scoped.
 - Acceptances require an authenticated active product user and snapshot the accepted document/version/content.
 - The website owns routes, layout, links, copy, and flow-specific agreement UI.
@@ -69,9 +70,9 @@
   - B. Call `accept(...)` before signup - impossible under the documented auth requirement.
   - C. Only show a checkbox and never call acceptance - fails the task.
 - Recommendation: A. It respects both user-facing agreement and ClassKit's authenticated acceptance contract.
-- Answer: A. Checkbox gates signup; `AuthPage` writes the pending marker before password or Google signup, and a stable app-level pending acceptance component completes durable acceptance after the user is authenticated and active.
+- Answer: A. Checkbox gates signup; `AuthPage` writes the pending marker before password or Google signup, uses direct `classKitClient.auth.signUp(...)` / `classKitClient.auth.signInWithGoogle()` calls for signup initiation error detection, clears the marker on thrown or typed initiation failure, refreshes product context after successful no-redirect password signup, and a stable app-level pending acceptance component completes durable acceptance after the user is authenticated and active.
 - Answer impact: Resolves branch.
-- Spec impact: Adds pending post-auth acceptance marker for password and Google signup, and explicitly keeps acceptance completion outside `AuthPage` because `AuthPage` redirects on session and can unmount before product-user hydration.
+- Spec impact: Adds pending post-auth acceptance marker for password and Google signup, explicitly keeps acceptance completion outside `AuthPage` because `AuthPage` redirects on session and can unmount before product-user hydration, and records direct client signup initiation as the deterministic marker cleanup boundary.
 - Context impact: Not needed.
 - ADR impact: Not needed; flow follows SDK constraint.
 - Follow-ups: None.
@@ -119,6 +120,6 @@
 - Result: The design is ready for chunked implementation planning. All material branches are resolved from task context, ClassKit docs, and repository evidence.
 - Remaining non-blocking risks:
   - Exact health declaration document type may need correction after product content is configured.
-  - Signup post-auth acceptance requires careful `sessionStorage` cleanup and a stable app-level component to avoid missed acceptance or repeated attempts.
+  - Signup post-auth acceptance requires careful `sessionStorage` cleanup, direct client initiation error handling, and a stable app-level component to avoid missed acceptance, stale markers, or repeated attempts.
   - Tiny markdown renderer may be insufficient if legal documents rely on tables or rich markdown.
   - Card/list register entry points must remain aligned with the detail agreement controls; compact signed-in eligible register actions should open detail rather than submitting without visible agreements.

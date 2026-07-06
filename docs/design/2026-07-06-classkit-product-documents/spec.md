@@ -12,7 +12,7 @@ Adopt ClassKit product documents in the Noya website for public Terms of Service
 - `package.json` already pins `@class-kit/react` `v0.1.17`, which includes product document APIs introduced in ClassKit `v0.1.13`.
 - The app uses lightweight path routing in `src/App.tsx`; route path constants and helpers live in `src/content/site-content.ts`.
 - Public classes and registration live in `src/features/lessons/lessons-page.tsx`, with `client.classes.register(classId)` as the customer registration mutation.
-- Signup lives in `src/features/account/auth-page.tsx`, using `signUp(email, password)` and `signInWithGoogle()` from `useProductContext()`.
+- Signup lives in `src/features/account/auth-page.tsx`, currently using `signUp(email, password)` and `signInWithGoogle()` from `useProductContext()`. Those context methods are `Promise<void>` convenience wrappers, so this feature should use the existing shared `classKitClient.auth.*` methods for signup initiation where typed SDK errors are needed.
 - Shared shell/menu/footer surfaces are `src/components/site/site-header.tsx`, `src/features/landing/mobile-menu.tsx`, and `src/features/landing/contact-section.tsx`.
 - All visible copy must be localized in `src/i18n.ts` for English, Hebrew, and Russian.
 - The repo has no markdown renderer dependency.
@@ -58,13 +58,16 @@ Relevant documented behavior:
 - The affordance links to the public Terms route.
 - The checkbox controls local UI readiness; the actual durable acceptance is attempted only when an authenticated active product user exists.
 - Password signup should:
-  1. require the checkbox before calling `signUp`;
-  2. write a small pending Terms acceptance marker before calling the existing `signUp(email, password)`;
-  3. let a stable post-auth component complete `client.productDocuments.accept("terms", { locale, fallbackLocale: "en", context: "signup" })` after the session/product user is available.
+  1. require the checkbox before signup initiation;
+  2. write a small pending Terms acceptance marker before calling `classKitClient.auth.signUp(email, password)`;
+  3. clear the pending marker if the direct SDK call throws or returns an error before auth succeeds;
+  4. call `refreshProductContext()` after a successful no-redirect password signup so the provider hydrates the new session/product user;
+  5. let a stable post-auth component complete `client.productDocuments.accept("terms", { locale, fallbackLocale: "en", context: "signup" })` after the session/product user is available.
 - Google signup cannot accept before OAuth because the user is not authenticated. The smallest defensible boundary is:
   1. require the checkbox before starting Google signup;
-  2. store a small pending acceptance marker in `sessionStorage`;
-  3. after OAuth returns and the app has an authenticated active product user, a stable post-auth component completes `accept("terms", { context: "signup" })` and clears the marker.
+  2. store a small pending acceptance marker in `sessionStorage` before calling `classKitClient.auth.signInWithGoogle()`;
+  3. clear the pending marker if OAuth initiation throws or returns a typed error without leaving the page;
+  4. after OAuth returns and the app has an authenticated active product user, a stable post-auth component completes `accept("terms", { context: "signup" })` and clears the marker.
 - `AuthPage` currently redirects to profile as soon as `session` exists, so it must not be the only owner of post-auth acceptance. It may write the pending marker and gate signup, but acceptance completion must live in a component that survives that redirect.
 - If post-auth acceptance fails, the user remains signed in but receives a localized recoverable message. Do not silently block the whole public site.
 
@@ -165,7 +168,10 @@ Modify `src/features/account/auth-page.tsx`:
 
 - show Terms agreement only when `visibleMode === "signup"`;
 - require it for password signup and Google signup;
-- store a pending signup Terms acceptance marker before password `signUp(...)` and before `signInWithGoogle()`;
+- keep existing context methods for sign-in, but use `classKitClient.auth.signUp(...)` and `classKitClient.auth.signInWithGoogle()` for signup initiation so `AuthPage` can deterministically clear the pending marker on typed SDK errors;
+- store a pending signup Terms acceptance marker before password signup and before Google OAuth initiation;
+- clear the pending marker on thrown or typed signup/OAuth initiation failure, and keep it only after initiation succeeds or redirects;
+- call `refreshProductContext()` after successful password signup that completes without redirect;
 - do not attempt post-auth acceptance in `AuthPage` because the existing session redirect can unmount it before `productUser?.status === "active"` is available.
 
 Modify `src/App.tsx` to render `PendingSignupTermsAcceptance` once inside the app shell, outside route-specific lazy pages, so acceptance completion survives navigation from auth to profile.
@@ -258,7 +264,7 @@ Implementation should be split into these chunks:
 
 ## Non-Blocking Risks
 
-- Signup acceptance depends on post-redirect/session restoration and must be completed by the stable app-level pending acceptance component, not only by `AuthPage`.
+- Signup acceptance depends on post-redirect/session restoration and must be completed by the stable app-level pending acceptance component, not only by `AuthPage`. Signup initiation error handling must use the direct `classKitClient.auth.*` methods rather than relying on `useProductContext()` auth wrapper return values.
 - The exact health declaration document type may differ from `health_declaration`.
 - Product-document registration controls must cover both detail-modal and card/list entry points. The chosen boundary is to make card/list register clicks open the detail surface for agreement review before submission.
 - The tiny markdown renderer will not support rich legal markdown features such as tables. If published documents require tables, add a markdown dependency only after confirming that need.
