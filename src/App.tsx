@@ -1,6 +1,13 @@
 import { useProductContext } from "@class-kit/react";
 import { Loader2 } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -386,10 +393,7 @@ export default function App() {
         );
       }
 
-      return renderPage(
-        <ManagerPage loading onNavigate={navigateTo} />,
-        true,
-      );
+      return renderPage(<ManagerPage loading onNavigate={navigateTo} />, true);
     }
 
     if (canEnterManager) {
