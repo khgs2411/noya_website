@@ -7,10 +7,12 @@ import {
   Building2,
   CalendarDays,
   Check,
+  ChevronRight,
   CircleUserRound,
   Info,
   Loader2,
   LogOut,
+  Phone,
   RefreshCw,
   Ticket,
   UsersRound,
@@ -35,6 +37,7 @@ type ProductProfileResponse = NonNullable<
 >;
 type ProductProfileMembershipGrant =
 ProductProfileResponse["memberships"]["grants"][number];
+type OnboardingStep = "name" | "phone";
 
 function MetricTile({
   icon: Icon,
@@ -164,6 +167,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [displayNameInput, setDisplayNameInput] = useState("");
   const [phoneNumberInput, setPhoneNumberInput] = useState("");
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>("name");
 
   async function handleSignOut() {
     await signOut();
@@ -251,19 +255,23 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     Boolean(session) &&
     saveStatus !== "saving" &&
     displayNameInput.trim().length > 0;
+  const canContinueOnboarding =
+    saveStatus !== "saving" && displayNameInput.trim().length > 0;
 
-  async function saveProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function persistProfile(input: {
+    displayName: string;
+    phoneNumber: string;
+    markOnboardingComplete: boolean;
+  }) {
+    if (!client || !session || saveStatus === "saving") return false;
 
-    if (!client || !session || saveStatus === "saving") return;
-
-    const displayName = displayNameInput.trim();
-    const phoneNumber = phoneNumberInput.trim();
+    const displayName = input.displayName.trim();
+    const phoneNumber = input.phoneNumber.trim();
 
     if (!displayName) {
       setSaveStatus("error");
       setSaveErrorMessage(t("profile.validation.displayNameRequired"));
-      return;
+      return false;
     }
 
     setSaveStatus("saving");
@@ -272,15 +280,17 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     const result = await client.profile.update({
       displayName,
       phoneNumber: phoneNumber || null,
-      metadata: {
-        onboarding_completed: true,
-      },
+      metadata: input.markOnboardingComplete
+        ? {
+            onboarding_completed: true,
+          }
+        : undefined,
     });
 
     if (result.error) {
       setSaveStatus("error");
       setSaveErrorMessage(result.error.message);
-      return;
+      return false;
     }
 
     setProfile((current) =>
@@ -300,6 +310,24 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     setPhoneNumberInput(result.data.profile.phone_number ?? "");
     setSaveStatus("saved");
     void loadProfile({ silent: true });
+    return true;
+  }
+
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await persistProfile({
+      displayName: displayNameInput,
+      phoneNumber: phoneNumberInput,
+      markOnboardingComplete: true,
+    });
+  }
+
+  async function completeOnboarding(phoneNumber: string) {
+    await persistProfile({
+      displayName: displayNameInput,
+      phoneNumber,
+      markOnboardingComplete: true,
+    });
   }
 
   return (
@@ -414,7 +442,134 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
                   </div>
                 )}
 
-                {profile && profileUser && (
+                {profile && profileUser && !onboardingComplete && (
+                  <section className="grid gap-6">
+                    <div className="flex items-start gap-4">
+                      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
+                        {onboardingStep === "name" ? (
+                          <CircleUserRound className="size-6" aria-hidden="true" />
+                        ) : (
+                          <Phone className="size-6" aria-hidden="true" />
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blush-strong">
+                          {t("profile.onboarding")}
+                        </p>
+                        <h2 className="mt-2 font-serif text-3xl leading-8 text-foreground">
+                          {onboardingStep === "name"
+                            ? t("profile.onboardingNameTitle")
+                            : t("profile.onboardingPhoneTitle")}
+                        </h2>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground/64">
+                          {onboardingStep === "name"
+                            ? t("profile.onboardingNameBody")
+                            : t("profile.onboardingPhoneBody")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {onboardingStep === "name" ? (
+                      <div className="grid gap-5">
+                        <ProfileInput
+                          label={t("profile.displayName")}
+                          value={displayNameInput}
+                          onChange={(value) => {
+                            setDisplayNameInput(value);
+                            setSaveStatus("idle");
+                            setSaveErrorMessage(null);
+                          }}
+                          autoComplete="name"
+                        />
+                        {saveErrorMessage && (
+                          <p className="text-sm leading-6 text-blush-strong">
+                            {saveErrorMessage}
+                          </p>
+                        )}
+                        <div className="flex justify-end">
+                          <Button
+                            type="button"
+                            className="h-12 w-full rounded-full bg-blush px-7 text-primary-foreground hover:bg-blush-strong sm:w-fit"
+                            disabled={!canContinueOnboarding}
+                            onClick={() => {
+                              if (!displayNameInput.trim()) {
+                                setSaveStatus("error");
+                                setSaveErrorMessage(
+                                  t("profile.validation.displayNameRequired"),
+                                );
+                                return;
+                              }
+
+                              setSaveStatus("idle");
+                              setSaveErrorMessage(null);
+                              setOnboardingStep("phone");
+                            }}
+                          >
+                            {t("profile.onboardingContinue")}
+                            <ChevronRight
+                              className="size-4 rtl:rotate-180"
+                              aria-hidden="true"
+                            />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid gap-5">
+                        <ProfileInput
+                          label={t("profile.phone")}
+                          value={phoneNumberInput}
+                          onChange={(value) => {
+                            setPhoneNumberInput(value);
+                            setSaveStatus("idle");
+                            setSaveErrorMessage(null);
+                          }}
+                          autoComplete="tel"
+                        />
+                        <p className="flex items-start gap-3 rounded-xl border border-blush/20 bg-background/38 p-4 text-sm leading-6 text-foreground/66">
+                          <Info
+                            className="mt-1 size-4 shrink-0 text-blush-strong"
+                            aria-hidden="true"
+                          />
+                          {t("profile.onboardingPhoneEncouragement")}
+                        </p>
+                        {saveErrorMessage && (
+                          <p className="text-sm leading-6 text-blush-strong">
+                            {saveErrorMessage}
+                          </p>
+                        )}
+                        <div className="grid gap-3 sm:grid-cols-[auto_auto] sm:justify-end">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-12 rounded-full border-blush/38 bg-background/42 px-7 text-foreground hover:bg-blush/10"
+                            disabled={saveStatus === "saving"}
+                            onClick={() => void completeOnboarding("")}
+                          >
+                            {t("profile.onboardingSkipPhone")}
+                          </Button>
+                          <Button
+                            type="button"
+                            className="h-12 rounded-full bg-blush px-7 text-primary-foreground hover:bg-blush-strong"
+                            disabled={saveStatus === "saving"}
+                            onClick={() => void completeOnboarding(phoneNumberInput)}
+                          >
+                            {saveStatus === "saving" ? (
+                              <Loader2
+                                className="size-4 animate-spin"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Check className="size-4" aria-hidden="true" />
+                            )}
+                            {t("profile.onboardingFinish")}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {profile && profileUser && onboardingComplete && (
                   <>
                     <form className="grid gap-6" onSubmit={saveProfile}>
                       <div className="flex items-start gap-4">
