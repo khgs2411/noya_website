@@ -118,7 +118,20 @@ function ProfileInput({
 function isOnboardingComplete(profile: ProductProfileResponse | null) {
   return (
     profile?.user.metadata.onboarding_completed === true ||
-    Boolean(profile?.user.display_name?.trim())
+    hasOnboardingProfileFields(profile)
+  );
+}
+
+function hasOnboardingProfileFields(profile: ProductProfileResponse | null) {
+  return Boolean(
+    profile?.user.display_name?.trim() || profile?.user.phone_number?.trim(),
+  );
+}
+
+function shouldBackfillOnboarding(profile: ProductProfileResponse | null) {
+  return (
+    profile?.user.metadata.onboarding_completed !== true &&
+    hasOnboardingProfileFields(profile)
   );
 }
 
@@ -202,6 +215,31 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     setPhoneNumberInput(result.data.user.phone_number ?? "");
     setLoadStatus("loaded");
     setErrorMessage(null);
+
+    if (shouldBackfillOnboarding(result.data)) {
+      void client
+        .profile
+        .update({
+          metadata: {
+            onboarding_completed: true,
+          },
+        })
+        .then((updateResult) => {
+          if (updateResult.error) return;
+
+          setProfile((current) =>
+            current
+              ? {
+                  ...current,
+                  user: {
+                    ...current.user,
+                    metadata: updateResult.data.product_user.metadata,
+                  },
+                }
+              : current,
+          );
+        });
+    }
   }, [client, session]);
 
   useEffect(() => {
