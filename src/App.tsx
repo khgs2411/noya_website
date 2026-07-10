@@ -16,12 +16,15 @@ import {
   isLessonsPath,
   isManagerPath,
   isProfilePath,
+  isTermsPath,
   managerPath,
   profilePath,
 } from "@/content/site-content";
 import { BrowserStorageNotice } from "@/components/site/browser-storage-notice";
 import { InstallAppPrompt } from "@/components/site/install-app-prompt";
 import { SiteHeader } from "@/components/site/site-header";
+import { PendingSignupTermsAcceptance } from "@/features/documents/pending-signup-terms-acceptance";
+import { productDocumentTypes } from "@/features/documents/product-document-types";
 import type { ManagerAccessSnapshot } from "@/features/manager/manager-page";
 import { useTheme } from "@/hooks/use-theme";
 import { captureActiveElement, restoreFocus } from "@/lib/focus";
@@ -57,6 +60,11 @@ const LessonsPage = lazy(() =>
 const ManagerPage = lazy(() =>
   import("@/features/manager/manager-page").then((module) => ({
     default: module.ManagerPage,
+  })),
+);
+const ProductDocumentPage = lazy(() =>
+  import("@/features/documents/product-document-page").then((module) => ({
+    default: module.ProductDocumentPage,
   })),
 );
 
@@ -364,6 +372,7 @@ export default function App() {
     return (
       <>
         {renderWithMenu(page, showHeader)}
+        <PendingSignupTermsAcceptance />
         <InstallAppPrompt />
         <BrowserStorageNotice />
       </>
@@ -404,6 +413,18 @@ export default function App() {
   if (isLessonsPath(route.pathname)) {
     return renderPage(
       <LessonsPage search={route.search} onNavigate={navigateTo} />,
+      true,
+    );
+  }
+
+  if (isTermsPath(route.pathname)) {
+    return renderPage(
+      <ProductDocumentPage
+        documentType={productDocumentTypes.terms}
+        titleKey="documents.terms.title"
+        emptyKey="documents.terms.empty"
+        onNavigate={navigateTo}
+      />,
       true,
     );
   }

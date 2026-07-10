@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { ContactLine, ContactLink } from "@/components/site/contact-line";
 import { PillLink } from "@/components/site/pill-link";
 import { InstagramIcon, TikTokIcon } from "@/components/site/social-icons";
+import { termsPath } from "@/content/site-content";
 
 export function ContactSection() {
   const { t } = useTranslation();
@@ -40,7 +41,12 @@ export function ContactSection() {
         </div>
       </div>
       <div className="mt-5 rounded-t-md bg-blush px-4 py-3 text-center text-xs text-primary-foreground">
-        {t("footer")}
+        <p>{t("footer")}</p>
+        <nav className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1">
+          <a className="underline-offset-4 hover:underline" href={termsPath}>
+            {t("footerLinks.terms")}
+          </a>
+        </nav>
       </div>
     </footer>
   );

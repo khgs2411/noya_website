@@ -31,6 +31,13 @@ const ScheduleManagementTab = lazy(() =>
     }),
   ),
 );
+const DocumentManagementTab = lazy(() =>
+  import("@/features/manager/documents/document-management-tab").then(
+    (module) => ({
+      default: module.DocumentManagementTab,
+    }),
+  ),
+);
 const TemplateManagementTab = lazy(() =>
   import("@/features/manager/templates/template-management-tab").then(
     (module) => ({
@@ -75,6 +82,9 @@ export function ManagerPage({
     managerAccess.permissions.includes("attendance.manage");
   const canManageMemberships =
     managerAccess.permissions.includes("memberships.manage");
+  const canManageDocuments = managerAccess.permissions.includes(
+    "product_documents.manage",
+  );
   const canManageRoles = Boolean(managerAccess.dashboard.can_manage_roles);
   const canManageUsers = Boolean(managerAccess.dashboard.can_manage_users);
   const tabFallback = (
@@ -132,6 +142,9 @@ export function ManagerPage({
               )}
               {activeTab === "schedules" && (
                 <ScheduleManagementTab canManageSchedules={canManageClasses} />
+              )}
+              {activeTab === "documents" && (
+                <DocumentManagementTab canManageDocuments={canManageDocuments} />
               )}
               {activeTab === "memberships" && (
                 <MembershipManagementTab

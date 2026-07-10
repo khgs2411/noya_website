@@ -1,4 +1,4 @@
-import { CalendarDays, Clock3, Layers3, Repeat, UserCog, WalletCards } from "lucide-react";
+import { CalendarDays, Clock3, FileText, Layers3, Repeat, UserCog, WalletCards } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ export type ManagerTab =
   | "pending"
   | "templates"
   | "schedules"
+  | "documents"
   | "memberships"
   | "users";
 
@@ -21,6 +22,7 @@ const tabs: Array<{
   { id: "pending", icon: Clock3, labelKey: "manager.tabs.pending" },
   { id: "templates", icon: Layers3, labelKey: "manager.tabs.templates" },
   { id: "schedules", icon: Repeat, labelKey: "manager.tabs.schedules" },
+  { id: "documents", icon: FileText, labelKey: "manager.tabs.documents" },
   { id: "memberships", icon: WalletCards, labelKey: "manager.tabs.memberships" },
   { id: "users", icon: UserCog, labelKey: "manager.tabs.users" },
 ];
@@ -34,7 +36,7 @@ export function ManagerTabs({ activeTab, onChange }: ManagerTabsProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex max-w-full gap-1 overflow-x-auto rounded-[1.2rem] border border-blush/24 bg-card/78 p-1 lg:grid lg:grid-cols-6 lg:gap-2 lg:overflow-visible">
+    <div className="flex max-w-full gap-1 overflow-x-auto rounded-[1.2rem] border border-blush/24 bg-card/78 p-1 lg:grid lg:grid-cols-7 lg:gap-2 lg:overflow-visible">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const active = tab.id === activeTab;

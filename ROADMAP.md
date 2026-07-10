@@ -69,6 +69,7 @@ Goal: Make display name and optional phone number first-class customer identity 
   - Description: Prompt users who have not completed onboarding to provide a required display name and optional phone number.
   - Why: The onboarding prompt creates enough structured product-user identity for later manager-facing lists, attendance, membership, and registration surfaces to show names instead of relying on email addresses.
   - Shape: Treat the user as onboarded when ClassKit profile data has a display name, while still honoring an existing `metadata.onboarding_completed` flag if ClassKit or a manager-controlled workflow sets one. Keep the prompt small, localized, and non-manager-specific. Explain that the phone number is optional but improves future product workflows.
+  - Progress: New users see a two-step profile onboarding flow: required name first, optional phone second. Existing users who already have either name or phone skip the prompt and are backfilled with `metadata.onboarding_completed`.
 
 - [x] `done` Persist onboarding completion
   - Description: Use product-user metadata as the durable onboarding flag without inventing website-owned identity state.
@@ -95,36 +96,61 @@ Goal: Prefer human display names across manager and registration surfaces after 
 
 Goal: Adopt ClassKit product documents for terms, policies, and public legal links without hard-coding legal-page infrastructure in this website.
 
-- [ ] `open` Add product document routes
+- [x] `done` Add product document routes
   - Description: Render published ClassKit product documents by document type and locale.
   - Why: Product documents are reusable ClassKit infrastructure with product-specific content, so this website should consume published documents instead of owning the document system.
-  - Shape: Use public `client.productDocuments.get(documentType, { locale, fallbackLocale })` for full markdown content and `client.productDocuments.list(options?)` for published summaries, as documented in `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-documents`. Public reads are anonymous-safe, product-scoped, and cached by the SDK in memory and `localStorage` for 5 minutes. Do not hard-code legal text into website routes except for temporary content while the product document is not yet published.
+  - Shape: Use public `client.productDocuments.get(documentType, { locale, fallbackLocale })` for full markdown content and `client.productDocuments.list(options?)` for published summaries, as documented in `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-documents`. Public reads are anonymous-safe, product-scoped, and cached by the SDK in memory and `localStorage` for 5 minutes. ClassKit provides the document API and stores published product document versions; it does not ship a static ToS file in the website SDK. The website should read the product-managed `terms` document type and render a clear unpublished/unavailable state when no document has been published.
 
-- [ ] `open` Add footer and policy links
+- [x] `done` Add footer and policy links
   - Description: Link to terms, privacy, accessibility, and browser-storage/cookie notices from the Noya website shell.
-  - Shape: The footer/site shell should link to ClassKit product document types such as `terms`, `privacy`, `accessibility`, and storage/cookie notice documents. The website owns link placement, page chrome, localization labels, and RTL-safe navigation; ClassKit owns the published document versions, locale fallback, and content retrieval. Relevant docs: `/Users/liadgoren/Repositories/class-kit/docs/sdk/client-sdk.md#product-documents` and `/Users/liadgoren/Repositories/class-kit/docs/api/backend-api.md#edge-function-map`.
+  - Shape: The first active slice should expose Terms links without expanding into every policy document at once. The website owns link placement, page chrome, localization labels, and RTL-safe navigation; ClassKit owns the published document versions, locale fallback, and content retrieval. Later policy links can use additional product document types such as `privacy`, `accessibility`, and `storage_notice` when those documents are published.
+
+- [x] `done` Add signup Terms acceptance
+  - Description: Require Terms agreement during signup and record an acceptance snapshot once the user is authenticated.
+  - Shape: Gate signup UI locally with a Terms checkbox, then call `client.productDocuments.accept("terms", { locale, fallbackLocale, context: "signup" })` after an authenticated active product user exists. Use a small pending marker for OAuth/password signup lifecycle only; do not store legal content locally.
 
 - [ ] `open` Add document acceptance where needed
   - Description: Use ClassKit document acceptances only in flows that require agreement snapshots, such as signup, booking, checkout, or future waivers.
   - Shape: Use `client.productDocuments.accept(documentType, { locale, fallbackLocale, context })` only for authenticated active product users and only when a flow needs a durable agreement snapshot. ClassKit snapshots accepted document id, type, locale, version, title, markdown content, and context; later edits do not rewrite historical acceptances. Acceptance should be flow-specific, not a generic blocking wall across the whole public website.
 
-## Roadmap Step 5: Later ClassKit Surfaces
+- [x] `done` Add manager document management
+  - Description: Let managers create, publish, draft, and archive the product Terms document from the manager workspace.
+  - Shape: Use manager-only `client.management.productDocuments.upsert(input)` and `client.management.productDocuments.archive(documentId)` behind `product_documents.manage`. The website owns the editor layout and localized manager copy; ClassKit owns immutable versioning, publish/archive behavior, permission checks, cache clearing, and acceptance snapshots.
 
-Goal: Track requested Noya features that are waiting on new customer-safe ClassKit behavior.
+## Roadmap Step 5: Registration Agreements And Health Declaration
+
+Goal: Use the product-document foundation from Step 4 to add Noya's health declaration and require the correct agreement snapshots before class registration.
 
 - [x] `done` Add customer-safe membership details to profile
   - Description: Show active membership type, remaining stock, and/or validity dates once ClassKit exposes ordinary-user membership details.
   - Why: ClassKit v0.1.14 now exposes the signed-in user's own membership grants through `client.profile.get()`, so this can be implemented without `management.memberships.*`.
+  - Shape: This is a completed prerequisite for registration UX because membership-gated classes already know whether the signed-in user can proceed to agreement-gated registration.
 
-- [ ] `open` Add health declaration flow
-  - Description: Add Noya's health declaration after the required ClassKit document/waiver behavior exists.
-  - Why: The health declaration should be handled after product documents and after any additional ClassKit behavior needed for waiver-like flows is available.
+- [ ] `open` Add health declaration document route and type
+  - Description: Render Noya's health declaration as a ClassKit product document.
+  - Shape: Reuse the Step 4 document route/page foundation with `healthDeclarationPath = "health-declaration"` and `productDocumentTypes.healthDeclaration = "health_declaration"`. Keep the document type centralized because the final product document type may need correction after content is configured.
+
+- [ ] `open` Add health declaration links and localized copy
+  - Description: Expose the health declaration from the registration agreement UI and, where appropriate, from policy-style shell links.
+  - Shape: Add English, Hebrew, and Russian copy for the document page, unpublished state, agreement label, and registration validation errors. Hebrew should use `הצהרת בריאות`.
+
+- [ ] `open` Gate registration on Terms and health declaration agreement
+  - Description: Require signed-in eligible users to confirm Terms and the health declaration before class registration.
+  - Shape: Card/list register buttons for signed-in eligible users should open the class detail surface instead of submitting a hidden agreement-gated mutation. The detail surface shows agreement controls near the primary register action.
+
+- [ ] `open` Record registration document acceptances
+  - Description: Store ClassKit acceptance snapshots before calling `client.classes.register(...)`.
+  - Shape: Use `client.productDocuments.accept("terms", { locale, fallbackLocale, context: "registration" })` and `client.productDocuments.accept(productDocumentTypes.healthDeclaration, { locale, fallbackLocale, context: "registration_health_declaration" })`. Acceptance failure must prevent registration and show a localized retryable error.
+
+- [ ] `open` Preserve registration invariants
+  - Description: Keep current signed-out, membership-required, pending, approved, cancellation, and duplicate-submit behavior intact while adding agreement checks.
+  - Shape: Validate unchecked agreement controls synchronously, then set the existing `registrationMutation` busy state before awaiting document acceptance or registration calls. Do not add profile metadata flags for health declaration; ClassKit document acceptance snapshots are the source of truth.
 
 ## Roadmap Step 6: Manager Change Requests
 
 Goal: Adopt ClassKit v0.1.18 product change requests so Noya managers can report website issues and request product changes from inside the manager workspace.
 
-- [ ] `next` Upgrade to ClassKit v0.1.18
+- [x] `done` Upgrade to ClassKit v0.1.18
   - Description: Move the website SDK dependency to the ClassKit release that exposes `management.changeRequests.*`.
   - Shape: Install `@class-kit/react` from `git+ssh://git@github.com/khgs2411/class-kit-sdk.git#v0.1.18` as documented in `/Users/liadgoren/Repositories/class-kit/docs/changelog.md`. Keep the private-SDK deployment model unchanged.
 
