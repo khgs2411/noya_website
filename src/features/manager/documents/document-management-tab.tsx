@@ -20,6 +20,8 @@ type DocumentFormState = {
   effectiveAt: string;
 };
 
+const supportedDocumentLocales = ["en", "he", "ru"] as const;
+
 const emptyForm: DocumentFormState = {
   title: "",
   contentMarkdown: "",
@@ -45,6 +47,11 @@ function toEffectiveAt(value: string) {
   return date.toISOString();
 }
 
+function getMarkdownTitle(contentMarkdown: string) {
+  const heading = contentMarkdown.match(/^#\s+(.+)$/m);
+  return heading?.[1]?.trim() ?? "";
+}
+
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
 }
@@ -56,6 +63,7 @@ export function DocumentManagementTab({
   const { client } = useProductContext();
   const [document, setDocument] = useState<ProductDocument | null>(null);
   const [form, setForm] = useState<DocumentFormState>(emptyForm);
+  const [locale, setLocale] = useState(i18n.language);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
   const [mutationStatus, setMutationStatus] = useState<MutationStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -79,7 +87,7 @@ export function DocumentManagementTab({
       const result = await client.productDocuments.get(
         productDocumentTypes.terms,
         {
-          locale: i18n.language,
+          locale,
         },
       );
 
@@ -116,7 +124,7 @@ export function DocumentManagementTab({
       setLoadStatus("error");
       setErrorMessage(getErrorMessage(error, t("manager.documents.errorBody")));
     }
-  }, [canManageDocuments, client, i18n.language, t]);
+  }, [canManageDocuments, client, locale, t]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -127,7 +135,7 @@ export function DocumentManagementTab({
   }, [loadDocument]);
 
   async function saveDocument() {
-    const title = form.title.trim();
+    const title = form.title.trim() || getMarkdownTitle(form.contentMarkdown);
     const contentMarkdown = form.contentMarkdown.trim();
 
     if (!title || !contentMarkdown) {
@@ -144,7 +152,7 @@ export function DocumentManagementTab({
 
       const result = await client.management.productDocuments.upsert({
         documentType: productDocumentTypes.terms,
-        locale: i18n.language,
+        locale,
         title,
         contentMarkdown,
         status: form.status,
@@ -293,21 +301,30 @@ export function DocumentManagementTab({
             <div className="grid gap-4 rounded-xl border border-blush/24 bg-background/46 p-4">
               <label className="grid gap-2 text-sm font-semibold text-foreground/76">
                 {t("manager.documents.documentType")}
-                <input
-                  value={t("documents.terms.label")}
-                  disabled
-                  className="h-11 rounded-xl border border-blush/24 bg-card/60 px-3 text-sm text-foreground/62"
-                />
+                <p className="flex h-11 items-center rounded-xl border border-blush/24 bg-card/60 px-3 text-sm text-foreground/62">
+                  {t("documents.terms.label")}
+                </p>
               </label>
 
               <label className="grid gap-2 text-sm font-semibold text-foreground/76">
                 {t("manager.documents.locale")}
-                <input
-                  value={i18n.language}
-                  disabled
-                  className="h-11 rounded-xl border border-blush/24 bg-card/60 px-3 text-sm text-foreground/62"
-                />
+                <select
+                  value={locale}
+                  className="h-11 rounded-xl border border-blush/24 bg-card/60 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                  disabled={loadStatus === "loading" || mutationStatus !== "idle"}
+                  onChange={(event) => setLocale(event.target.value)}
+                >
+                  {supportedDocumentLocales.map((documentLocale) => (
+                    <option key={documentLocale} value={documentLocale}>
+                      {t(`manager.documents.localeOptions.${documentLocale}`)}
+                    </option>
+                  ))}
+                </select>
               </label>
+
+              <p className="text-xs leading-5 text-foreground/56">
+                {t("manager.documents.documentTypeHint")}
+              </p>
 
               <label className="grid gap-2 text-sm font-semibold text-foreground/76">
                 {t("manager.documents.status")}

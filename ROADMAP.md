@@ -116,6 +116,7 @@ Goal: Adopt ClassKit product documents for terms, policies, and public legal lin
 - [x] `done` Add manager document management
   - Description: Let managers create, publish, draft, and archive the product Terms document from the manager workspace.
   - Shape: Use manager-only `client.management.productDocuments.upsert(input)` and `client.management.productDocuments.archive(documentId)` behind `product_documents.manage`. The website owns the editor layout and localized manager copy; ClassKit owns immutable versioning, publish/archive behavior, permission checks, cache clearing, and acceptance snapshots.
+  - Progress: The initial manager surface is intentionally limited to Terms markdown and its locale-specific versions. Health-declaration authoring remains part of Step 5 so it ships with its registration agreement flow.
 
 ## Roadmap Step 5: Registration Agreements And Health Declaration
 
