@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import {
   authPath,
   isAuthPath,
+  isHealthDeclarationPath,
   isLessonsPath,
   isManagerPath,
   isProfilePath,
@@ -423,6 +424,18 @@ export default function App() {
         documentType={productDocumentTypes.terms}
         titleKey="documents.terms.title"
         emptyKey="documents.terms.empty"
+        onNavigate={navigateTo}
+      />,
+      true,
+    );
+  }
+
+  if (isHealthDeclarationPath(route.pathname)) {
+    return renderPage(
+      <ProductDocumentPage
+        documentType={productDocumentTypes.healthDeclaration}
+        titleKey="documents.healthDeclaration.title"
+        emptyKey="documents.healthDeclaration.empty"
         onNavigate={navigateTo}
       />,
       true,

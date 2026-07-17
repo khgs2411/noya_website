@@ -115,8 +115,8 @@ Goal: Adopt ClassKit product documents for terms, policies, and public legal lin
 
 - [x] `done` Add manager document management
   - Description: Let managers create, publish, draft, and archive the product Terms document from the manager workspace.
-  - Shape: Use manager-only `client.management.productDocuments.upsert(input)` and `client.management.productDocuments.archive(documentId)` behind `product_documents.manage`. The website owns the editor layout and localized manager copy; ClassKit owns immutable versioning, publish/archive behavior, permission checks, cache clearing, and acceptance snapshots.
-  - Progress: The initial manager surface is intentionally limited to Terms markdown and its locale-specific versions. Health-declaration authoring remains part of Step 5 so it ships with its registration agreement flow.
+  - Shape: Use the v0.1.19 manager lifecycle behind `product_documents.manage`: `getDraft`, `saveDraft`, `discardDraft`, `listVersions`, `getVersion`, `publishDraft`, and `archiveActiveVersion`. The website owns the editor, localized manager copy, history preview, and restore-to-draft interaction; ClassKit owns exact-locale draft revision checks, immutable publication history, active-version transitions, cache clearing, and acceptance snapshots.
+  - Progress: The manager surface is intentionally limited to Terms markdown and its locale-specific streams. It saves one mutable draft, publishes immutable versions, lists and previews prior versions, and restores history by loading a selected version into a new draft before review and publication. Health-declaration authoring remains part of Step 5 so it ships with its registration agreement flow.
 
 ## Roadmap Step 5: Registration Agreements And Health Declaration
 
@@ -149,11 +149,11 @@ Goal: Use the product-document foundation from Step 4 to add Noya's health decla
 
 ## Roadmap Step 6: Manager Change Requests
 
-Goal: Adopt ClassKit v0.1.18 product change requests so Noya managers can report website issues and request product changes from inside the manager workspace.
+Goal: Adopt ClassKit product change requests so Noya managers can report website issues and request product changes from inside the manager workspace.
 
-- [x] `done` Upgrade to ClassKit v0.1.18
-  - Description: Move the website SDK dependency to the ClassKit release that exposes `management.changeRequests.*`.
-  - Shape: Install `@class-kit/react` from `git+ssh://git@github.com/khgs2411/class-kit-sdk.git#v0.1.18` as documented in `/Users/liadgoren/Repositories/class-kit/docs/changelog.md`. Keep the private-SDK deployment model unchanged.
+- [x] `done` Upgrade to ClassKit v0.1.19
+  - Description: Move the website SDK dependency to the release that exposes `management.changeRequests.*` and the current product-document lifecycle.
+  - Shape: Install `@class-kit/react` from `git+ssh://git@github.com/khgs2411/class-kit-sdk.git#v0.1.19` as documented in `/Users/liadgoren/Repositories/class-kit/docs/changelog.md`. Keep the private-SDK deployment model unchanged.
 
 - [ ] `next` Add manager ticket workspace
   - Description: Add a manager-only surface for product-scoped issues and feature requests.

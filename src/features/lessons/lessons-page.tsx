@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  type ClassKitClient,
   useProductContext,
   type ClassInformation,
   type ClassSummary,
@@ -19,7 +20,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ToastStack, type ToastItem } from "@/components/ui/toast";
-import { authPath } from "@/content/site-content";
+import { authPath, healthDeclarationPath } from "@/content/site-content";
 import { ClassCalendarView } from "@/features/classes/class-calendar-view";
 import { ClassListView } from "@/features/classes/class-list-view";
 import {
@@ -45,6 +46,16 @@ import type {
 } from "@/features/classes/class-types";
 import { captureActiveElement, restoreFocus } from "@/lib/focus";
 import { cn } from "@/lib/utils";
+import { DocumentAgreement } from "@/features/documents/document-agreement";
+import { acceptProductDocument } from "@/features/documents/product-document-acceptance";
+import {
+  hasAcceptedHealthDeclaration,
+  healthDeclarationAcceptanceVersionKey,
+} from "@/features/documents/health-declaration-acceptance";
+import {
+  productDocumentFallbackLocale,
+  productDocumentTypes,
+} from "@/features/documents/product-document-types";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 type RegistrationMutation =
@@ -54,7 +65,11 @@ type RegistrationMutation =
 
 type DetailStatus = "idle" | "loading" | "loaded" | "error";
 type SignupLinkStatus = "idle" | "resolving" | "resolved" | "error";
+type HealthDeclarationStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
 type ClassToast = ToastItem;
+type ProductProfile = NonNullable<
+  Awaited<ReturnType<ClassKitClient["profile"]["get"]>>["data"]
+>;
 const CANCELLATION_CLOSED_MESSAGE = "Cancellation is closed for this class.";
 const dateInputPattern = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -184,6 +199,14 @@ export function LessonsPage({
   const [signupLinkStatus, setSignupLinkStatus] =
     useState<SignupLinkStatus>("idle");
   const [signupLinkError, setSignupLinkError] = useState<string | null>(null);
+  const [healthDeclarationStatus, setHealthDeclarationStatus] =
+    useState<HealthDeclarationStatus>("idle");
+  const [healthDeclarationAccepted, setHealthDeclarationAccepted] =
+    useState(false);
+  const [healthDeclarationChecked, setHealthDeclarationChecked] =
+    useState(false);
+  const [healthDeclarationError, setHealthDeclarationError] =
+    useState<string | null>(null);
   const requestIdRef = useRef(0);
   const detailRequestIdRef = useRef(0);
   const resolvedSignupSlugRef = useRef<string | null>(null);
@@ -555,6 +578,77 @@ export function LessonsPage({
     return () => window.clearTimeout(timeoutId);
   }, [client, detailStatus, loadClassDetail, selectedClassDetail?.id, selectedClassId]);
 
+  useEffect(() => {
+    if (!client || !session || !selectedClassId) {
+      const timeoutId = window.setTimeout(() => {
+        setHealthDeclarationStatus("idle");
+        setHealthDeclarationAccepted(false);
+        setHealthDeclarationChecked(false);
+        setHealthDeclarationError(null);
+      }, 0);
+
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    const activeClient = client;
+    let cancelled = false;
+
+    async function loadHealthDeclaration() {
+      try {
+        const [documentResult, profileResult] = await Promise.all([
+          activeClient.productDocuments.get(productDocumentTypes.healthDeclaration, {
+            locale: i18n.language,
+            fallbackLocale: productDocumentFallbackLocale,
+          }),
+          activeClient.profile.get(),
+        ]);
+
+        if (cancelled) return;
+
+        if (documentResult.error?.code === "not_found") {
+          setHealthDeclarationStatus("unavailable");
+          return;
+        }
+
+        if (documentResult.error || profileResult.error) {
+          setHealthDeclarationStatus("error");
+          setHealthDeclarationError(
+            documentResult.error?.message ?? profileResult.error?.message ?? t("classes.healthDeclaration.loadError"),
+          );
+          return;
+        }
+
+        const profile = profileResult.data as ProductProfile;
+        setHealthDeclarationAccepted(
+          hasAcceptedHealthDeclaration(
+            profile.user.metadata,
+            documentResult.data.document.version,
+          ),
+        );
+        setHealthDeclarationStatus("ready");
+      } catch (error) {
+        if (cancelled) return;
+        setHealthDeclarationStatus("error");
+        setHealthDeclarationError(
+          error instanceof Error ? error.message : t("classes.healthDeclaration.loadError"),
+        );
+      }
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setHealthDeclarationStatus("loading");
+      setHealthDeclarationAccepted(false);
+      setHealthDeclarationChecked(false);
+      setHealthDeclarationError(null);
+      void loadHealthDeclaration();
+    }, 0);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [client, i18n.language, selectedClassId, session, t]);
+
   function openClassDetails(classId: string) {
     classDetailFocusReturnRef.current = captureActiveElement();
     setSelectedClassId(classId);
@@ -563,7 +657,10 @@ export function LessonsPage({
     void loadClassDetail(classId);
   }
 
-  async function registerForClass(item: ClassViewItem) {
+  async function registerForClass(
+    item: ClassViewItem,
+    options?: { requiresHealthDeclaration?: boolean },
+  ) {
     setOperationError(null);
 
     if (!session) {
@@ -581,9 +678,58 @@ export function LessonsPage({
       return;
     }
 
+    if (options?.requiresHealthDeclaration) {
+      if (healthDeclarationStatus === "unavailable") {
+        setOperationError(t("classes.healthDeclaration.unavailable"));
+        return;
+      }
+
+      if (healthDeclarationStatus !== "ready") {
+        setOperationError(
+          healthDeclarationError ?? t("classes.healthDeclaration.loadError"),
+        );
+        return;
+      }
+
+      if (!healthDeclarationAccepted && !healthDeclarationChecked) {
+        setHealthDeclarationError(t("classes.healthDeclaration.required"));
+        return;
+      }
+    }
+
     setRegistrationMutation({ type: "register", classId: item.id });
 
     try {
+      if (options?.requiresHealthDeclaration && !healthDeclarationAccepted) {
+        const acceptanceResult = await acceptProductDocument(
+          client,
+          productDocumentTypes.healthDeclaration,
+          i18n.language,
+          "registration_health_declaration",
+        );
+
+        if (acceptanceResult.error) {
+          showOperationError(acceptanceResult.error.message);
+          return;
+        }
+
+        const profileResult = await client.profile.update({
+          metadata: {
+            [healthDeclarationAcceptanceVersionKey]:
+              acceptanceResult.data.acceptance.document_version,
+          },
+        });
+
+        if (profileResult.error) {
+          showOperationError(profileResult.error.message);
+          return;
+        }
+
+        setHealthDeclarationAccepted(true);
+        setHealthDeclarationChecked(false);
+        setHealthDeclarationError(null);
+      }
+
       const result = await client.classes.register(item.id);
 
       if (result.error) {
@@ -767,13 +913,15 @@ export function LessonsPage({
     }
 
     if (session && item.canRegister) {
+      if (options?.prominence === "primary") return null;
+
       return (
         <Button
           type="button"
           size="sm"
           className={primaryButtonClass}
           disabled={actionBusy}
-          onClick={() => void registerForClass(item)}
+          onClick={() => openClassDetails(item.id)}
         >
           {actionBusy ? (
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -1075,6 +1223,79 @@ export function LessonsPage({
                   )}
 
                   {renderClassFacts(selectedClass)}
+
+                  {session &&
+                    selectedClass.canRegister &&
+                    !selectedClass.userRegistrationState && (
+                      <section className="mt-5 grid gap-3 rounded-xl border border-blush/24 bg-background/46 p-4">
+                        <div className="grid gap-1">
+                          <p className="font-serif text-xl text-foreground">
+                            {t("classes.healthDeclaration.title")}
+                          </p>
+                          <p className="text-sm leading-6 text-foreground/68">
+                            {healthDeclarationAccepted
+                              ? t("classes.healthDeclaration.alreadyAccepted")
+                              : t("classes.healthDeclaration.body")}
+                          </p>
+                        </div>
+
+                        {healthDeclarationStatus === "loading" && (
+                          <div className="flex items-center gap-2 text-sm text-foreground/64">
+                            <Loader2 className="size-4 animate-spin text-blush-strong" aria-hidden="true" />
+                            {t("classes.healthDeclaration.loading")}
+                          </div>
+                        )}
+
+                        {healthDeclarationStatus === "unavailable" && (
+                          <p className="text-sm leading-6 text-blush-strong">
+                            {t("classes.healthDeclaration.unavailable")}
+                          </p>
+                        )}
+
+                        {healthDeclarationStatus === "error" && (
+                          <p className="text-sm leading-6 text-blush-strong">
+                            {healthDeclarationError ?? t("classes.healthDeclaration.loadError")}
+                          </p>
+                        )}
+
+                        {healthDeclarationStatus === "ready" && !healthDeclarationAccepted && (
+                          <DocumentAgreement
+                            checked={healthDeclarationChecked}
+                            labelKey="classes.healthDeclaration.agreement"
+                            linkLabelKey="documents.healthDeclaration.label"
+                            documentPath={healthDeclarationPath}
+                            disabled={registrationMutation?.classId === selectedClass.id}
+                            error={healthDeclarationError}
+                            onCheckedChange={(checked) => {
+                              setHealthDeclarationChecked(checked);
+                              setHealthDeclarationError(null);
+                            }}
+                          />
+                        )}
+
+                        <Button
+                          type="button"
+                          className="min-h-12 w-full rounded-full px-5 text-base font-semibold sm:w-auto"
+                          disabled={
+                            registrationMutation?.classId === selectedClass.id ||
+                            healthDeclarationStatus !== "ready" ||
+                            (!healthDeclarationAccepted && !healthDeclarationChecked)
+                          }
+                          onClick={() =>
+                            void registerForClass(selectedClass, {
+                              requiresHealthDeclaration: true,
+                            })
+                          }
+                        >
+                          {registrationMutation?.classId === selectedClass.id ? (
+                            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                          ) : (
+                            <CheckCircle2 className="size-4" aria-hidden="true" />
+                          )}
+                          {t("classes.register")}
+                        </Button>
+                      </section>
+                    )}
 
                   <div className="mt-5 border-t border-blush/18 pt-4">
                     <Button
