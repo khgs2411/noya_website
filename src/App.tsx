@@ -25,6 +25,7 @@ import { BrowserStorageNotice } from "@/components/site/browser-storage-notice";
 import { InstallAppPrompt } from "@/components/site/install-app-prompt";
 import { SiteHeader } from "@/components/site/site-header";
 import { PendingSignupTermsAcceptance } from "@/features/documents/pending-signup-terms-acceptance";
+import { HealthDeclarationGate } from "@/features/documents/health-declaration-gate";
 import { productDocumentTypes } from "@/features/documents/product-document-types";
 import type { ManagerAccessSnapshot } from "@/features/manager/manager-page";
 import { useTheme } from "@/hooks/use-theme";
@@ -382,6 +383,7 @@ export default function App() {
       <>
         {renderWithMenu(page, showHeader)}
         <PendingSignupTermsAcceptance />
+        <HealthDeclarationGate />
         <InstallAppPrompt />
         <BrowserStorageNotice />
       </>
