@@ -150,7 +150,7 @@ function writeStoredManagerAccess(
 }
 
 export default function App() {
-  const { capabilities, loading, session } = useProductContext();
+  const { capabilities, loading, session, signOut } = useProductContext();
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [aboutExpanded, setAboutExpanded] = useState(false);
@@ -310,6 +310,12 @@ export default function App() {
     navigateTo(session ? profilePath : authPath);
   }
 
+  async function signOutFromMenu() {
+    closeMenu({ restore: false });
+    await signOut();
+    navigateTo(authPath);
+  }
+
   function openMenu() {
     menuFocusReturnRef.current = captureActiveElement();
     setMenuOpen(true);
@@ -360,6 +366,8 @@ export default function App() {
               onOpenAccount={openAccount}
               onOpenManager={openManager}
               canEnterManager={canEnterManager}
+              isSignedIn={Boolean(session)}
+              onSignOut={signOutFromMenu}
               onClose={closeMenu}
               onNavigate={navigateTo}
             />

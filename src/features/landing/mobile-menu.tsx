@@ -1,4 +1,4 @@
-import { Mail, Moon, Settings, Sun, UserCircle, X } from "lucide-react";
+import { LogOut, Mail, Moon, Settings, Sun, UserCircle, X } from "lucide-react";
 import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -16,6 +16,8 @@ export function MobileMenu({
   onOpenAccount,
   onOpenManager,
   canEnterManager,
+  isSignedIn,
+  onSignOut,
   onClose,
   onNavigate,
 }: {
@@ -24,6 +26,8 @@ export function MobileMenu({
   onOpenAccount: () => void;
   onOpenManager: () => void;
   canEnterManager: boolean;
+  isSignedIn: boolean;
+  onSignOut: () => Promise<void>;
   onClose: () => void;
   onNavigate: (path: string) => void;
 }) {
@@ -149,18 +153,32 @@ export function MobileMenu({
           </SidebarLink>
         </nav>
 
-        <div className="mt-4 grid gap-2 rounded-[1rem] border border-blush/25 bg-background/52 p-3 text-xs text-foreground/70 shadow-sm">
-          <ContactLine icon={<Mail />} text="noyas2703@gmail.com" />
-          <ContactLink
-            href="https://www.instagram.com/noyashlomo?utm_source=qr"
-            icon={<InstagramIcon />}
-            text="Instagram"
-          />
-          <ContactLink
-            href="https://www.tiktok.com/@noyalachan?_r=1&_t=ZS-96pJauUzNoO"
-            icon={<TikTokIcon />}
-            text="TikTok"
-          />
+        <div className="mt-auto pt-4">
+          <div className="grid gap-2 rounded-[1rem] border border-blush/25 bg-background/52 p-3 text-xs text-foreground/70 shadow-sm">
+            <ContactLine icon={<Mail />} text="noyas2703@gmail.com" />
+            <ContactLink
+              href="https://www.instagram.com/noyashlomo?utm_source=qr"
+              icon={<InstagramIcon />}
+              text="Instagram"
+            />
+            <ContactLink
+              href="https://www.tiktok.com/@noyalachan?_r=1&_t=ZS-96pJauUzNoO"
+              icon={<TikTokIcon />}
+              text="TikTok"
+            />
+          </div>
+
+          {isSignedIn && (
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-3 w-full justify-between rounded-[0.95rem] border-blush/35 bg-background/52 text-foreground hover:border-blush-strong hover:bg-blush/12"
+              onClick={() => void onSignOut()}
+            >
+              <span>{t("profile.signOut")}</span>
+              <LogOut className="size-4 opacity-70" aria-hidden="true" />
+            </Button>
+          )}
         </div>
       </aside>
     </div>
