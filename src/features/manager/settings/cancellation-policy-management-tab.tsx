@@ -89,6 +89,8 @@ export function CancellationPolicyManagementTab({
       const result = await client.management.product.updateCancellationPolicy({
         registrationCancellationCutoffHours: Number(draftHours),
       });
+      setLoadStatus("loaded");
+      setLoadError(null);
       setCutoffHours(result.registration_cancellation_cutoff_hours);
       setDraftHours(String(result.registration_cancellation_cutoff_hours));
       setNotice(
@@ -156,7 +158,7 @@ export function CancellationPolicyManagementTab({
         </div>
       )}
 
-      {cannotRead && (
+      {cannotRead && cutoffHours === null && (
         <p className="mt-5 rounded-xl border border-blush/24 bg-background/34 p-4 text-sm leading-6 text-foreground/68">
           {t("manager.cancellationPolicy.currentValueUnavailable")}
         </p>
