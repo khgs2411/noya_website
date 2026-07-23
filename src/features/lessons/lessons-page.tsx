@@ -169,7 +169,7 @@ export function LessonsPage({
   onNavigate: (path: string) => void;
 }) {
   const { t, i18n } = useTranslation();
-  const { client, productUser, session } = useProductContext();
+  const { client, session } = useProductContext();
   const [initialClassFocus] = useState(() => getInitialClassFocus(search));
   const [rangeScope, setRangeScope] = useState<RangeScope>(() =>
     initialClassFocus.date ? "custom" : "week",
@@ -803,7 +803,13 @@ export function LessonsPage({
       const result = await client.classes.register(item.id);
 
       if (result.error) {
-        showOperationError(result.error.message);
+        showOperationError(
+          result.error.code === "membership_required"
+            ? t("classes.registrationErrors.membershipRequired")
+            : result.error.code === "membership_not_eligible"
+              ? t("classes.registrationErrors.membershipNotEligible")
+              : result.error.message,
+        );
         return;
       }
 
@@ -861,7 +867,7 @@ export function LessonsPage({
       });
       updateClassLocally(item.id, (classSummary) => ({
         ...classSummary,
-        canRegister: classSummary.registrationOpen,
+        canRegister: false,
         canCancelRegistration: false,
         userRegistrationState: null,
         registeredUsersCount:
@@ -970,18 +976,6 @@ export function LessonsPage({
       );
     }
 
-    if (
-      session &&
-      item.membershipRequirement === "required" &&
-      !productUser?.has_active_membership
-    ) {
-      return (
-        <span className={fallbackClass}>
-          {t("classes.membershipRequiredShort")}
-        </span>
-      );
-    }
-
     if (session && item.canRegister) {
       if (options?.prominence === "primary") return null;
 
@@ -1005,7 +999,9 @@ export function LessonsPage({
 
     return (
       <span className={fallbackClass}>
-        {t("classes.registrationClosed")}
+        {session
+          ? t("classes.registrationUnavailable")
+          : t("classes.registrationClosed")}
       </span>
     );
   }

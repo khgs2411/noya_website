@@ -810,9 +810,11 @@ const resources = {
         select: 'Select class',
         capacity: '{{count}} spots',
         capacityWithRegistered: '{{registered}} / {{count}} registered',
-        membershipRequired: 'This class requires an active membership before registration.',
-        membershipRequiredShort: 'Membership required',
         registrationUnavailable: 'Registration is not available for this class.',
+        registrationErrors: {
+          membershipRequired: 'This class requires a membership before you can register.',
+          membershipNotEligible: 'Your membership is not eligible for this class.',
+        },
         register: 'Register',
         terms: {
           title: 'Terms of Service',
@@ -1753,9 +1755,11 @@ const resources = {
         select: 'Выбрать занятие',
         capacity: '{{count}} мест',
         capacityWithRegistered: '{{registered}} / {{count}} записано',
-        membershipRequired: 'Для записи на это занятие нужен активный абонемент.',
-        membershipRequiredShort: 'Нужен абонемент',
         registrationUnavailable: 'Запись на это занятие недоступна.',
+        registrationErrors: {
+          membershipRequired: 'Для записи на это занятие нужен абонемент.',
+          membershipNotEligible: 'Ваш абонемент не подходит для этого занятия.',
+        },
         register: 'Записаться',
         terms: {
           title: 'Условия использования',
@@ -2695,9 +2699,11 @@ const resources = {
         select: 'בחירת שיעור',
         capacity: '{{count}} מקומות',
         capacityWithRegistered: '{{registered}} / {{count}} רשומות',
-        membershipRequired: 'לשיעור הזה נדרש מינוי פעיל לפני הרשמה.',
-        membershipRequiredShort: 'נדרש מינוי',
         registrationUnavailable: 'ההרשמה לשיעור הזה אינה זמינה.',
+        registrationErrors: {
+          membershipRequired: 'נדרש מינוי כדי להירשם לשיעור הזה.',
+          membershipNotEligible: 'המינוי שלך אינו מתאים לשיעור הזה.',
+        },
         register: 'הרשמה',
         terms: {
           title: 'תנאי שימוש',
