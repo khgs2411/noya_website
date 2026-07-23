@@ -20,7 +20,11 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ToastStack, type ToastItem } from "@/components/ui/toast";
-import { authPath, healthDeclarationPath } from "@/content/site-content";
+import {
+  authPath,
+  healthDeclarationPath,
+  termsPath,
+} from "@/content/site-content";
 import { ClassCalendarView } from "@/features/classes/class-calendar-view";
 import { ClassListView } from "@/features/classes/class-list-view";
 import {
@@ -66,6 +70,7 @@ type RegistrationMutation =
 type DetailStatus = "idle" | "loading" | "loaded" | "error";
 type SignupLinkStatus = "idle" | "resolving" | "resolved" | "error";
 type HealthDeclarationStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
+type TermsStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
 type ClassToast = ToastItem;
 type ProductProfile = NonNullable<
   Awaited<ReturnType<ClassKitClient["profile"]["get"]>>["data"]
@@ -207,6 +212,9 @@ export function LessonsPage({
     useState(false);
   const [healthDeclarationError, setHealthDeclarationError] =
     useState<string | null>(null);
+  const [termsStatus, setTermsStatus] = useState<TermsStatus>("idle");
+  const [termsChecked, setTermsChecked] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
   const detailRequestIdRef = useRef(0);
   const resolvedSignupSlugRef = useRef<string | null>(null);
@@ -585,6 +593,9 @@ export function LessonsPage({
         setHealthDeclarationAccepted(false);
         setHealthDeclarationChecked(false);
         setHealthDeclarationError(null);
+        setTermsStatus("idle");
+        setTermsChecked(false);
+        setTermsError(null);
       }, 0);
 
       return () => window.clearTimeout(timeoutId);
@@ -593,9 +604,13 @@ export function LessonsPage({
     const activeClient = client;
     let cancelled = false;
 
-    async function loadHealthDeclaration() {
+    async function loadRegistrationAgreements() {
       try {
-        const [documentResult, profileResult] = await Promise.all([
+        const [termsResult, healthDeclarationResult, profileResult] = await Promise.all([
+          activeClient.productDocuments.get(productDocumentTypes.terms, {
+            locale: i18n.language,
+            fallbackLocale: productDocumentFallbackLocale,
+          }),
           activeClient.productDocuments.get(productDocumentTypes.healthDeclaration, {
             locale: i18n.language,
             fallbackLocale: productDocumentFallbackLocale,
@@ -605,15 +620,24 @@ export function LessonsPage({
 
         if (cancelled) return;
 
-        if (documentResult.error?.code === "not_found") {
+        if (termsResult.error?.code === "not_found") {
+          setTermsStatus("unavailable");
+        } else if (termsResult.error) {
+          setTermsStatus("error");
+          setTermsError(t("classes.terms.loadError"));
+        } else {
+          setTermsStatus("ready");
+        }
+
+        if (healthDeclarationResult.error?.code === "not_found") {
           setHealthDeclarationStatus("unavailable");
           return;
         }
 
-        if (documentResult.error || profileResult.error) {
+        if (healthDeclarationResult.error || profileResult.error) {
           setHealthDeclarationStatus("error");
           setHealthDeclarationError(
-            documentResult.error?.message ?? profileResult.error?.message ?? t("classes.healthDeclaration.loadError"),
+            healthDeclarationResult.error?.message ?? profileResult.error?.message ?? t("classes.healthDeclaration.loadError"),
           );
           return;
         }
@@ -622,7 +646,7 @@ export function LessonsPage({
         setHealthDeclarationAccepted(
           hasAcceptedHealthDeclaration(
             profile.user.metadata,
-            documentResult.data.document.version,
+            healthDeclarationResult.data.document.version,
           ),
         );
         setHealthDeclarationStatus("ready");
@@ -632,6 +656,8 @@ export function LessonsPage({
         setHealthDeclarationError(
           error instanceof Error ? error.message : t("classes.healthDeclaration.loadError"),
         );
+        setTermsStatus("error");
+        setTermsError(t("classes.terms.loadError"));
       }
     }
 
@@ -640,7 +666,10 @@ export function LessonsPage({
       setHealthDeclarationAccepted(false);
       setHealthDeclarationChecked(false);
       setHealthDeclarationError(null);
-      void loadHealthDeclaration();
+      setTermsStatus("loading");
+      setTermsChecked(false);
+      setTermsError(null);
+      void loadRegistrationAgreements();
     }, 0);
 
     return () => {
@@ -659,7 +688,7 @@ export function LessonsPage({
 
   async function registerForClass(
     item: ClassViewItem,
-    options?: { requiresHealthDeclaration?: boolean },
+    options?: { requiresHealthDeclaration?: boolean; requiresTerms?: boolean },
   ) {
     setOperationError(null);
 
@@ -676,6 +705,23 @@ export function LessonsPage({
     if (!item.canRegister) {
       setOperationError(t("classes.registrationUnavailable"));
       return;
+    }
+
+    if (options?.requiresTerms) {
+      if (termsStatus === "unavailable") {
+        setOperationError(t("classes.terms.unavailable"));
+        return;
+      }
+
+      if (termsStatus !== "ready") {
+        setOperationError(termsError ?? t("classes.terms.loadError"));
+        return;
+      }
+
+      if (!termsChecked) {
+        setTermsError(t("classes.terms.required"));
+        return;
+      }
     }
 
     if (options?.requiresHealthDeclaration) {
@@ -700,6 +746,22 @@ export function LessonsPage({
     setRegistrationMutation({ type: "register", classId: item.id });
 
     try {
+      if (options?.requiresTerms) {
+        const acceptanceResult = await acceptProductDocument(
+          client,
+          productDocumentTypes.terms,
+          i18n.language,
+          "registration",
+        );
+
+        if (acceptanceResult.error) {
+          setTermsError(t("classes.terms.acceptanceError"));
+          return;
+        }
+
+        setTermsError(null);
+      }
+
       if (options?.requiresHealthDeclaration && !healthDeclarationAccepted) {
         const acceptanceResult = await acceptProductDocument(
           client,
@@ -1230,6 +1292,51 @@ export function LessonsPage({
                       <section className="mt-5 grid gap-3 rounded-xl border border-blush/24 bg-background/46 p-4">
                         <div className="grid gap-1">
                           <p className="font-serif text-xl text-foreground">
+                            {t("classes.terms.title")}
+                          </p>
+                          <p className="text-sm leading-6 text-foreground/68">
+                            {t("classes.terms.body")}
+                          </p>
+                        </div>
+
+                        {termsStatus === "loading" && (
+                          <div className="flex items-center gap-2 text-sm text-foreground/64">
+                            <Loader2 className="size-4 animate-spin text-blush-strong" aria-hidden="true" />
+                            {t("classes.terms.loading")}
+                          </div>
+                        )}
+
+                        {termsStatus === "unavailable" && (
+                          <p className="text-sm leading-6 text-blush-strong">
+                            {t("classes.terms.unavailable")}
+                          </p>
+                        )}
+
+                        {termsStatus === "error" && (
+                          <p className="text-sm leading-6 text-blush-strong">
+                            {termsError ?? t("classes.terms.loadError")}
+                          </p>
+                        )}
+
+                        {termsStatus === "ready" && (
+                          <DocumentAgreement
+                            checked={termsChecked}
+                            labelKey="classes.terms.agreement"
+                            linkLabelKey="documents.terms.label"
+                            documentPath={termsPath}
+                            disabled={registrationMutation?.classId === selectedClass.id}
+                            error={termsError}
+                            onCheckedChange={(checked) => {
+                              setTermsChecked(checked);
+                              setTermsError(null);
+                            }}
+                          />
+                        )}
+
+                        <div className="border-t border-blush/18 pt-3" />
+
+                        <div className="grid gap-1">
+                          <p className="font-serif text-xl text-foreground">
                             {t("classes.healthDeclaration.title")}
                           </p>
                           <p className="text-sm leading-6 text-foreground/68">
@@ -1278,11 +1385,14 @@ export function LessonsPage({
                           className="min-h-12 w-full rounded-full px-5 text-base font-semibold sm:w-auto"
                           disabled={
                             registrationMutation?.classId === selectedClass.id ||
+                            termsStatus !== "ready" ||
+                            !termsChecked ||
                             healthDeclarationStatus !== "ready" ||
                             (!healthDeclarationAccepted && !healthDeclarationChecked)
                           }
                           onClick={() =>
                             void registerForClass(selectedClass, {
+                              requiresTerms: true,
                               requiresHealthDeclaration: true,
                             })
                           }
