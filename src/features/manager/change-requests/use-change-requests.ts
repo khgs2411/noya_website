@@ -127,6 +127,10 @@ export function useChangeRequests({
     }));
   }, []);
 
+  const clearMutationError = useCallback(() => {
+    setState((current) => ({ ...current, mutationError: null }));
+  }, []);
+
   const create = useCallback(
     async (input: CreateProductChangeRequestInput) => {
       const result = await runMutation("create", () =>
@@ -201,6 +205,13 @@ export function useChangeRequests({
 
   return {
     state,
-    actions: { load, create, update, remove, upload },
+    actions: {
+      load,
+      create,
+      update,
+      remove,
+      upload,
+      clearMutationError,
+    },
   };
 }

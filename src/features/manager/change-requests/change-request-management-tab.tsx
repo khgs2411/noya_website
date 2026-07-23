@@ -52,6 +52,7 @@ function AuthorizedChangeRequestManagementTab() {
   const busy = state.mutation !== null;
 
   function openDetail(id: string) {
+    actions.clearMutationError();
     detailFocusReturn.current = captureActiveElement();
     setSelectedId(id);
   }
@@ -60,6 +61,7 @@ function AuthorizedChangeRequestManagementTab() {
     restoreFocus(detailFocusReturn.current);
   }
   function openForm(surface: FormSurface) {
+    actions.clearMutationError();
     formFocusReturn.current =
       surface === "create" ? captureActiveElement() : null;
     setFormSurface(surface);
@@ -203,7 +205,11 @@ function AuthorizedChangeRequestManagementTab() {
         <ChangeRequestDetailPanel
           request={selectedRequest}
           busy={busy}
-          errorMessage={state.mutationError}
+          errorMessage={
+            state.mutationError
+              ? t("manager.changeRequests.actionFailed")
+              : null
+          }
           refreshFailed={state.loadError !== null}
           onClose={closeDetail}
           onRevise={() => openForm("revise")}
@@ -217,7 +223,11 @@ function AuthorizedChangeRequestManagementTab() {
           mode={formSurface}
           request={formSurface === "revise" ? selectedRequest : null}
           busy={busy}
-          errorMessage={state.mutationError}
+          errorMessage={
+            state.mutationError
+              ? t("manager.changeRequests.actionFailed")
+              : null
+          }
           onClose={closeForm}
           onCreate={create}
           onRevise={actions.update}

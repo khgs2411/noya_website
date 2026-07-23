@@ -81,6 +81,7 @@ export function ChangeRequestFormDialog({
       setValidationError(t("manager.changeRequests.validation.description"));
       return;
     }
+    setValidationError(null);
 
     const title = fields.title.trim();
     const input = {
