@@ -59,6 +59,13 @@ const ChangeRequestManagementTab = lazy(() =>
     default: module.ChangeRequestManagementTab,
   })),
 );
+const CancellationPolicyManagementTab = lazy(() =>
+  import(
+    "@/features/manager/settings/cancellation-policy-management-tab"
+  ).then((module) => ({
+    default: module.CancellationPolicyManagementTab,
+  })),
+);
 
 export type ManagerAccessSnapshot = {
   dashboard: {
@@ -98,8 +105,17 @@ export function ManagerPage({
   const canManageChangeRequests =
     accessSnapshot === null &&
     capabilities.permissions.includes("product_change_requests.manage");
+  const canReadCancellationPolicy = managerAccess.permissions.includes(
+    "product.cancellation_policy.read",
+  );
+  const canUpdateCancellationPolicy = managerAccess.permissions.includes(
+    "product.cancellation_policy.update",
+  );
+  const canAccessCancellationPolicy =
+    canReadCancellationPolicy || canUpdateCancellationPolicy;
   const effectiveActiveTab =
-    activeTab === "change-requests" && !canManageChangeRequests
+    (activeTab === "change-requests" && !canManageChangeRequests) ||
+    (activeTab === "settings" && !canAccessCancellationPolicy)
       ? "classes"
       : activeTab;
 
@@ -152,6 +168,7 @@ export function ManagerPage({
               activeTab={effectiveActiveTab}
               onChange={setActiveTab}
               canManageChangeRequests={canManageChangeRequests}
+              canAccessCancellationPolicy={canAccessCancellationPolicy}
             />
             <Suspense fallback={tabFallback}>
               {effectiveActiveTab === "classes" && (
@@ -192,6 +209,13 @@ export function ManagerPage({
                 canManageChangeRequests && (
                   <ChangeRequestManagementTab
                     canManageChangeRequests={canManageChangeRequests}
+                  />
+                )}
+              {effectiveActiveTab === "settings" &&
+                canAccessCancellationPolicy && (
+                  <CancellationPolicyManagementTab
+                    canReadCancellationPolicy={canReadCancellationPolicy}
+                    canUpdateCancellationPolicy={canUpdateCancellationPolicy}
                   />
                 )}
             </Suspense>
