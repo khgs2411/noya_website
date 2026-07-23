@@ -4,6 +4,7 @@ import type {
   MembershipMode,
   MembershipType,
   ProductUserListItem,
+  ClassTemplate,
 } from "@class-kit/react";
 import { useProductContext } from "@class-kit/react";
 import {
@@ -31,6 +32,7 @@ type LoadStatus = "idle" | "loading" | "loaded" | "error";
 type MembershipForm = {
   name: string;
   mode: MembershipMode;
+  templateId: string;
   defaultStock: string;
   defaultDurationDays: string;
 };
@@ -55,6 +57,7 @@ type StockAdjustmentForm = {
 
 type EditingMembershipForm = MembershipForm & {
   membershipTypeId: string;
+  initialTemplateId: string | null;
 };
 
 type MembershipManagementTabProps = {
@@ -71,6 +74,7 @@ const modeOptions: MembershipMode[] = [
 const initialForm: MembershipForm = {
   name: "",
   mode: "limited_stock",
+  templateId: "",
   defaultStock: "10",
   defaultDurationDays: "30",
 };
@@ -125,9 +129,100 @@ function buildTypeInput(
   return {
     name: form.name.trim(),
     mode: form.mode,
+    templateId: form.templateId || null,
     defaultStock,
     defaultDurationDays,
   };
+}
+
+function getTemplateBindingLabel(
+  templateId: string | null,
+  templatesById: Map<string, ClassTemplate>,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  if (!templateId) return t("manager.memberships.allClasses");
+
+  const template = templatesById.get(templateId);
+  if (!template) {
+    return t("manager.memberships.missingTemplate", { templateId });
+  }
+
+  return template.status === "active"
+    ? template.name
+    : t("manager.memberships.inactiveTemplate", {
+        templateName: template.name,
+      });
+}
+
+type TemplateEligibilityFieldProps = {
+  value: string;
+  onChange: (templateId: string) => void;
+  activeTemplates: ClassTemplate[];
+  currentTemplateId?: string | null;
+  templatesById: Map<string, ClassTemplate>;
+  templateLoadStatus: LoadStatus;
+  templateErrorMessage: string | null;
+  t: (key: string, options?: Record<string, unknown>) => string;
+};
+
+function TemplateEligibilityField({
+  value,
+  onChange,
+  activeTemplates,
+  currentTemplateId,
+  templatesById,
+  templateLoadStatus,
+  templateErrorMessage,
+  t,
+}: TemplateEligibilityFieldProps) {
+  const currentTemplateIsUnavailable =
+    Boolean(currentTemplateId) &&
+    !activeTemplates.some((template) => template.id === currentTemplateId);
+
+  return (
+    <div className="rounded-xl border border-blush/18 bg-background/34 p-3">
+      <label className="grid gap-1.5">
+        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+          {t("manager.memberships.eligibility")}
+        </span>
+        <select
+          className="h-11 rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        >
+          <option value="">{t("manager.memberships.allClasses")}</option>
+          {currentTemplateIsUnavailable && currentTemplateId && (
+            <option value={currentTemplateId} disabled>
+              {getTemplateBindingLabel(currentTemplateId, templatesById, t)}
+            </option>
+          )}
+          {activeTemplates.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="mt-2 text-xs leading-5 text-foreground/58">
+        {t("manager.memberships.eligibilityHint")}
+      </p>
+      {templateLoadStatus === "loading" && (
+        <p className="mt-2 text-xs text-foreground/58">
+          {t("manager.memberships.templatesLoading")}
+        </p>
+      )}
+      {templateLoadStatus === "error" && (
+        <p className="mt-2 text-xs leading-5 text-blush-strong">
+          {templateErrorMessage ?? t("manager.memberships.templatesErrorBody")}
+        </p>
+      )}
+      {templateLoadStatus === "loaded" && activeTemplates.length === 0 && (
+        <p className="mt-2 text-xs leading-5 text-foreground/58">
+          {t("manager.memberships.noActiveTemplates")}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function mergeMembershipType(
@@ -205,9 +300,15 @@ export function MembershipManagementTab({
   const { t, i18n } = useTranslation();
   const { client } = useProductContext();
   const [membershipTypes, setMembershipTypes] = useState<MembershipType[]>([]);
+  const [templates, setTemplates] = useState<ClassTemplate[]>([]);
   const [users, setUsers] = useState<ProductUserListItem[]>([]);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
+  const [templateLoadStatus, setTemplateLoadStatus] =
+    useState<LoadStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [templateErrorMessage, setTemplateErrorMessage] = useState<string | null>(
+    null,
+  );
   const [operationError, setOperationError] = useState<string | null>(null);
   const [mutatingKey, setMutatingKey] = useState<string | null>(null);
   const [form, setForm] = useState<MembershipForm>(initialForm);
@@ -259,6 +360,17 @@ export function MembershipManagementTab({
       ),
     [membershipTypes],
   );
+  const templatesById = useMemo(
+    () => new Map(templates.map((template) => [template.id, template])),
+    [templates],
+  );
+  const activeTemplates = useMemo(
+    () =>
+      templates
+        .filter((template) => template.status === "active")
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [templates],
+  );
   const filteredUsers = useMemo(() => {
     const query = userSearch.trim().toLowerCase();
     if (!query) return users.slice(0, 8);
@@ -286,34 +398,64 @@ export function MembershipManagementTab({
   const loadMembershipTypes = useCallback(async (options?: { silent?: boolean }) => {
     if (!client || !canManageMemberships) {
       setMembershipTypes([]);
+      setTemplates([]);
       setUsers([]);
       setLoadStatus("idle");
+      setTemplateLoadStatus("idle");
+      setTemplateErrorMessage(null);
       return;
     }
 
     if (!options?.silent) {
       setLoadStatus("loading");
       setErrorMessage(null);
+      setTemplateLoadStatus("loading");
+      setTemplateErrorMessage(null);
     }
 
-    try {
-      const [membershipTypeResult, userResult] = await Promise.all([
+    const [membershipTypeResult, userResult, templateResult] =
+      await Promise.allSettled([
         client.management.memberships.listTypes(),
         client.management.users.list(),
+        client.management.templates.list(),
       ]);
-      setMembershipTypes(membershipTypeResult.membership_types);
-      setUsers(userResult.users);
-      setLoadStatus("loaded");
-    } catch (error) {
-      if (options?.silent) return;
 
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : t("manager.memberships.errorBody"),
+    if (templateResult.status === "fulfilled") {
+      setTemplates(templateResult.value.templates);
+      setTemplateLoadStatus("loaded");
+      setTemplateErrorMessage(null);
+    } else if (!options?.silent) {
+      setTemplates([]);
+      setTemplateLoadStatus("error");
+      setTemplateErrorMessage(
+        templateResult.reason instanceof Error
+          ? templateResult.reason.message
+          : t("manager.memberships.templatesErrorBody"),
       );
-      setLoadStatus("error");
     }
+
+    if (
+      membershipTypeResult.status === "fulfilled" &&
+      userResult.status === "fulfilled"
+    ) {
+      setMembershipTypes(membershipTypeResult.value.membership_types);
+      setUsers(userResult.value.users);
+      setLoadStatus("loaded");
+      return;
+    }
+
+    if (options?.silent) return;
+
+    const error =
+      membershipTypeResult.status === "rejected"
+        ? membershipTypeResult.reason
+        : userResult.status === "rejected"
+          ? userResult.reason
+          : null;
+    setErrorMessage(
+      error instanceof Error ? error.message : t("manager.memberships.errorBody"),
+    );
+    setLoadStatus("error");
   }, [canManageMemberships, client, t]);
 
   const loadUserMemberships = useCallback(
@@ -470,6 +612,9 @@ export function MembershipManagementTab({
           name: input.name,
           defaultStock: input.defaultStock,
           defaultDurationDays: input.defaultDurationDays,
+          ...(input.templateId === editingForm.initialTemplateId
+            ? {}
+            : { templateId: input.templateId }),
         }),
       );
 
@@ -1231,6 +1376,17 @@ export function MembershipManagementTab({
                 ))}
               </select>
             </label>
+            <TemplateEligibilityField
+              value={form.templateId}
+              onChange={(templateId) =>
+                setForm((current) => ({ ...current, templateId }))
+              }
+              activeTemplates={activeTemplates}
+              templatesById={templatesById}
+              templateLoadStatus={templateLoadStatus}
+              templateErrorMessage={templateErrorMessage}
+              t={t}
+            />
             {supportsStock(form.mode) && (
               <label className="grid gap-1.5">
                 <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
@@ -1360,6 +1516,20 @@ export function MembershipManagementTab({
                             required
                           />
                         </label>
+                        <TemplateEligibilityField
+                          value={editingForm.templateId}
+                          onChange={(templateId) =>
+                            setEditingForm((current) =>
+                              current ? { ...current, templateId } : current,
+                            )
+                          }
+                          activeTemplates={activeTemplates}
+                          currentTemplateId={editingForm.initialTemplateId}
+                          templatesById={templatesById}
+                          templateLoadStatus={templateLoadStatus}
+                          templateErrorMessage={templateErrorMessage}
+                          t={t}
+                        />
                         {supportsStock(editingForm.mode) && (
                           <label className="grid gap-1.5">
                             <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
@@ -1464,6 +1634,16 @@ export function MembershipManagementTab({
                                 : t("manager.memberships.notLimited")}
                             </dd>
                           </div>
+                          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-3">
+                            <dt>{t("manager.memberships.eligibility")}</dt>
+                            <dd className="break-words text-foreground [overflow-wrap:anywhere] sm:text-end">
+                              {getTemplateBindingLabel(
+                                membershipType.template_id,
+                                templatesById,
+                                t,
+                              )}
+                            </dd>
+                          </div>
                           <div className="flex justify-between gap-3">
                             <dt>{t("manager.memberships.updatedAt")}</dt>
                             <dd className="text-foreground">
@@ -1486,6 +1666,8 @@ export function MembershipManagementTab({
                                 membershipTypeId: membershipType.id,
                                 name: membershipType.name,
                                 mode: membershipType.mode,
+                                templateId: membershipType.template_id ?? "",
+                                initialTemplateId: membershipType.template_id,
                                 defaultStock: formatNullableNumber(
                                   membershipType.default_stock,
                                 ),
