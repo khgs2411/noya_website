@@ -867,7 +867,7 @@ export function LessonsPage({
       });
       updateClassLocally(item.id, (classSummary) => ({
         ...classSummary,
-        canRegister: classSummary.registrationOpen,
+        canRegister: false,
         canCancelRegistration: false,
         userRegistrationState: null,
         registeredUsersCount:
