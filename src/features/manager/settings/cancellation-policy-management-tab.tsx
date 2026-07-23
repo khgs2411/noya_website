@@ -10,10 +10,6 @@ import { Button } from "@/components/ui/button";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 
-function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
-}
-
 export function CancellationPolicyManagementTab({
   canReadCancellationPolicy,
   canUpdateCancellationPolicy,
@@ -35,7 +31,9 @@ export function CancellationPolicyManagementTab({
     (hours: number) =>
       hours === 0
         ? t("manager.cancellationPolicy.atClassStart")
-        : t("manager.cancellationPolicy.hoursBeforeClass", { count: hours }),
+        : hours === 1
+          ? t("manager.cancellationPolicy.hourBeforeClass")
+          : t("manager.cancellationPolicy.hoursBeforeClass", { count: hours }),
     [t],
   );
 
@@ -62,7 +60,7 @@ export function CancellationPolicyManagementTab({
       setLoadError(
         error instanceof ClassKitManagerApiError && error.code === "forbidden"
           ? t("manager.cancellationPolicy.readDenied")
-          : getErrorMessage(error, t("manager.cancellationPolicy.loadErrorBody")),
+          : t("manager.cancellationPolicy.loadErrorBody"),
       );
     }
   }, [canReadCancellationPolicy, client, t]);
@@ -108,7 +106,7 @@ export function CancellationPolicyManagementTab({
           ? t("manager.cancellationPolicy.updateDenied")
           : error instanceof ClassKitManagerApiError && error.code === "bad_request"
             ? t("manager.cancellationPolicy.invalidValue")
-            : getErrorMessage(error, t("manager.cancellationPolicy.saveError")),
+            : t("manager.cancellationPolicy.saveError"),
       );
     } finally {
       setSaving(false);
