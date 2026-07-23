@@ -2,6 +2,7 @@ import {
   CalendarDays,
   Clock3,
   FileText,
+  MessageSquareText,
   Layers3,
   Menu,
   Repeat,
@@ -21,7 +22,8 @@ export type ManagerTab =
   | "schedules"
   | "documents"
   | "memberships"
-  | "users";
+  | "users"
+  | "change-requests";
 
 const primaryTabs: Array<{
   id: ManagerTab;
@@ -41,19 +43,38 @@ const moreTabs: Array<{
   { id: "templates", icon: Layers3, labelKey: "manager.tabs.templates" },
   { id: "schedules", icon: Repeat, labelKey: "manager.tabs.schedules" },
   { id: "documents", icon: FileText, labelKey: "manager.tabs.documents" },
-  { id: "memberships", icon: WalletCards, labelKey: "manager.tabs.memberships" },
+  {
+    id: "memberships",
+    icon: WalletCards,
+    labelKey: "manager.tabs.memberships",
+  },
 ];
 
 type ManagerTabsProps = {
   activeTab: ManagerTab;
   onChange: (tab: ManagerTab) => void;
+  canManageChangeRequests: boolean;
 };
 
-export function ManagerTabs({ activeTab, onChange }: ManagerTabsProps) {
+export function ManagerTabs({
+  activeTab,
+  onChange,
+  canManageChangeRequests,
+}: ManagerTabsProps) {
   const { t } = useTranslation();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreMenuId = useId();
-  const moreIsActive = moreTabs.some((tab) => tab.id === activeTab);
+  const visibleMoreTabs = canManageChangeRequests
+    ? [
+        ...moreTabs,
+        {
+          id: "change-requests" as const,
+          icon: MessageSquareText,
+          labelKey: "manager.tabs.changeRequests",
+        },
+      ]
+    : moreTabs;
+  const moreIsActive = visibleMoreTabs.some((tab) => tab.id === activeTab);
 
   function selectTab(tab: ManagerTab) {
     onChange(tab);
@@ -75,7 +96,8 @@ export function ManagerTabs({ activeTab, onChange }: ManagerTabsProps) {
               className={cn(
                 "h-10 min-w-12 shrink-0 gap-2 rounded-xl px-3 font-serif text-sm lg:min-w-0",
                 "w-full",
-                active && "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
+                active &&
+                  "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
               )}
               aria-pressed={active}
               onClick={() => selectTab(tab.id)}
@@ -108,7 +130,7 @@ export function ManagerTabs({ activeTab, onChange }: ManagerTabsProps) {
           className="mt-2 grid gap-2 rounded-xl border border-blush/20 bg-background/42 p-2 sm:grid-cols-2"
           aria-label={t("manager.tabs.moreMenuLabel")}
         >
-          {moreTabs.map((tab) => {
+          {visibleMoreTabs.map((tab) => {
             const Icon = tab.icon;
             const active = tab.id === activeTab;
 

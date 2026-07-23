@@ -1,6 +1,6 @@
 import { useProductContext } from "@class-kit/react";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ManagerTabs, type ManagerTab } from "@/features/manager/manager-tabs";
@@ -46,8 +46,17 @@ const TemplateManagementTab = lazy(() =>
   ),
 );
 const UserRoleManagementTab = lazy(() =>
-  import("@/features/manager/users/user-role-management-tab").then((module) => ({
-    default: module.UserRoleManagementTab,
+  import("@/features/manager/users/user-role-management-tab").then(
+    (module) => ({
+      default: module.UserRoleManagementTab,
+    }),
+  ),
+);
+const ChangeRequestManagementTab = lazy(() =>
+  import(
+    "@/features/manager/change-requests/change-request-management-tab"
+  ).then((module) => ({
+    default: module.ChangeRequestManagementTab,
   })),
 );
 
@@ -73,11 +82,10 @@ export function ManagerPage({
   const [activeTab, setActiveTab] = useState<ManagerTab>("classes");
   const { capabilities } = useProductContext();
   const managerAccess = accessSnapshot ?? capabilities;
-  const canManageClasses = Boolean(
-    managerAccess.dashboard.can_manage_classes,
+  const canManageClasses = Boolean(managerAccess.dashboard.can_manage_classes);
+  const canManageRegistrations = managerAccess.permissions.includes(
+    "registrations.manage",
   );
-  const canManageRegistrations =
-    managerAccess.permissions.includes("registrations.manage");
   const canManageAttendance =
     managerAccess.permissions.includes("attendance.manage");
   const canManageMemberships =
@@ -87,6 +95,23 @@ export function ManagerPage({
   );
   const canManageRoles = Boolean(managerAccess.dashboard.can_manage_roles);
   const canManageUsers = Boolean(managerAccess.dashboard.can_manage_users);
+  const canManageChangeRequests =
+    accessSnapshot === null &&
+    capabilities.permissions.includes("product_change_requests.manage");
+  const effectiveActiveTab =
+    activeTab === "change-requests" && !canManageChangeRequests
+      ? "classes"
+      : activeTab;
+
+  useEffect(() => {
+    if (activeTab === effectiveActiveTab) return;
+
+    const repairId = window.setTimeout(
+      () => setActiveTab(effectiveActiveTab),
+      0,
+    );
+    return () => window.clearTimeout(repairId);
+  }, [activeTab, effectiveActiveTab]);
   const tabFallback = (
     <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-5 shadow-soft">
       <div className="flex items-center gap-3 text-sm text-foreground/68">
@@ -123,40 +148,52 @@ export function ManagerPage({
           </section>
         ) : (
           <section className="mt-7 flex flex-col gap-4">
-            <ManagerTabs activeTab={activeTab} onChange={setActiveTab} />
+            <ManagerTabs
+              activeTab={effectiveActiveTab}
+              onChange={setActiveTab}
+              canManageChangeRequests={canManageChangeRequests}
+            />
             <Suspense fallback={tabFallback}>
-              {activeTab === "classes" && (
+              {effectiveActiveTab === "classes" && (
                 <ClassManagementTab
                   canManageClasses={canManageClasses}
                   canManageRegistrations={canManageRegistrations}
                   canManageAttendance={canManageAttendance}
                 />
               )}
-              {activeTab === "pending" && (
+              {effectiveActiveTab === "pending" && (
                 <PendingRegistrationManagementTab
                   canManageRegistrations={canManageRegistrations}
                 />
               )}
-              {activeTab === "templates" && (
+              {effectiveActiveTab === "templates" && (
                 <TemplateManagementTab canManageTemplates={canManageClasses} />
               )}
-              {activeTab === "schedules" && (
+              {effectiveActiveTab === "schedules" && (
                 <ScheduleManagementTab canManageSchedules={canManageClasses} />
               )}
-              {activeTab === "documents" && (
-                <DocumentManagementTab canManageDocuments={canManageDocuments} />
+              {effectiveActiveTab === "documents" && (
+                <DocumentManagementTab
+                  canManageDocuments={canManageDocuments}
+                />
               )}
-              {activeTab === "memberships" && (
+              {effectiveActiveTab === "memberships" && (
                 <MembershipManagementTab
                   canManageMemberships={canManageMemberships}
                 />
               )}
-              {activeTab === "users" && (
+              {effectiveActiveTab === "users" && (
                 <UserRoleManagementTab
                   canManageRoles={canManageRoles}
                   canManageUsers={canManageUsers}
                 />
               )}
+              {effectiveActiveTab === "change-requests" &&
+                canManageChangeRequests && (
+                  <ChangeRequestManagementTab
+                    canManageChangeRequests={canManageChangeRequests}
+                  />
+                )}
             </Suspense>
           </section>
         )}
