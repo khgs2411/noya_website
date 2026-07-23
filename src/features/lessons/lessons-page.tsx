@@ -215,6 +215,7 @@ export function LessonsPage({
   const [termsStatus, setTermsStatus] = useState<TermsStatus>("idle");
   const [termsChecked, setTermsChecked] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
+  const [agreementLoadAttempt, setAgreementLoadAttempt] = useState(0);
   const requestIdRef = useRef(0);
   const detailRequestIdRef = useRef(0);
   const resolvedSignupSlugRef = useRef<string | null>(null);
@@ -676,7 +677,14 @@ export function LessonsPage({
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [client, i18n.language, selectedClassId, session, t]);
+  }, [
+    agreementLoadAttempt,
+    client,
+    i18n.language,
+    selectedClassId,
+    session,
+    t,
+  ]);
 
   function openClassDetails(classId: string) {
     classDetailFocusReturnRef.current = captureActiveElement();
@@ -1313,9 +1321,22 @@ export function LessonsPage({
                         )}
 
                         {termsStatus === "error" && (
-                          <p className="text-sm leading-6 text-blush-strong">
-                            {termsError ?? t("classes.terms.loadError")}
-                          </p>
+                          <div className="grid justify-items-start gap-2">
+                            <p className="text-sm leading-6 text-blush-strong">
+                              {termsError ?? t("classes.terms.loadError")}
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                setAgreementLoadAttempt((attempt) => attempt + 1)
+                              }
+                            >
+                              <RefreshCw className="size-4" aria-hidden="true" />
+                              {t("classes.retry")}
+                            </Button>
+                          </div>
                         )}
 
                         {termsStatus === "ready" && (
