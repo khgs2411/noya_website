@@ -6,6 +6,7 @@ import {
   Layers3,
   Menu,
   Repeat,
+  Settings2,
   UserCog,
   WalletCards,
 } from "lucide-react";
@@ -23,7 +24,8 @@ export type ManagerTab =
   | "documents"
   | "memberships"
   | "users"
-  | "change-requests";
+  | "change-requests"
+  | "settings";
 
 const primaryTabs: Array<{
   id: ManagerTab;
@@ -54,26 +56,39 @@ type ManagerTabsProps = {
   activeTab: ManagerTab;
   onChange: (tab: ManagerTab) => void;
   canManageChangeRequests: boolean;
+  canAccessCancellationPolicy: boolean;
 };
 
 export function ManagerTabs({
   activeTab,
   onChange,
   canManageChangeRequests,
+  canAccessCancellationPolicy,
 }: ManagerTabsProps) {
   const { t } = useTranslation();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreMenuId = useId();
-  const visibleMoreTabs = canManageChangeRequests
-    ? [
-        ...moreTabs,
+  const visibleMoreTabs = [
+    ...moreTabs,
+    ...(canAccessCancellationPolicy
+      ? [
+          {
+            id: "settings" as const,
+            icon: Settings2,
+            labelKey: "manager.tabs.settings",
+          },
+        ]
+      : []),
+    ...(canManageChangeRequests
+      ? [
         {
           id: "change-requests" as const,
           icon: MessageSquareText,
           labelKey: "manager.tabs.changeRequests",
         },
       ]
-    : moreTabs;
+      : []),
+  ];
   const moreIsActive = visibleMoreTabs.some((tab) => tab.id === activeTab);
 
   function selectTab(tab: ManagerTab) {
