@@ -24,7 +24,7 @@ export function getSignupSlugFromSearch(search: string) {
 export function getSignupLinkUrl(slug: string) {
   const url = new URL(
     `${import.meta.env.BASE_URL}${lessonsPath}`,
-    window.location.origin,
+    window.location.href,
   );
   url.searchParams.set(signupQueryParam, slug);
   return url.toString();
