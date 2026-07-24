@@ -41,6 +41,7 @@ type ClassAttendanceFormProps = {
   canReadCustomers: boolean;
   canReadUsers: boolean;
   className?: string;
+  registrationRefreshKey?: number;
   onClassChanged: () => void | Promise<void>;
 };
 
@@ -158,6 +159,7 @@ export function ClassAttendanceForm({
   canReadCustomers,
   canReadUsers,
   className,
+  registrationRefreshKey = 0,
   onClassChanged,
 }: ClassAttendanceFormProps) {
   const { t } = useTranslation();
@@ -395,6 +397,16 @@ export function ClassAttendanceForm({
       loadGenerationRef.current += 1;
     };
   }, [loadAttendance]);
+
+  useEffect(() => {
+    if (registrationRefreshKey === 0) return;
+
+    const timeoutId = window.setTimeout(() => {
+      void loadAttendance({ silent: true });
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadAttendance, registrationRefreshKey]);
 
   useEffect(() => {
     if (!canReadCustomers) {

@@ -1,10 +1,11 @@
 import type { ClassKitClient, ManagedClass } from "@class-kit/react";
-import type { ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { Ban, Edit3, Link2, Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ClassAttendanceForm } from "@/features/manager/attendance/class-attendance-form";
+import { ClassRegistrationRoster } from "@/features/manager/registrations/class-registration-roster";
 import { PendingRegistrationsPanel } from "@/features/manager/registrations/pending-registrations-panel";
 import { LocationDisplay } from "@/features/locations/location-display";
 
@@ -55,6 +56,11 @@ export function ClassDetailPanel({
   signupLinkNotice,
 }: ClassDetailPanelProps) {
   const { t, i18n } = useTranslation();
+  const [registrationRefreshKey, setRegistrationRefreshKey] = useState(0);
+  const handleRegistrationsChanged = useCallback(() => {
+    setRegistrationRefreshKey((current) => current + 1);
+    return onRegistrationsChanged();
+  }, [onRegistrationsChanged]);
 
   if (!managedClass) return null;
 
@@ -156,9 +162,18 @@ export function ClassDetailPanel({
             canManageRegistrations={canManageRegistrations}
             classId={managedClass.id}
             compact
-            onChanged={onRegistrationsChanged}
+            refreshKey={registrationRefreshKey}
+            onChanged={handleRegistrationsChanged}
           />
         </section>
+        <ClassRegistrationRoster
+          client={client}
+          classId={managedClass.id}
+          canManageRegistrations={canManageRegistrations}
+          canReadCustomers={canReadCustomers}
+          refreshKey={registrationRefreshKey}
+          onChanged={handleRegistrationsChanged}
+        />
         <ClassAttendanceForm
           client={client}
           managedClass={managedClass}
@@ -166,6 +181,7 @@ export function ClassDetailPanel({
           canManageRegistrations={canManageRegistrations}
           canReadCustomers={canReadCustomers}
           canReadUsers={canReadUsers}
+          registrationRefreshKey={registrationRefreshKey}
           onClassChanged={onClassChanged}
         />
         {canManageClasses && (

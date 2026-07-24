@@ -17,6 +17,7 @@ type PendingRegistrationsPanelProps = {
   canManageRegistrations: boolean;
   classId?: string;
   compact?: boolean;
+  refreshKey?: number;
   onChanged?: () => void | Promise<void>;
 };
 
@@ -42,6 +43,7 @@ export function PendingRegistrationsPanel({
   canManageRegistrations,
   classId,
   compact = false,
+  refreshKey = 0,
   onChanged,
 }: PendingRegistrationsPanelProps) {
   const { t, i18n } = useTranslation();
@@ -104,7 +106,7 @@ export function PendingRegistrationsPanel({
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [loadPending]);
+  }, [loadPending, refreshKey]);
 
   const runAction = useCallback(
     async (registrationId: string, action: "approve" | "reject") => {
