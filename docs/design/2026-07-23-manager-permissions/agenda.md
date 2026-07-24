@@ -3,8 +3,8 @@
 ## Status
 
 - Spec: `docs/design/2026-07-23-manager-permissions/spec.md`
-- State: Working Draft
-- Approval: Not Approved
+- State: Approved
+- Approval: Approved by explicit rework assignment on 2026-07-24
 
 ## Documented Decisions
 
@@ -12,7 +12,8 @@
   supported role editing, and grouped permission mutation move to a dedicated
   Permissions page; user role assignment/revocation and the read-only effective
   summary stay in Users.
-- Users is independently authorized by `dashboard.can_manage_users`.
+- Users is independently authorized by live `dashboard.can_manage_users` plus
+  the explicit live `users.read` directory permission.
 - Permissions is independently authorized by `dashboard.can_manage_roles`.
 - Users remains a primary operational tab. Permissions is a lower-frequency
   configuration entry in the existing responsive More menu.
@@ -20,12 +21,13 @@
   mounting, loading, and controls. Cached manager access may preserve the shell
   but cannot positively authorize either workspace.
 - ClassKit remains the only data and authorization boundary through
-  `@class-kit/react`; the website must not call a backend directly. Resolving
-  the users-only blocker may require a ClassKit facade/authorization contract
-  change.
+  `@class-kit/react`; the website must not call a backend directly.
+- This card upgrades Noya to `@class-kit/react` v0.1.22. Users loads the
+  complete assignable role catalog and permission keys through
+  `management.users.roles.listAssignable()` and does not call the
+  role-definition facade.
 - Users does not load the role-management permission catalog or perform
-  role-definition mutations. It still requires a ClassKit-authorized read of
-  the complete assignable role catalog and each role's permissions.
+  role-definition mutations.
 - A neutral shared role/permission presentation module supplies only curated
   group definitions, icons, and pure summary helpers used by both workspaces.
   Permissions alone owns role presets, level validation, role-key generation,
@@ -37,25 +39,22 @@
 - All visible copy is localized in English, Russian, and Hebrew; layouts use
   logical direction and remain mobile-first and RTL-safe.
 
-## Blocking Contract Conflict
+## Resolved Dependency
 
-- The pinned SDK exposes `management.users.roles.assign/revoke`, but no
-  user-authorized role-catalog read.
-- `ProductUserListItem` carries current assignment identity, not the complete
-  assignable role set or role permission sets.
-- `management.roles.list()` is the only current SDK operation that supplies the
-  missing data, while current ClassKit backend source protects it with
-  role-management authority.
-- Therefore the users-only acceptance row cannot be implemented by this website
-  without a ClassKit authorization/facade correction. Broadening Users to
-  `can_manage_roles`, using a raw Edge Function, or rendering a partial Users
-  workspace would violate the assignment.
+- ClassKit v0.1.22 tag and master both resolve to
+  `bae7d746397e1ff473477ca9337b90e5a69e1d6d`.
+- The released `AssignableProductRole` contains the complete role identity,
+  protected/built-in flags, level, and permission-key set.
+- `management.users.roles.listAssignable()` calls the deployed
+  `list_assignable` user-role-management action, resolving the v0.1.21 catalog
+  blocker without granting role-definition authority.
+- `users.read` remains an explicit, separate prerequisite for
+  `management.users.list()`.
 
 ## Questions
 
-No material questions remain. The repository and assignment contract determine
-the product behavior. The ClassKit conflict above is an integration blocker,
-not a product question.
+No material questions remain. The repository, assignment, and released
+v0.1.22 contract determine the product and integration behavior.
 
 ## Pressure-Test Result
 

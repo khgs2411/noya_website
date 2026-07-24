@@ -9,6 +9,7 @@ import {
   Settings2,
   UserCog,
   WalletCards,
+  ShieldCheck,
 } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,6 +25,7 @@ export type ManagerTab =
   | "documents"
   | "memberships"
   | "users"
+  | "permissions"
   | "change-requests"
   | "settings";
 
@@ -55,6 +57,8 @@ const moreTabs: Array<{
 type ManagerTabsProps = {
   activeTab: ManagerTab;
   onChange: (tab: ManagerTab) => void;
+  canAccessUsers: boolean;
+  canManageRoles: boolean;
   canManageChangeRequests: boolean;
   canAccessCancellationPolicy: boolean;
 };
@@ -62,14 +66,28 @@ type ManagerTabsProps = {
 export function ManagerTabs({
   activeTab,
   onChange,
+  canAccessUsers,
+  canManageRoles,
   canManageChangeRequests,
   canAccessCancellationPolicy,
 }: ManagerTabsProps) {
   const { t } = useTranslation();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreMenuId = useId();
+  const visiblePrimaryTabs = primaryTabs.filter(
+    (tab) => tab.id !== "users" || canAccessUsers,
+  );
   const visibleMoreTabs = [
     ...moreTabs,
+    ...(canManageRoles
+      ? [
+          {
+            id: "permissions" as const,
+            icon: ShieldCheck,
+            labelKey: "manager.tabs.permissions",
+          },
+        ]
+      : []),
     ...(canAccessCancellationPolicy
       ? [
           {
@@ -99,7 +117,7 @@ export function ManagerTabs({
   return (
     <div className="relative rounded-[1.2rem] border border-blush/24 bg-card/78 p-1">
       <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 sm:gap-2">
-        {primaryTabs.map((tab) => {
+        {visiblePrimaryTabs.map((tab) => {
           const Icon = tab.icon;
           const active = tab.id === activeTab;
 

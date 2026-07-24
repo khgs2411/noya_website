@@ -1,6 +1,6 @@
 # Manager Users And Permissions Split Design
 
-Status: Working Draft — not approved for implementation planning.
+Status: Approved — eligible for implementation planning.
 Design directory: `docs/design/2026-07-23-manager-permissions/`
 
 ## Goal And Success Criteria
@@ -20,16 +20,16 @@ operations; no role-definition mutation remains in Users; current role and
 permission behavior remains ClassKit-owned; and all new or revised copy is
 localized in English, Hebrew, and Russian with mobile-first, RTL-safe layouts.
 
-The users-only case has a blocking ClassKit contract conflict described below.
-It is not implementable from the website alone until ClassKit exposes a
-role-catalog read to `product_user_roles.manage` authority or otherwise returns
-the assignable roles and their permission sets through a user-management
-facade.
+ClassKit v0.1.22 resolves the earlier users-only blocker through
+`management.users.roles.listAssignable()`, which is authorized at the
+user-role-management boundary and returns the complete assignable role catalog
+with permission keys.
 
-## Current Repository Context
+## Pre-Change Repository Context
 
-- `ROADMAP.md` places this feature in Step 5 as the information-architecture
-  prerequisite for the later customer-first workspace.
+- The Symphony assignment ledger scopes this feature independently from the
+  later customer-first workspace; this split is an information-architecture
+  prerequisite inferred from that boundary.
 - `src/features/manager/users/user-role-management-tab.tsx` currently owns both
   user-role assignment and all role-definition behavior in one component. It
   calls `client.management.roles.*` for definitions and permissions, and
@@ -41,18 +41,16 @@ facade.
   row and lower-frequency manager workspaces in the More menu.
 - `src/i18n.ts` contains matching English, Russian, and Hebrew `manager.users`
   trees. Role-definition copy is currently mixed into those trees.
-- The pinned `@class-kit/react` v0.1.21 facade exposes role assignment and
-  revocation under `management.users.roles`, but it does not expose the
-  backend's assignment-list operation or a user-authorized role-catalog read.
-  `ProductUserListItem` contains assigned role IDs/names, not the complete
-  assignable role catalog or each role's permissions.
-- `management.roles.list()` is therefore the only existing SDK read that can
-  supply both assignable roles and the permission sets required by the current
-  effective-permissions summary. Current ClassKit backend source guards that
-  read with role-management authority, not
-  `product_user_roles.manage`. This contradicts the assignment's
-  no-ClassKit-prerequisite claim and prevents a users-only manager from loading
-  the required Users data.
+- This card establishes `@class-kit/react` v0.1.22 as Noya's SDK baseline.
+  The released facade adds
+  `management.users.roles.listAssignable(): Promise<{ roles:
+  AssignableProductRole[] }>` alongside assignment and revocation. Each
+  assignable role includes identity, level, protected/built-in flags, and its
+  permission keys.
+- The user directory remains separately authorized by `users.read`;
+  `dashboard.can_manage_users` continues to represent
+  `product_user_roles.manage` assignment authority and does not imply directory
+  read access.
 - The repository has no automated test script. `npm run lint` is the focused
   static check; `npm run build` is justified for this change because the split
   changes lazy imports, component props, and ClassKit-backed TypeScript
@@ -62,7 +60,8 @@ facade.
 
 ### Responsive Manager Navigation
 
-- Show **Users** only when the live `dashboard.can_manage_users` value is true.
+- Show **Users** only when live `dashboard.can_manage_users` is true and the
+  live permission set includes `users.read`.
 - Show **Permissions** only when the live `dashboard.can_manage_roles` value is
   true.
 - Keep Users in the primary navigation row because it is an operational
@@ -80,13 +79,11 @@ facade.
 
 ### Users Workspace
 
-- Load users with `client.management.users.list()` only when
-  `can_manage_users` is true.
-- Load the complete assignable role catalog, including each role's permission
-  keys, through a ClassKit read explicitly authorized for
-  `product_user_roles.manage`. The current SDK offers no such independently
-  authorized read; using `client.management.roles.list()` is acceptable only
-  after ClassKit confirms or changes that operation's authorization contract.
+- Load users with `client.management.users.list()` only when `users.read` is
+  present and `can_manage_users` is true.
+- Load the complete assignable role catalog and permission keys with
+  `client.management.users.roles.listAssignable()` under
+  `can_manage_users`. Users must not call `management.roles.list()`.
 - Preserve customer search, selected-customer behavior, display identity,
   supporting email and phone, product scope, status, assigned roles, role
   assignment, role revocation, refresh, loading, empty, and error behavior.
@@ -161,18 +158,18 @@ they are extracted from the current combined component.
 
 ### Page Ownership
 
-- `UserRoleManagementTab` becomes a users-only workspace with a
-  `canManageUsers` boundary.
+- `UserRoleManagementTab` becomes a users-only workspace with explicit
+  `canManageUsers` and `canReadUsers` boundaries.
 - A new `PermissionManagementTab` owns the role-definition state and ClassKit
   role/permission operations behind a `canManageRoles` boundary.
 - `ManagerPage` remains the sole owner of capability derivation, safe active-tab
   selection, lazy loading, and mounting.
 - `ManagerTabs` remains the sole owner of responsive navigation placement and
   receives live-derived booleans instead of reading ClassKit context.
-- No new route, global state, persistence model, backend API, dependency, or
-  direct Supabase/Edge Function call is introduced in this website. Resolving
-  the users-only role-catalog blocker requires an existing ClassKit operation
-  to be re-authorized or an SDK/backend contract change outside this repository.
+- No new route, global state, persistence model, backend API, production
+  dependency family, or direct Supabase/Edge Function call is introduced.
+  Noya upgrades its existing `@class-kit/react` dependency from v0.1.21 to
+  v0.1.22 and updates the lockfile.
 
 ### Authorization Boundary
 
@@ -190,9 +187,9 @@ The operation split is:
 
 | Workspace | ClassKit operation family | Purpose |
 | --- | --- | --- |
-| Users | `management.users.list` | User directory and current assignments |
+| Users | `management.users.list` | User directory and current assignments; requires `users.read` |
+| Users | `management.users.roles.listAssignable` | Assignable roles and permission keys for the read-only effective summary |
 | Users | `management.users.roles.assign/revoke` | User-role mutations |
-| Users | ClassKit role-catalog read authorized for user-role managers | Assignable roles and read-only effective summary; currently blocked |
 | Permissions | `management.roles.list/listPermissions` | Role definitions and available permission catalog |
 | Permissions | `management.roles.create/update` | Supported role-definition mutations |
 | Permissions | `management.roles.grantPermission/revokePermission` | Grouped permission mutations |
@@ -227,9 +224,9 @@ The operation split is:
 - Capability loss unmounts the affected workspace before it can make another
   call and returns the manager to the safe default tab.
 - A cached positive capability never starts a Users or Permissions load.
-- Until the ClassKit role-catalog read conflict is resolved, a users-only load
-  cannot degrade to a misleading partial success: hiding role choices or
-  showing an empty effective summary would violate the acceptance contract.
+- A missing `users.read` permission fails closed before the Users workspace
+  mounts; the UI must not attempt directory access or present an incomplete
+  assignment surface.
 
 ## Localization, Layout, And Accessibility
 
@@ -283,10 +280,11 @@ evidence that ClassKit authorizes the required runtime operations.
 
 - Production implementation must preserve the existing ClassKit-first boundary
   and use only `@class-kit/react`.
+- Upgrade the existing SDK pin and lockfile to the released v0.1.22 tag before
+  compiling against `AssignableProductRole` and `listAssignable()`.
 - Do not implement a website fallback that infers an assignable role catalog,
   calls raw Edge Functions, broadens Users to `can_manage_roles`, or silently
-  drops assignment/effective-summary behavior. Those approaches would hide,
-  rather than solve, the ClassKit contract conflict.
+  drops assignment/effective-summary behavior.
 - Shared logic is limited to the stable role/permission presentation model;
   page-specific state and mutation orchestration stay with their owning page.
 - The change may split the current large component across files as needed to
@@ -307,13 +305,11 @@ evidence that ClassKit authorizes the required runtime operations.
 - The live-only navigation/mount rule is an agent inference from the existing
   cached-access behavior and the requirement that denied workspaces never
   mount.
-- The ClassKit role-catalog blocker is contract evidence, not a product choice:
-  the pinned SDK types lack a user-scoped role-catalog method, while current
-  ClassKit backend source protects `roles.list` with role-management authority.
+- The previous v0.1.21 blocker and the v0.1.22 resolution come from the current
+  rework feedback and were verified against the released SDK tag
+  `bae7d746397e1ff473477ca9337b90e5a69e1d6d`.
 
 ## Open Questions
 
-None. There is no unresolved product decision. There is one blocking
-cross-repository contract contradiction: the assignment says no ClassKit
-prerequisite exists, but the current SDK/backend boundary cannot support the
-required users-only role assignment and effective-permissions summary.
+None. The v0.1.22 user-role-management catalog resolves the prior
+cross-repository blocker without changing the accepted product boundary.
