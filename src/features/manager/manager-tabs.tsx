@@ -7,7 +7,7 @@ import {
   Menu,
   Repeat,
   Settings2,
-  UserCog,
+  UsersRound,
   WalletCards,
   ShieldCheck,
 } from "lucide-react";
@@ -24,7 +24,7 @@ export type ManagerTab =
   | "schedules"
   | "documents"
   | "memberships"
-  | "users"
+  | "customers"
   | "permissions"
   | "change-requests"
   | "settings";
@@ -36,7 +36,7 @@ const primaryTabs: Array<{
 }> = [
   { id: "classes", icon: CalendarDays, labelKey: "manager.tabs.classes" },
   { id: "pending", icon: Clock3, labelKey: "manager.tabs.pending" },
-  { id: "users", icon: UserCog, labelKey: "manager.tabs.users" },
+  { id: "customers", icon: UsersRound, labelKey: "manager.tabs.customers" },
 ];
 
 const moreTabs: Array<{
@@ -57,7 +57,7 @@ const moreTabs: Array<{
 type ManagerTabsProps = {
   activeTab: ManagerTab;
   onChange: (tab: ManagerTab) => void;
-  canAccessUsers: boolean;
+  canAccessCustomers: boolean;
   canManageRoles: boolean;
   canManageChangeRequests: boolean;
   canAccessCancellationPolicy: boolean;
@@ -66,7 +66,7 @@ type ManagerTabsProps = {
 export function ManagerTabs({
   activeTab,
   onChange,
-  canAccessUsers,
+  canAccessCustomers,
   canManageRoles,
   canManageChangeRequests,
   canAccessCancellationPolicy,
@@ -75,7 +75,7 @@ export function ManagerTabs({
   const [moreOpen, setMoreOpen] = useState(false);
   const moreMenuId = useId();
   const visiblePrimaryTabs = primaryTabs.filter(
-    (tab) => tab.id !== "users" || canAccessUsers,
+    (tab) => tab.id !== "customers" || canAccessCustomers,
   );
   const visibleMoreTabs = [
     ...moreTabs,

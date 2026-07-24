@@ -67,6 +67,20 @@ export const permissionGroups: PermissionGroup[] = [
     icon: BarChart3,
   },
   {
+    id: "customerDirectory",
+    labelKey: "manager.permissions.permissionGroups.customerDirectory",
+    descriptionKey: "manager.permissions.permissionGroupDescriptions.customerDirectory",
+    permissionKeys: ["customers.read"],
+    icon: UsersRound,
+  },
+  {
+    id: "customerMemberships",
+    labelKey: "manager.permissions.permissionGroups.customerMemberships",
+    descriptionKey: "manager.permissions.permissionGroupDescriptions.customerMemberships",
+    permissionKeys: ["memberships.read"],
+    icon: UsersRound,
+  },
+  {
     id: "studioSettings",
     labelKey: "manager.permissions.permissionGroups.studioSettings",
     descriptionKey: "manager.permissions.permissionGroupDescriptions.studioSettings",
