@@ -54,6 +54,10 @@ function getRoleName(role: AssignableProductRole | undefined, roleId: string) {
   return role ? `${role.name} (${role.key})` : roleId;
 }
 
+function getActiveRoleAssignments(user: ProductUserListItem) {
+  return (user.roles ?? []).filter((assignment) => assignment.status === "active");
+}
+
 export function UserRoleManagementTab({
   canManageUsers,
   canReadUsers,
@@ -91,8 +95,10 @@ export function UserRoleManagementTab({
         user.user_id,
         user.status,
         user.scope,
-        ...(user.roles?.flatMap((role) => [role.role_name, role.role_key]) ??
-          []),
+        ...getActiveRoleAssignments(user).flatMap((role) => [
+          role.role_name,
+          role.role_key,
+        ]),
       ]
         .filter((value): value is string => Boolean(value))
         .some((value) => value.toLowerCase().includes(term)),
@@ -413,9 +419,10 @@ function UserDetail({
   onRevoke: (roleId: string) => void;
   t: (key: string, options?: Record<string, unknown>) => string;
 }) {
-  const assignedRoleIds = new Set(user.roles?.map((role) => role.role_id));
+  const activeAssignments = getActiveRoleAssignments(user);
+  const assignedRoleIds = new Set(activeAssignments.map((role) => role.role_id));
   const effectivePermissionKeys = new Set(
-    (user.roles ?? []).flatMap(
+    activeAssignments.flatMap(
       (assignment) => rolesById.get(assignment.role_id)?.permissions ?? [],
     ),
   );
@@ -469,8 +476,8 @@ function UserDetail({
           {t("manager.users.assignedRoles")}
         </h4>
         <div className="mt-3 flex flex-wrap gap-2">
-          {(user.roles ?? []).length ? (
-            user.roles?.map((assignment) => (
+          {activeAssignments.length ? (
+            activeAssignments.map((assignment) => (
               <span
                 key={assignment.role_id}
                 className="inline-flex items-center gap-2 rounded-full border border-blush/24 bg-background/32 px-3 py-2 text-sm text-foreground"
@@ -478,6 +485,13 @@ function UserDetail({
                 <UsersRound className="size-4 text-blush-strong" aria-hidden="true" />
                 {assignment.role_name ??
                   getRoleName(rolesById.get(assignment.role_id), assignment.role_id)}
+                {rolesById.has(assignment.role_id) && (
+                  <span className="text-xs text-foreground/52">
+                    {t("manager.users.roleLevel", {
+                      level: rolesById.get(assignment.role_id)!.level,
+                    })}
+                  </span>
+                )}
                 <button
                   type="button"
                   className="rounded-full text-foreground/48 hover:text-blush-strong disabled:opacity-45"
