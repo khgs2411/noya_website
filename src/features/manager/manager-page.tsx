@@ -52,6 +52,13 @@ const UserRoleManagementTab = lazy(() =>
     }),
   ),
 );
+const PermissionManagementTab = lazy(() =>
+  import("@/features/manager/permissions/permission-management-tab").then(
+    (module) => ({
+      default: module.PermissionManagementTab,
+    }),
+  ),
+);
 const ChangeRequestManagementTab = lazy(() =>
   import(
     "@/features/manager/change-requests/change-request-management-tab"
@@ -100,8 +107,10 @@ export function ManagerPage({
   const canManageDocuments = managerAccess.permissions.includes(
     "product_documents.manage",
   );
-  const canManageRoles = Boolean(managerAccess.dashboard.can_manage_roles);
-  const canManageUsers = Boolean(managerAccess.dashboard.can_manage_users);
+  const canManageRoles = Boolean(capabilities.dashboard.can_manage_roles);
+  const canManageUsers = Boolean(capabilities.dashboard.can_manage_users);
+  const canReadUsers = capabilities.permissions.includes("users.read");
+  const canAccessUsers = canManageUsers && canReadUsers;
   const canManageChangeRequests =
     accessSnapshot === null &&
     capabilities.permissions.includes("product_change_requests.manage");
@@ -117,6 +126,8 @@ export function ManagerPage({
   const canAccessCancellationPolicy =
     canReadCancellationPolicy || canUpdateCancellationPolicy;
   const effectiveActiveTab =
+    (activeTab === "users" && !canAccessUsers) ||
+    (activeTab === "permissions" && !canManageRoles) ||
     (activeTab === "change-requests" && !canManageChangeRequests) ||
     (activeTab === "settings" && !canAccessCancellationPolicy)
       ? "classes"
@@ -170,6 +181,8 @@ export function ManagerPage({
             <ManagerTabs
               activeTab={effectiveActiveTab}
               onChange={setActiveTab}
+              canAccessUsers={canAccessUsers}
+              canManageRoles={canManageRoles}
               canManageChangeRequests={canManageChangeRequests}
               canAccessCancellationPolicy={canAccessCancellationPolicy}
             />
@@ -206,11 +219,14 @@ export function ManagerPage({
                   canManageMemberships={canManageMemberships}
                 />
               )}
-              {effectiveActiveTab === "users" && (
+              {effectiveActiveTab === "users" && canAccessUsers && (
                 <UserRoleManagementTab
-                  canManageRoles={canManageRoles}
                   canManageUsers={canManageUsers}
+                  canReadUsers={canReadUsers}
                 />
+              )}
+              {effectiveActiveTab === "permissions" && canManageRoles && (
+                <PermissionManagementTab canManageRoles={canManageRoles} />
               )}
               {effectiveActiveTab === "change-requests" &&
                 canManageChangeRequests && (
