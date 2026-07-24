@@ -43,10 +43,10 @@ export function LocationDisplay({
 
   if (variant === "compact") {
     return (
-      <p className={className ?? "flex items-start gap-2 text-sm text-foreground/68"}>
+      <span className={className ?? "flex items-start gap-2 text-sm text-foreground/68"}>
         <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <span className="break-words">{displayText}</span>
-      </p>
+      </span>
     );
   }
 

@@ -1,3 +1,5 @@
+import type { LocationSnapshot } from "@class-kit/react";
+
 type RegistrationStatusValue = "pending" | "approved" | "rejected" | "cancelled";
 type ClassTemporalStatusValue = "upcoming" | "started" | "ended" | "cancelled";
 type ClassLifecycleStatusValue =
@@ -41,4 +43,3 @@ export type ClassViewDateGroup = {
   label: string;
   items: ClassViewItem[];
 };
-import type { LocationSnapshot } from "@class-kit/react";

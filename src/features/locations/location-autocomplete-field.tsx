@@ -8,6 +8,7 @@ import {
   selectLocationDraftSnapshot,
   updateLocationDraftText,
 } from "@/features/locations/location-draft";
+import { cn } from "@/lib/utils";
 
 type AutocompleteResponse = {
   draft: LocationDraft;
@@ -218,20 +219,19 @@ export function LocationAutocompleteField({
                 key={`${suggestion.provider.reference}-${suggestion.label}`}
                 role="option"
                 aria-selected={index === activeIndex}
+                className={cn(
+                  "cursor-pointer rounded-lg px-3 py-2 text-start text-sm text-foreground transition-colors hover:bg-blush-strong/10",
+                  index === activeIndex && "bg-blush-strong/10",
+                )}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectSuggestion(suggestion)}
               >
-                <button
-                  type="button"
-                  className="w-full rounded-lg px-3 py-2 text-start text-sm text-foreground transition-colors hover:bg-blush-strong/10 focus-visible:bg-blush-strong/10 focus-visible:outline-none"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => selectSuggestion(suggestion)}
-                >
-                  <span className="block break-words font-semibold">{suggestion.label}</span>
-                  {suggestion.formatted_address !== suggestion.label && (
-                    <span className="mt-0.5 block break-words text-xs text-foreground/58">
-                      {suggestion.formatted_address}
-                    </span>
-                  )}
-                </button>
+                <span className="block break-words font-semibold">{suggestion.label}</span>
+                {suggestion.formatted_address !== suggestion.label && (
+                  <span className="mt-0.5 block break-words text-xs text-foreground/58">
+                    {suggestion.formatted_address}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
