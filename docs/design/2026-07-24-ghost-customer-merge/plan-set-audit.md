@@ -47,7 +47,7 @@ Verified using local repository inspection at `f4d5a32`:
 
 | Referenced Path | Status | Notes |
 | --- | --- | --- |
-| `.symphony/assignment.md` | Exists | Authoritative plan-only assignment and acceptance contract. |
+| `.symphony/assignment.md` | Mission evidence only | Intentionally not part of the accepted repository artifacts; the Trello card and committed spec carry the implementation contract. |
 | `docs/design/2026-07-24-ghost-customer-merge/spec.md` | Exists | Approved implementation-planning source. |
 | `docs/design/2026-07-24-ghost-customer-merge/agenda.md` | Exists | Approved decision ledger with no open product question. |
 | `docs/design/2026-07-24-ghost-customer-merge/spec-audit.md` | Exists | Design audit ends ready for implementation planning. |
