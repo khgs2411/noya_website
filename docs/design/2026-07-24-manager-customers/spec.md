@@ -1,6 +1,6 @@
 # Manager Customers Workspace Design
 
-Status: Working Draft — not approved for implementation planning.
+Status: Ready for Review — not approved for implementation planning.
 Design directory: `docs/design/2026-07-24-manager-customers/`
 
 ## Goal And Success Criteria
@@ -32,13 +32,18 @@ The feature succeeds when:
   active tab, and lazy-loads manager workspaces.
 - `src/features/manager/manager-tabs.tsx` currently exposes a primary `users`
   tab.
-- `src/features/manager/users/user-role-management-tab.tsx` currently combines
-  a `management.users.list()` directory, role assignment/revocation, role
-  creation/editing, and permission grants/revocations in one component.
+- `src/features/manager/users/user-role-management-tab.tsx` now owns only the
+  user directory, assignable-role catalog, role assignment/revocation, and
+  read-only effective permission summary.
+- `src/features/manager/permissions/permission-management-tab.tsx` owns role
+  creation/editing and permission grants/revocations. The prerequisite
+  Permissions card is merged into `version/1.1.5` at `77727b9`.
+- `src/features/manager/access/role-permission-presentation.ts` is the existing
+  pure shared seam for curated permission-group presentation.
 - `src/features/manager/memberships/membership-management-tab.tsx` still uses
   the legacy user-oriented membership facade. That adjacent migration is not
   part of this customer-directory slice; new customer workspace state and
-  reads must nevertheless use the customer-first v0.1.21 facade.
+  reads must nevertheless use the customer-first v0.1.23 facade.
 - `src/features/users/user-labels.ts` accepts user-shaped identities and can
   expose IDs as display fallbacks. It is not a safe customer presentation
   contract because ghost customers have no user ID and raw customer IDs are
@@ -49,31 +54,26 @@ The feature succeeds when:
 - `src/i18n.ts` is the single English, Russian, and Hebrew locale registry.
 - `DESIGN_GUIDE.md` requires branded mobile-first manager layouts, safe wrapping,
   RTL support, and drawer/dialog detail surfaces instead of inline expansion.
-- `package.json` and `bun.lock` already pin `@class-kit/react` v0.1.21 at commit
-  `c0d1fc7a0f7eff77a17b3fbccc3944d19c74711d`.
-- The pinned SDK exposes `management.customers.list({ limit, cursor, status })`
+- `package.json` and `bun.lock` currently pin `@class-kit/react` v0.1.22.
+  Implementation must update both to v0.1.23 at
+  `a158bc588f5ec3421788475ccab2c5c2cb47ce9f`; this planning branch does not
+  change the dependency.
+- v0.1.23 exposes `management.customers.list({ limit, cursor, status })`
   with `nextCursor`, `management.customers.get(customerId)`, customer-first
   membership reads, and nullable `Customer.userId`.
-- The assignment requires a dedicated Permissions workspace to own role
-  creation and permission configuration before this redesign. That workspace is
-  not present on the current `version/1.1.5` base. Customer implementation must
-  therefore start only after the prerequisite is integrated.
-- The accepted ClassKit backend at
-  `2f3c6390e34f288cd349cb49312f2cb5e097db1a` does not expose one authority
-  matching the proposed page:
-  - customer list/get requires product role level 75;
-  - membership type, customer-grant, and ledger reads require level 75;
-  - linked-user get requires `users.read`;
-  - user-role assignment/revocation requires
-    `product_user_roles.manage`; and
-  - the complete role catalog requires level 75 or
-    `product_role_permissions.manage`.
-- The current product context derives `dashboard.can_manage_users` solely from
-  `product_user_roles.manage`. It can therefore authorize a page whose
-  customer, membership, user-read, or role-catalog calls will be denied, while
-  hiding customer reads from a level-75 manager who lacks that mutation key.
-  v0.1.21 exposes no granular live customer-read or membership-read signal and
-  no assignment-authorized role-catalog facade.
+- v0.1.23 adds live
+  `capabilities.dashboard.can_read_customers` and
+  `capabilities.dashboard.can_read_memberships`. Their predicates match the
+  protected customer and membership reads: current-product `customers.read`
+  and `memberships.read`, with the deliberate platform-level-75 alternative.
+- Live `capabilities.permissions` continues to contain only explicit active
+  product-role grants. It supplies `users.read` and
+  `product_user_roles.manage`; Noya must not infer customer or membership read
+  authority from that array, a role name, `can_manage_users`, or a numeric
+  level.
+- `management.users.roles.listAssignable()` is authorized by
+  `product_user_roles.manage` and does not require `users.read`,
+  role-definition authority, or a level threshold.
 
 ## User-Facing Behavior
 
@@ -85,27 +85,28 @@ The feature succeeds when:
   editing, permission-catalog configuration, or permission grant/revoke
   controls.
 - Do not use `dashboard.can_manage_users` as a proxy for the whole page. The
-  final integration requires independent, live signals matching the accepted
+  integration uses independent, live signals matching the released v0.1.23
   operation matrix:
 
-  | Surface / operation | Accepted backend authority | Required live website signal |
+  | Surface / operation | ClassKit authority | Live website signal |
   | --- | --- | --- |
-  | Customer list/get | Product role level 75 | Explicit customer-directory read signal |
-  | Membership context reads | Product role level 75 | Explicit membership-context read signal |
+  | Customer list/get | Current-product `customers.read` or platform level 75 | `dashboard.can_read_customers` |
+  | Membership context reads | Current-product `memberships.read` or platform level 75 | `dashboard.can_read_memberships` |
   | Linked-user get | `users.read` | `users.read` in live effective permissions |
-  | Role assign/revoke | `product_user_roles.manage` | `product_user_roles.manage` in live effective permissions |
-  | Complete assignable-role catalog | Level 75 or `product_role_permissions.manage` | Assignment-authorized catalog-read signal that does not imply configuration authority |
+  | Role assign/revoke | `product_user_roles.manage` | Live `dashboard.can_manage_users` and matching explicit permission |
+  | Complete assignable-role catalog | `product_user_roles.manage` | `dashboard.can_manage_users`; use `management.users.roles.listAssignable()` |
 
 - A cached manager snapshot may keep the enclosing shell visible but cannot
   positively authorize, expose, mount, or load any Customer data surface.
-- Show and mount Customers only when the final live customer-directory read
-  signal is present. Pass the other live signals independently so linked
+- Show and mount Customers only when live
+  `dashboard.can_read_customers` is true. Pass the other live signals
+  independently so linked
   identity, membership context, and access mutations never inherit authority
   from navigation visibility.
 - If customer access disappears while Customers is active, derive a safe
   effective tab before render, do not mount the workspace, and then repair the
   stored active tab.
-- The workspace receives and enforces `canManageCustomers` as a defensive
+- The workspace receives and enforces `canReadCustomers` as a defensive
   boundary. A denied state contains no customer data or controls.
 
 ### Directory, Status Filters, And Opaque Pagination
@@ -135,7 +136,7 @@ The feature succeeds when:
 - Disable forward navigation when `nextCursor` is null and backward navigation
   on the first page. A failed next-page request preserves the current page and
   cursor stack and offers retry.
-- Do not present page-local filtering as global customer search. v0.1.21 has no
+- Do not present page-local filtering as global customer search. v0.1.23 has no
   search contract, so this slice adds no search field.
 - Each row/card shows a safe customer label, supporting contact information
   when present, localized linked/unlinked state, localized active/inactive
@@ -179,7 +180,7 @@ The feature succeeds when:
 
 ### Membership Context
 
-- When the final live membership-context read signal is present, load the
+- When live `dashboard.can_read_memberships` is true, load the
   selected customer's grants with
   `management.memberships.listCustomerGrants(customerId)`, recent history with
   `management.memberships.listLedger({ customerId, limit })`, and membership
@@ -189,9 +190,8 @@ The feature succeeds when:
   list using localized event labels. Do not render internal IDs or raw metadata.
 - When membership-read authority is absent, show a localized explanation that
   membership context is not available to this manager and do not call the
-  membership facade. `memberships.manage` is not a valid read gate: the accepted
-  backend uses level 75 for these reads, while that permission names mutation
-  authority.
+  membership facade. `memberships.manage` is not a valid read gate and is not
+  consumed by this read-only section.
 - Membership context has its own loading, error, and retry state. Its failure
   does not hide customer identity or linked-access context.
 - The Customers workspace performs no membership grant, set, upgrade, revoke,
@@ -214,10 +214,10 @@ The feature succeeds when:
   - both authorities plus the assignment-authorized catalog read: read access
     and assignment/revocation; and
   - ghost: no linked-access calls or controls regardless of capabilities.
-- Load the complete assignable role catalog through the ClassKit read contract
-  established as an upstream prerequisite. The Permissions UI split alone does
-  not establish this contract. The read must be authorized for user-role
-  managers without conferring role-definition mutation authority.
+- When both `users.read` and `dashboard.can_manage_users` are live, load the
+  complete assignable role catalog through
+  `management.users.roles.listAssignable()`. Customers never calls
+  `management.roles`.
 - Assign and revoke only through
   `management.users.roles.assign({ userId, roleId })` and
   `management.users.roles.revoke({ userId, roleId })`.
@@ -229,9 +229,9 @@ The feature succeeds when:
   manage linked-user access but cannot configure role definitions. Requiring
   `can_manage_roles` for Customers would collapse the boundary back into the
   design this assignment replaces.
-- If the prerequisite role-catalog contract is still unavailable at
-  implementation time, stop rather than broadening authority, calling a raw
-  backend, hiding assignment, or presenting an empty catalog.
+- If v0.1.23 or `listAssignable()` is unavailable at implementation time, stop
+  rather than broadening authority, calling a raw backend, hiding assignment,
+  or presenting an empty catalog.
 - `userId` is the fail-closed access discriminator. `identityStatus` may label
   the record only when consistent with `userId`. If the SDK returns
   `identityStatus: "linked"` with `userId: null`, or `"unlinked"` with a
@@ -255,19 +255,19 @@ manager customer feature rather than leaking into the shared helper.
 
 - derive every positive Customer data signal from live ClassKit context, not
   `accessSnapshot`;
-- pass customer-directory, membership-read, linked-user-read, role-mutation,
-  and assignment-catalog availability independently;
+- pass `canReadCustomers`, `canReadMemberships`, `canReadUsers`, and
+  `canManageUsers` independently;
 - expose Customers to `ManagerTabs` only when live-authorized;
 - lazy-load and mount the workspace only when authorized; and
 - repair an invalid active tab before mounting any denied workspace.
 
 `ManagerTabs` owns navigation placement and labels but does not read ClassKit.
-The prerequisite Permissions workspace remains separately capability-gated.
+The merged Permissions workspace remains separately capability-gated.
 
-The existing mixed Users component is retired only after its role-definition
-responsibilities exist in Permissions. Customer implementation must not delete
-the sole working role configuration UI from the current base and claim the
-prerequisite is satisfied.
+Replace the current Users directory/assignment component with Customers.
+Permissions and the shared role-permission presentation module remain. Reuse
+the assignment behavior and pure permission-summary seam without moving
+role-definition ownership back into Customers.
 
 No new route, global state, persisted cursor cache, website data model, backend
 API, dependency, direct Supabase call, or raw Edge Function call is introduced.
@@ -314,30 +314,35 @@ Linked access adds:
 
 ```text
 management.users.get(userId)
+management.users.roles.listAssignable()
 management.users.roles.assign({ userId, roleId })
 management.users.roles.revoke({ userId, roleId })
-ClassKit prerequisite role-catalog read authorized for user-role managers
 ```
 
-Only exported v0.1.21 types are used for ClassKit records and inputs. The
-executor must confirm the installed dependency resolves to the pinned lockfile
-commit before relying on those types.
+Only exported v0.1.23 types are used for ClassKit records and inputs. The
+executor must update the dependency and lockfile, then confirm the installed
+dependency resolves to `a158bc588f5ec3421788475ccab2c5c2cb47ce9f`
+before relying on those types.
 
 ## Permissions, Security, And Privacy
 
-- The final live customer-directory read signal governs Customers navigation,
+- Live `dashboard.can_read_customers` governs Customers navigation,
   mounting, and customer list/get calls.
-- The final live membership-context read signal separately governs membership
-  reads.
+- Live `dashboard.can_read_memberships` separately governs membership reads.
 - Live `users.read` governs linked-user reads.
-- Live `product_user_roles.manage` governs assignment/revocation only after
-  linked identity is readable and an assignment-authorized catalog is
-  available.
+- Live `dashboard.can_manage_users` plus explicit
+  `product_user_roles.manage` governs catalog loading and assignment/revocation
+  only after linked identity is readable.
 - Role-definition capability does not grant or substitute for customer
   authority. `dashboard.can_manage_roles` remains owned by Permissions.
 - Cached manager access is a shell-loading optimization, never positive
   authority for customer or service data.
 - Frontend guards improve UX but do not replace ClassKit server authorization.
+- A `ClassKitManagerApiError` with code `forbidden` is authoritative evidence
+  that cached or live context is stale. Clear the denied section's data, stop
+  further calls for that section, and show localized access-changed recovery
+  copy; never continue rendering previously loaded protected data under a
+  failed authorization response.
 - Do not log customer records, contact fields, membership history, user access
   records, or raw API error payloads.
 - Do not expose metadata, internal IDs, raw permission keys, or unknown origin
@@ -345,8 +350,17 @@ commit before relying on those types.
 
 ## Failure And Recovery Behavior
 
-- Missing client or denied customer authority produces an unavailable/denied
+- Missing client or absent customer authority produces an unavailable/denied
   state and no customer calls.
+- A customer list/get `forbidden` response clears customer pages and selection
+  and replaces the workspace with an access-changed state. It does not retain a
+  stale directory merely because `can_read_customers` has not refreshed yet.
+- A membership-read `forbidden` response clears only membership context and
+  shows access-changed recovery in that section. Customer identity and
+  permitted linked access remain available.
+- A linked-user, catalog, assignment, or revoke `forbidden` response clears
+  affected linked-access data and controls while preserving the customer
+  record.
 - Initial list failure shows a retry state. Refresh failure preserves the last
   successful page and marks it stale.
 - Next-page failure preserves the current page and does not push a cursor.
@@ -417,15 +431,8 @@ interaction matrix rows explicitly. Do not start a server or fabricate evidence.
 
 ## Implementation Constraints And Seams
 
-- The Permissions workspace and the ClassKit assignment-authorized
-  role-catalog read are separate prerequisites, not hidden work inside
-  Customers.
-- Implementation planning is blocked until ClassKit documents and tests live
-  signals for customer-directory reads and membership-context reads, exposes
-  `users.read` and `product_user_roles.manage` to the website's live capability
-  decision, and supplies a complete assignable-role catalog readable by
-  assignment managers without role-definition authority. The consuming SDK
-  version and lockfile commit must be named before planning resumes.
+- Merged Permissions at `77727b9` and ClassKit v0.1.23 are satisfied
+  prerequisites. Do not undo their ownership boundaries.
 - The customer presentation helper is the only reusable seam required now.
   Do not build a global customer store, generic data-fetching framework, or
   speculative service-card abstraction.
@@ -447,21 +454,17 @@ interaction matrix rows explicitly. Do not start a server or fabricate evidence.
 - Current page, capability-cache, localization, and styling facts come from the
   repository files named above.
 - Exact customer, membership, cursor, nullable-link, and user-role method shapes
-  were verified against the v0.1.21 tag at the commit pinned by `bun.lock`.
+  were verified against v0.1.23 at
+  `a158bc588f5ec3421788475ccab2c5c2cb47ce9f`.
 - The status-filter/page-stack model, no-search decision, independent detail
   context failures, live-only authorization, and generic unknown-origin label
   are repository-grounded design inferences.
-- Treating the separate Permissions workspace and an independently authorized
-  role-catalog read as execution prerequisites follows the assignment's
-  sequencing requirement and the current repository's lack of that boundary.
-- Backend authorization evidence comes from accepted ClassKit API commit
-  `2f3c6390e34f288cd349cb49312f2cb5e097db1a`:
-  `class-kit-customers`, `class-kit-memberships`,
-  `class-kit-product-users`, `class-kit-product-roles`,
-  `class-kit-product-user-roles`, and `class-kit-product-context`.
+- Released upstream evidence is ClassKit API `bf50f4d`, SDK v0.1.23 at
+  `a158bc5`, canonical docs `168cfc9`, and production migration
+  `20260724085642`. Those contracts resolve the prior read-capability and
+  assignable-catalog blockers.
 
 ## Open Questions
 
-None. The assignment fixes the product boundary. The missing Permissions
-workspace and granular upstream authorization/read contracts are blocking
-execution prerequisites, not product choices this website may redefine.
+None. The assignment and released v0.1.23 contracts fix the product and
+authorization boundaries.

@@ -3,7 +3,7 @@
 ## Status
 
 - Spec: `docs/design/2026-07-24-manager-customers/spec.md`
-- State: Working Draft
+- State: Ready for Review
 - Approval: Not Approved
 
 ## Documented Decisions
@@ -17,7 +17,7 @@
 - Customers is positively authorized only by the required live
   customer-directory read signal; cached access may preserve the shell but
   cannot expose, mount, or load the workspace.
-- The directory uses the v0.1.21 customer facade with All/Active/Inactive
+- The directory uses the v0.1.23 customer facade with All/Active/Inactive
   server filters and an in-memory opaque cursor page stack. It does not offer a
   misleading page-local search field.
 - Selection and read-only membership context are keyed by `customerId`.
@@ -41,27 +41,20 @@
 - All visible behavior is localized in English, Russian, and Hebrew and remains
   mobile-first, theme-safe, and RTL-safe.
 
-## Execution Prerequisites
+## Resolved Execution Prerequisites
 
-- The current base does not contain the assignment-required Permissions
-  workspace. Customer implementation cannot remove the mixed Users composition
-  until Permissions owns all role creation/editing and permission
-  configuration behavior.
-- The accepted backend requires level 75 for customer list/get and read-only
-  membership context, `users.read` for linked-user get,
-  `product_user_roles.manage` for assignment/revocation, and level 75 or
-  `product_role_permissions.manage` for the complete role catalog.
-- Current `dashboard.can_manage_users` represents only
-  `product_user_roles.manage`. It is neither a valid customer-read signal nor a
-  membership-read, user-read, or complete role-catalog signal.
-- Before implementation planning resumes, ClassKit must document and test
-  independent live customer-read, membership-read, linked-user-read,
-  role-mutation, and assignment-catalog signals/facades, and identify the
-  consuming SDK version and lockfile commit. The assignment-authorized catalog
-  must not grant role-definition mutation authority.
-- These are blocking upstream prerequisites. The website must not broaden
-  capability requirements, infer level, probe raw endpoints, call a raw
-  backend, or degrade the accepted customer/role behavior.
+- Permissions is merged into `version/1.1.5` at `77727b9` and exclusively owns
+  role definition and permission configuration.
+- ClassKit v0.1.23 at `a158bc5` supplies live
+  `dashboard.can_read_customers` and `dashboard.can_read_memberships` with
+  predicates matching the protected read endpoints.
+- Live explicit `users.read` and `product_user_roles.manage` grants remain in
+  `capabilities.permissions`; Noya does not infer them.
+- `management.users.roles.listAssignable()` is authorized by
+  `product_user_roles.manage` without `users.read`, role-definition authority,
+  or a level threshold.
+- Implementation updates the existing dependency and lockfile from v0.1.22 to
+  v0.1.23. This planning branch does not update the pin.
 
 ## Questions
 
@@ -78,13 +71,8 @@ this feature may redefine.
   prerequisite sequencing; partial failures; privacy; localization;
   responsive/RTL overlay behavior; verification feasibility.
 - New questions added: None.
-- Blocking findings:
-  - Permissions is not integrated on the current base.
-  - v0.1.21 and current product context do not expose live signals matching the
-    accepted backend's customer-read and membership-read policies.
-  - The SDK has no role catalog independently authorized for assignment
-    managers.
-- Remaining non-blocking risks after those blockers are resolved:
+- Blocking findings: None.
+- Remaining non-blocking risks:
   - The repository has no automated interaction-test harness.
   - Full browser evidence depends on an already-running approved server and
     suitable linked/ghost, active/inactive, paginated, and capability fixtures.
