@@ -61,7 +61,7 @@ export function CustomerPicker({
   }
 
   return (
-    <div className={compact ? "grid gap-3" : "rounded-[1.2rem] border border-blush/22 bg-background/30 p-3 sm:p-4"}>
+    <div className={compact ? "grid gap-3" : "grid gap-3 rounded-[1.2rem] border border-blush/22 bg-background/30 p-3 sm:p-4"}>
       {!compact && (
         <div className="flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-full bg-blush-strong/18 text-blush-strong">
@@ -120,7 +120,7 @@ export function CustomerPicker({
           {t("manager.customers.empty")}
         </p>
       ) : (
-        <div className={compact ? "grid gap-2" : "grid max-h-[38rem] gap-2 overflow-y-auto pe-1"}>
+        <div className={compact ? "grid max-h-80 gap-2 overflow-y-auto pe-1" : "grid max-h-[38rem] gap-2 overflow-y-auto pe-1"}>
           {directory.records.map((customer) => {
             const selected = customer.customerId === selectedCustomerId;
             const label = getCustomerLabel(customer, t("manager.customers.unnamed"));

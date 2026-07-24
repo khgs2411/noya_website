@@ -60,6 +60,8 @@ function getAttendanceErrorMessage(
   fallbackKey: string,
 ) {
   const message = error instanceof Error ? error.message : "";
+  const code =
+    error instanceof ClassKitManagerApiError ? error.code : null;
 
   if (message === "walk_in_has_live_registration") {
     return t("manager.attendance.errors.walkInHasLiveRegistration");
@@ -69,7 +71,7 @@ function getAttendanceErrorMessage(
     return t("manager.attendance.errors.participantAlreadyExists");
   }
 
-  if (message === "customer_inactive") {
+  if (code === "customer_inactive" || message === "customer_inactive") {
     return t("manager.attendance.errors.customerInactive");
   }
 
@@ -300,13 +302,18 @@ export function ClassAttendanceForm({
       setRegistered(registeredResult.registrations);
       setLoadStatus("loaded");
 
-      const registeredCustomerIds = new Set(
+      const labelledRegistrationIds = new Set(
         registeredResult.registrations
-          .filter((registration) => registration.customer)
+          .filter((registration) =>
+            getRegistrationLabel(
+              registration,
+              t("manager.attendance.unknownParticipant"),
+            ),
+          )
           .map((registration) => registration.id),
       );
       const customerIds = [...new Set(attendanceResult.participants
-        .filter((participant) => participant.customer_id && !registeredCustomerIds.has(participant.registration_id ?? ""))
+        .filter((participant) => participant.customer_id && !labelledRegistrationIds.has(participant.registration_id ?? ""))
         .map((participant) => participant.customer_id!))];
       const customerSettled = canReadCustomers && !customerAccessChanged
         ? await Promise.allSettled(customerIds.map(async (customerId) => {
@@ -315,7 +322,13 @@ export function ClassAttendanceForm({
         }))
         : [];
       if (generation !== loadGenerationRef.current) return;
-      if (customerSettled.some((result) => result.status === "rejected" && result.reason instanceof ClassKitManagerApiError && result.reason.code === "forbidden")) {
+      const customerReadForbidden = customerSettled.some(
+        (result) =>
+          result.status === "rejected" &&
+          result.reason instanceof ClassKitManagerApiError &&
+          result.reason.code === "forbidden",
+      );
+      if (customerReadForbidden) {
         clearCustomerDirectoryForForbidden();
         setCustomerLabels(new Map());
       } else {
@@ -325,10 +338,14 @@ export function ClassAttendanceForm({
         }
       }
 
-      const resolvedCustomerIds = new Set(customerSettled.flatMap((result) => result.status === "fulfilled" ? [result.value[0]] : []));
+      const resolvedCustomerIds = new Set(customerReadForbidden ? [] : customerSettled.flatMap((result) => result.status === "fulfilled" ? [result.value[0]] : []));
       const userIds = canReadUsers && !userAccessChanged
         ? [...new Set(attendanceResult.participants
-          .filter((participant) => participant.user_id && (!participant.customer_id || !resolvedCustomerIds.has(participant.customer_id)))
+          .filter((participant) =>
+            participant.user_id &&
+            !labelledRegistrationIds.has(participant.registration_id ?? "") &&
+            (!participant.customer_id || !resolvedCustomerIds.has(participant.customer_id)),
+          )
           .map((participant) => participant.user_id!))]
         : [];
       const userSettled = await Promise.allSettled(userIds.map(async (userId) => {

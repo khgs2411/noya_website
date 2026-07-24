@@ -534,6 +534,8 @@ export function MembershipManagementTab({
   );
 
   useEffect(() => {
+    if (membershipAccessChangedRef.current) return;
+
     const timeoutId = window.setTimeout(() => {
       void loadMembershipTypes();
     }, 0);
@@ -603,9 +605,10 @@ export function MembershipManagementTab({
             selectedCustomerRef.current === customerId
           ));
         if (!canCommit) return { ok: false as const };
-        const message = error instanceof Error ? error.message : "";
+        const code =
+          error instanceof ClassKitManagerApiError ? error.code : "";
         setOperationError(
-          message === "customer_inactive"
+          code === "customer_inactive"
             ? t("manager.memberships.customerInactive")
             : error instanceof Error
               ? error.message
