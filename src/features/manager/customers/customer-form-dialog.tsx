@@ -1,6 +1,6 @@
 import type { CreateCustomerInput, Customer, UpdateCustomerInput } from "@class-kit/react";
 import { X } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,51 @@ function CustomerFormDialogContent({
     mode === "edit" ? fieldsFromCustomer(customer) : emptyFields,
   );
   const [validationError, setValidationError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusId = window.setTimeout(() => {
+      dialogRef.current
+        ?.querySelector<HTMLElement>("button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], input:not([disabled])")
+        ?.focus();
+    }, 0);
+    return () => {
+      window.clearTimeout(focusId);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (!submitting) onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], input:not([disabled])",
+      );
+      if (!focusable?.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose, submitting]);
 
   function updateField(key: keyof CustomerFields, value: string) {
     setFields((current) => ({ ...current, [key]: value }));
@@ -123,6 +168,7 @@ function CustomerFormDialogContent({
       onMouseDown={submitting ? undefined : onClose}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}

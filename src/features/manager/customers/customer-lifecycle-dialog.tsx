@@ -1,4 +1,5 @@
 import type { Customer } from "@class-kit/react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,56 @@ export function CustomerLifecycleDialog({
   onConfirm: () => Promise<{ ok: boolean }>;
 }) {
   const { t } = useTranslation();
+  const dialogRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open || !customer) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusId = window.setTimeout(() => {
+      dialogRef.current
+        ?.querySelector<HTMLElement>("button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], input:not([disabled])")
+        ?.focus();
+    }, 0);
+    return () => {
+      window.clearTimeout(focusId);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [customer, open]);
+
+  useEffect(() => {
+    if (!open || !customer) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (!submitting) onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], input:not([disabled])",
+      );
+      if (!focusable?.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [customer, onClose, open, submitting]);
+
   if (!open || !customer) return null;
 
   const title = t(`manager.customerActions.lifecycle.${action}.title`);
@@ -41,6 +92,7 @@ export function CustomerLifecycleDialog({
       onMouseDown={submitting ? undefined : onClose}
     >
       <section
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
