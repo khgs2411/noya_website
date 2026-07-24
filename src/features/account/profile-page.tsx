@@ -96,23 +96,57 @@ function ProfileInput({
   value,
   onChange,
   autoComplete,
+  type = "text",
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   autoComplete: string;
+  type?: "text" | "date";
 }) {
   return (
     <label className="grid min-w-0 gap-2">
       <span className="text-sm font-medium text-foreground/68">{label}</span>
       <input
         className="min-h-12 rounded-xl border border-blush/24 bg-background/54 px-4 text-base text-foreground outline-none transition-colors [overflow-wrap:anywhere] placeholder:text-foreground/34 focus:border-blush-strong"
+        type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         autoComplete={autoComplete}
+        dir={type === "date" ? "ltr" : undefined}
       />
     </label>
   );
+}
+
+function isValidDateOnly(value: string) {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!parts) return false;
+
+  const year = Number(parts[1]);
+  const month = Number(parts[2]);
+  const day = Number(parts[3]);
+
+  return (
+    year > 0 &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= new Date(year, month, 0).getDate()
+  );
+}
+
+function getBirthDateInputValue(value: unknown) {
+  return typeof value === "string" && isValidDateOnly(value) ? value : "";
+}
+
+function getTodayDateOnly() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function isOnboardingComplete(profile: ProductProfileResponse | null) {
@@ -180,6 +214,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [displayNameInput, setDisplayNameInput] = useState("");
   const [phoneNumberInput, setPhoneNumberInput] = useState("");
+  const [birthDateInput, setBirthDateInput] = useState("");
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>("name");
 
   async function handleSignOut() {
@@ -213,6 +248,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     setProfile(result.data);
     setDisplayNameInput(result.data.user.display_name ?? "");
     setPhoneNumberInput(result.data.user.phone_number ?? "");
+    setBirthDateInput(getBirthDateInputValue(result.data.user.metadata.birth_date));
     setLoadStatus("loaded");
     setErrorMessage(null);
 
@@ -300,6 +336,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     displayName: string;
     phoneNumber: string;
     markOnboardingComplete: boolean;
+    birthDate?: string;
   }) {
     if (!client || !session || saveStatus === "saving") return false;
 
@@ -312,15 +349,30 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
       return false;
     }
 
+    if (
+      input.birthDate &&
+      (!isValidDateOnly(input.birthDate) || input.birthDate > getTodayDateOnly())
+    ) {
+      setSaveStatus("error");
+      setSaveErrorMessage(t("profile.validation.birthDateFuture"));
+      return false;
+    }
+
     setSaveStatus("saving");
     setSaveErrorMessage(null);
 
     const result = await client.profile.update({
       displayName,
       phoneNumber: phoneNumber || null,
-      metadata: input.markOnboardingComplete
+      metadata:
+        input.markOnboardingComplete || input.birthDate !== undefined
         ? {
-            onboarding_completed: true,
+            ...(input.markOnboardingComplete
+              ? { onboarding_completed: true }
+              : {}),
+            ...(input.birthDate !== undefined
+              ? { birth_date: input.birthDate || null }
+              : {}),
           }
         : undefined,
     });
@@ -346,6 +398,9 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     );
     setDisplayNameInput(result.data.profile.display_name ?? "");
     setPhoneNumberInput(result.data.profile.phone_number ?? "");
+    setBirthDateInput(
+      getBirthDateInputValue(result.data.product_user.metadata.birth_date),
+    );
     setSaveStatus("saved");
     void loadProfile({ silent: true });
     return true;
@@ -357,6 +412,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
       displayName: displayNameInput,
       phoneNumber: phoneNumberInput,
       markOnboardingComplete: true,
+      birthDate: birthDateInput,
     });
   }
 
@@ -624,7 +680,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
                         </div>
                       </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid gap-4 md:grid-cols-3">
                         <ProfileInput
                           label={t("profile.displayName")}
                           value={displayNameInput}
@@ -644,6 +700,17 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
                             setSaveErrorMessage(null);
                           }}
                           autoComplete="tel"
+                        />
+                        <ProfileInput
+                          label={t("profile.birthDate")}
+                          value={birthDateInput}
+                          onChange={(value) => {
+                            setBirthDateInput(value);
+                            setSaveStatus("idle");
+                            setSaveErrorMessage(null);
+                          }}
+                          autoComplete="bday"
+                          type="date"
                         />
                       </div>
 

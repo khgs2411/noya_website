@@ -804,6 +804,7 @@ const resources = {
         detailsTitle: 'Your details',
         detailsBody: 'Keep your information up to date.',
         displayName: 'Name',
+        birthDate: 'Date of birth',
         missingDisplayName: 'Name not set',
         saveProfile: 'Save changes',
         saved: 'Profile saved.',
@@ -825,6 +826,7 @@ const resources = {
         onboardingIncomplete: 'Needs details',
         validation: {
           displayNameRequired: 'Name is required.',
+          birthDateFuture: 'Date of birth cannot be in the future.',
         },
         studio: 'Studio',
         classAccess: 'Class access',
@@ -1830,6 +1832,7 @@ const resources = {
         detailsTitle: 'Ваши данные',
         detailsBody: 'Поддерживайте информацию в актуальном состоянии.',
         displayName: 'Имя',
+        birthDate: 'Дата рождения',
         missingDisplayName: 'Имя не указано',
         saveProfile: 'Сохранить изменения',
         saved: 'Профиль сохранен.',
@@ -1851,6 +1854,7 @@ const resources = {
         onboardingIncomplete: 'Нужны данные',
         validation: {
           displayNameRequired: 'Имя обязательно.',
+          birthDateFuture: 'Дата рождения не может быть в будущем.',
         },
         studio: 'Студия',
         classAccess: 'Доступ к занятиям',
@@ -2856,6 +2860,7 @@ const resources = {
         detailsTitle: 'הפרטים שלך',
         detailsBody: 'שמירה על פרטי קשר מעודכנים.',
         displayName: 'שם',
+        birthDate: 'תאריך לידה',
         missingDisplayName: 'לא הוגדר שם',
         saveProfile: 'שמירת שינויים',
         saved: 'הפרופיל נשמר.',
@@ -2877,6 +2882,7 @@ const resources = {
         onboardingIncomplete: 'נדרשים פרטים',
         validation: {
           displayNameRequired: 'שם הוא שדה חובה.',
+          birthDateFuture: 'תאריך הלידה לא יכול להיות בעתיד.',
         },
         studio: 'סטודיו',
         classAccess: 'גישה לשיעורים',
