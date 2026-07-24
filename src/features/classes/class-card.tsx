@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { CalendarClock, Clock3, Loader2, MapPin } from "lucide-react";
+import { CalendarClock, Clock3, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { ClassViewItem } from "@/features/classes/class-types";
+import { LocationDisplay } from "@/features/locations/location-display";
 import { cn } from "@/lib/utils";
 
 type ClassCardProps = {
@@ -86,12 +87,12 @@ export function ClassCard({
           </div>
         </div>
 
-        {item.location && (
-          <p className="mt-3 flex items-start gap-2 text-sm text-foreground/68">
-            <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <span className="break-words">{item.location}</span>
-          </p>
-        )}
+        <LocationDisplay
+          text={item.location}
+          snapshot={item.locationSnapshot}
+          variant="compact"
+          className="mt-3 flex items-start gap-2 text-sm text-foreground/68"
+        />
 
         {item.capacityLabel && (
           <p className="mt-3 text-sm text-foreground/68">{item.capacityLabel}</p>

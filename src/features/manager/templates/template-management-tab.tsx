@@ -12,6 +12,7 @@ import { useManagedTemplates } from "@/features/manager/templates/use-managed-te
 
 type TemplateManagementTabProps = {
   canManageTemplates: boolean;
+  canAutocompleteLocations: boolean;
 };
 
 type FormSurface =
@@ -21,6 +22,7 @@ type FormSurface =
 
 export function TemplateManagementTab({
   canManageTemplates,
+  canAutocompleteLocations,
 }: TemplateManagementTabProps) {
   const { t } = useTranslation();
   const { client } = useProductContext();
@@ -172,6 +174,8 @@ export function TemplateManagementTab({
             open={formSurface !== null}
             mode={formSurface?.mode ?? "create"}
             template={formTemplate}
+            client={client}
+            canAutocompleteLocations={canAutocompleteLocations}
             submitting={
               state.mutationStatus === "creating" ||
               state.mutationStatus === "updating"

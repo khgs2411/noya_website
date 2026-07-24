@@ -19,6 +19,7 @@ export type ClassViewItem = {
   startsAt: string;
   endsAt: string;
   location: string | null;
+  locationSnapshot: LocationSnapshot | null;
   capacity: number;
   registeredUsersCount?: number;
   membershipRequirement?: MembershipRequirementValue;
@@ -40,3 +41,4 @@ export type ClassViewDateGroup = {
   label: string;
   items: ClassViewItem[];
 };
+import type { LocationSnapshot } from "@class-kit/react";

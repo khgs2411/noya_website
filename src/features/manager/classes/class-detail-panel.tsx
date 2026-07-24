@@ -1,10 +1,12 @@
 import type { ClassKitClient, ManagedClass } from "@class-kit/react";
+import type { ReactNode } from "react";
 import { Ban, Edit3, Link2, Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ClassAttendanceForm } from "@/features/manager/attendance/class-attendance-form";
 import { PendingRegistrationsPanel } from "@/features/manager/registrations/pending-registrations-panel";
+import { LocationDisplay } from "@/features/locations/location-display";
 
 type ClassDetailPanelProps = {
   client: ClassKitClient | null;
@@ -22,7 +24,7 @@ type ClassDetailPanelProps = {
   signupLinkNotice: string | null;
 };
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="grid gap-1 rounded-xl border border-blush/24 bg-background/46 p-3 sm:grid-cols-[8rem_1fr]">
       <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
@@ -107,7 +109,13 @@ export function ClassDetailPanel({
           />
           <DetailRow
             label={t("manager.detail.location")}
-            value={managedClass.location ?? t("manager.detail.noLocation")}
+            value={managedClass.location?.trim() || managedClass.location_snapshot?.label ? (
+              <LocationDisplay
+                text={managedClass.location}
+                snapshot={managedClass.location_snapshot}
+                variant="detailed"
+              />
+            ) : t("manager.detail.noLocation")}
           />
           {description && (
             <DetailRow

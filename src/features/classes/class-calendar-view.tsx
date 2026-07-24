@@ -3,6 +3,7 @@ import { Clock3, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { ClassViewItem } from "@/features/classes/class-types";
+import { LocationDisplay } from "@/features/locations/location-display";
 import {
   getCalendarDays,
   getLocalDateKey,
@@ -80,6 +81,12 @@ function CalendarClassButton({
           )}
         </span>
         <span className="block break-words text-foreground/68">{item.name}</span>
+        <LocationDisplay
+          text={item.location}
+          snapshot={item.locationSnapshot}
+          variant="compact"
+          className="mt-1 flex items-start gap-1.5 text-[0.68rem] text-foreground/58 xl:text-xs"
+        />
         {item.statusLabel && (
           <span
             className={cn(

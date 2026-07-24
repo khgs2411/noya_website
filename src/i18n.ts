@@ -39,6 +39,9 @@ const resources = {
       theme: { toggle: 'Toggle theme', light: 'Light', dark: 'Dark' },
       nav: { about: 'About', work: 'Work', classes: 'Classes', lessons: 'Lessons', contact: 'Contact' },
       actions: { readMore: 'Read more', readLess: 'Show less', close: 'Close', back: 'Go back', save: 'Save', cancel: 'Cancel', retry: 'Retry' },
+      location: {
+        fieldLabel: 'Location', suggestionsLabel: 'Location suggestions', loading: 'Finding location suggestions…', empty: 'No suggestions found. You can keep your text.', unavailable: 'Suggestions are unavailable right now. You can keep your text.', freeTextHint: 'Type a location or keep free text.', selected: 'Selected location', googleMaps: 'Google Maps', waze: 'Waze', googleMapsAria: 'Get directions to {{location}} with Google Maps', wazeAria: 'Get directions to {{location}} with Waze', attribution: 'Location sources',
+      },
       account: { eyebrow: 'Account', title: 'Account', open: 'Open account' },
       documents: {
         eyebrow: 'Documents',
@@ -1017,6 +1020,9 @@ const resources = {
       theme: { toggle: 'Сменить тему', light: 'Светлая', dark: 'Темная' },
       nav: { about: 'Обо мне', work: 'Работы', classes: 'Занятия', lessons: 'Расписание', contact: 'Контакт' },
       actions: { readMore: 'Читать дальше', readLess: 'Свернуть', close: 'Закрыть', back: 'Назад', save: 'Сохранить', cancel: 'Отмена', retry: 'Повторить' },
+      location: {
+        fieldLabel: 'Место', suggestionsLabel: 'Варианты места', loading: 'Ищем варианты места…', empty: 'Варианты не найдены. Вы можете оставить свой текст.', unavailable: 'Варианты сейчас недоступны. Вы можете оставить свой текст.', freeTextHint: 'Введите место или оставьте свободный текст.', selected: 'Выбранное место', googleMaps: 'Google Maps', waze: 'Waze', googleMapsAria: 'Построить маршрут до {{location}} в Google Maps', wazeAria: 'Построить маршрут до {{location}} в Waze', attribution: 'Источники места',
+      },
       account: { eyebrow: 'Аккаунт', title: 'Аккаунт', open: 'Открыть аккаунт' },
       documents: {
         eyebrow: 'Документы',
@@ -1995,6 +2001,9 @@ const resources = {
       theme: { toggle: 'החלפת מצב תצוגה', light: 'בהיר', dark: 'כהה' },
       nav: { about: 'עליי', work: 'עבודות', classes: 'שיעורים', lessons: 'מערכת שיעורים', contact: 'יצירת קשר' },
       actions: { readMore: 'קראי עוד', readLess: 'סגירה', close: 'סגירה', back: 'חזרה', save: 'שמירה', cancel: 'ביטול', retry: 'ניסיון חוזר' },
+      location: {
+        fieldLabel: 'מיקום', suggestionsLabel: 'הצעות למיקום', loading: 'מחפשות הצעות למיקום…', empty: 'לא נמצאו הצעות. אפשר לשמור את הטקסט שלך.', unavailable: 'הצעות אינן זמינות כרגע. אפשר לשמור את הטקסט שלך.', freeTextHint: 'אפשר להקליד מיקום או להשאיר טקסט חופשי.', selected: 'המיקום שנבחר', googleMaps: 'Google Maps', waze: 'Waze', googleMapsAria: 'קבלת ניווט אל {{location}} ב-Google Maps', wazeAria: 'קבלת ניווט אל {{location}} ב-Waze', attribution: 'מקורות המיקום',
+      },
       account: { eyebrow: 'חשבון', title: 'חשבון', open: 'פתיחת חשבון' },
       documents: {
         eyebrow: 'מסמכים',
