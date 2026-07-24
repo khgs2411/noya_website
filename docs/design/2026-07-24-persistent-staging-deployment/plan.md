@@ -1,6 +1,7 @@
 # Persistent Staging Deployment Implementation Plan Set
 
-**Approved Source:** `.symphony/assignment.md` harness-accepted requirements; `spec.md` remains Ready for Review and supplies audited design detail
+**Canonical Execution Source:** `spec.md`, `agenda.md`, this roadmap, and the
+four chunk plans; no Symphony mission file is required
 **Agenda:** `agenda.md`
 **Pseudocode:** Absent
 **Context:** `README.md` and `DESIGN_GUIDE.md`
@@ -17,10 +18,14 @@ card.
 
 ## Source Artifacts And Repository Evidence
 
-- `.symphony/assignment.md` is the harness-accepted requirements source and
-  fixes the implementation baseline at `version/1.1.5`, commit `4c9f110`.
-- `spec.md` and `agenda.md` contain the resolved hosting, branch, credential,
-  ClassKit, Supabase Auth, routing, PWA, promotion, and evidence decisions.
+- `spec.md` and `agenda.md` are the complete committed requirements and design
+  source. Together with this roadmap and its four chunks, they contain every
+  hosting, branch, credential, ClassKit, Supabase Auth, routing, PWA,
+  promotion, authority, and evidence decision needed for execution.
+- The implementation baseline is the resolved `version/1.1.5` commit that
+  contains this complete approved artifact set. Commit `4c9f110` is only the
+  original repository-inspection and production-workflow comparison snapshot;
+  it is not the required implementation branch tip.
 - `spec-audit.md` ends with `Verdict: Ready for Development`.
 - `.github/workflows/deploy-pages.yml` is the untouched production workflow.
 - `vite.config.ts` owns the current `base: "./"` production behavior.
@@ -49,8 +54,8 @@ Missing artifacts:
 
 ## Design Readiness
 
-- Accepted requirements source verified: Yes. The design artifacts remain
-  Ready for Review and are not represented as user-approved.
+- Canonical committed source verified: Yes. The spec, agenda, roadmap, chunks,
+  and audits are self-contained and require no `.symphony` files at execution.
 - Design paths verified: Yes.
 - Pseudocode: Absent; no source-shape ambiguity requires it.
 - Design audit: Ready for Development.
@@ -247,8 +252,9 @@ target-specific authority.
 
 ## Execution Handoff
 
-Load the assignment, spec, agenda, audits, root plan, and current chunk before
-acting. Execute 01 → 02 → 03 → 04. Stop when:
+Load the committed spec, agenda, both audits, root plan, and current chunk
+before acting. Execute 01 → 02 → 03 → 04. No `.symphony` mission artifact is
+an execution input. Stop when:
 
 - the production environment is not verifiably master-only;
 - the exact Cloudflare hostname is unavailable;

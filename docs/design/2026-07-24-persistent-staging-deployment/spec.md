@@ -1,6 +1,7 @@
 # Persistent Staging Deployment Design
 
-Status: Ready for Review — not approved for implementation planning.
+Status: Ready for Review — canonical design source; implementation requires
+approval of the complete audited plan set.
 Design directory: `docs/design/2026-07-24-persistent-staging-deployment/`
 
 ## Goal And Success Criteria

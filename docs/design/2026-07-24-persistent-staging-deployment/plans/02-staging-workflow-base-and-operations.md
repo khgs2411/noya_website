@@ -1,8 +1,8 @@
 # Chunk 02: Staging Workflow, Public Base, And Operations
 
 **Plan Set:** `../plan.md`
-**Approved Source:** `.symphony/assignment.md` accepted requirements;
-`../spec.md` supplies audited design detail
+**Canonical Source:** `../spec.md`, `../agenda.md`, and `../plan.md`; no
+Symphony mission file is required
 **Status:** Ready for Review
 **Depends on:** Chunk 01
 **Enables:** Chunk 03
@@ -129,7 +129,9 @@ unchanged.
 - `if rg -n 'environment:[[:space:]]*github-pages|secrets\\.CLASS_KIT_SDK_DEPLOY_KEY|npm version|git commit|git push|pages:[[:space:]]*write|id-token:[[:space:]]*write|actions/deploy-pages|workflow_dispatch' .github/workflows/deploy-staging.yml; then exit 1; fi`
   — expect exit 0 with no forbidden staging behavior.
 - `git diff --exit-code 4c9f110 -- .github/workflows/deploy-pages.yml`
-  — expect exit 0; production workflow unchanged from assignment baseline.
+  — expect exit 0; production workflow unchanged from the original
+  repository-inspection snapshot. This does not require `4c9f110` to be the
+  implementation branch tip.
 - `VITE_PUBLIC_BASE=/unexpected bun run build` with stdout/stderr captured to a
   temporary log
   — expect non-zero.

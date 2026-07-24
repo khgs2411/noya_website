@@ -4,7 +4,7 @@
 
 - Spec: `docs/design/2026-07-24-persistent-staging-deployment/spec.md`
 - State: Ready for Review
-- Approval: Not Approved
+- Approval: Ready for plan-set review; not approved for execution
 
 ## Documented Decisions
 
@@ -16,14 +16,14 @@
   isolated ClassKit product data and permissions, reproducible promotion flow,
   and complete route/auth/signup/PWA verification.
 - A staging subpath in the production Pages artifact is excluded by the
-  assignment because it cannot isolate deployment replacement.
+  canonical design because it cannot isolate deployment replacement.
 - The website continues to use `@class-kit/react`; product identity, origin
   validation, auth policy, redirects, permissions, and data remain
   ClassKit-owned.
-- The operator is unavailable during this autonomous planning run. Material
-  choices below are resolved by the planner lead against the assignment,
-  repository, pinned SDK, and current primary hosting documentation, then
-  challenged by the required design and audit gates.
+- Material choices below were resolved against the repository, pinned SDK, and
+  primary hosting documentation, then challenged by the recorded design and
+  audit gates. This agenda and `spec.md` preserve those decisions without
+  requiring mission-ledger context.
 
 ## Questions
 

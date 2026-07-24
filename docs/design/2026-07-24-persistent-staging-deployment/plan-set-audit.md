@@ -1,274 +1,180 @@
-# Persistent Staging Deployment Implementation Plan-Set Final Audit
+# Persistent Staging Deployment Plan-Set Rework Audit
 
-## Audit Mode: Full
+## Audit Mode: Focused Rework
 
-Rationale: This final follow-up verifies the last ClassKit
-fixture-authorization blocker after the complete cross-system plan had already
-closed its production, workflow, evidence, external-authority, and sequencing
-findings.
+Rework cycle 1 is limited to the execution-source, implementation-baseline,
+and status-metadata delta requested by reviewer feedback
+`6a638f9d14924559264d3e35`. Previously accepted domain, hosting, production
+guardrail, workflow, evidence, authority, ClassKit, and acceptance findings
+were carried forward and not replayed.
 
 ## Plan Overview
 
-Objective: Create a stable Cloudflare Pages staging deployment from a protected
-`staging` branch while preserving the production GitHub Pages artifact,
-`master`, production versioning behavior, and ClassKit ownership boundaries.
+Objective: Make the committed design directory a complete, durable execution
+source and ensure implementation starts from the resolved `version/1.1.5`
+commit that contains the approved artifacts.
 
-Scope: Explicit external-state authority, production and staging GitHub
-guardrails, a bounded Vite base, a structurally validated staging workflow,
-deterministic evidence tooling, dedicated Cloudflare and ClassKit staging
-services, exact shared Auth redirect configuration, live product-context
-fixture creation, route/auth/PWA acceptance, production non-mutation evidence,
-and a disposable promotion-history simulation.
+Scope: `spec.md`, `agenda.md`, the root `plan.md`, and all four chunk plans.
 
-Target Audience: Human developers and AI agents executing a later approved
-implementation card.
+Target Audience: Human developers and AI agents executing a separately
+approved implementation card after the plan artifacts are committed.
 
 Readiness Level: Ready for Development.
 
+## Reviewer Feedback Closure
+
+| Feedback Reference | Required Correction | Status | Evidence |
+| --- | --- | --- | --- |
+| `6a638f9d14924559264d3e35` | Remove `.symphony/assignment.md` and other mission state as execution dependencies. | Closed | The root plan names the committed spec, agenda, roadmap, and four chunks as the canonical execution source. Every chunk points only to committed design artifacts, and the handoff explicitly states that no `.symphony` mission artifact is an execution input. |
+| `6a638f9d14924559264d3e35` | Resolve implementation against an artifact-containing `version/1.1.5` commit instead of hard-coding `4c9f110` as the branch tip. | Closed | The root plan defines the baseline as the resolved `version/1.1.5` commit containing the complete approved artifact set. Chunk 01 records its SHA and requires byte-for-byte presence of the spec, agenda, roadmap, four chunks, and both ready audits before any implementation work. |
+| `6a638f9d14924559264d3e35` | Retain `4c9f110` only as the original inspection/comparison snapshot. | Closed | The root plan and Chunk 01 explicitly disqualify `4c9f110` as the required implementation tip. Chunk 02 uses it only for the production-workflow non-mutation comparison. |
+| `6a638f9d14924559264d3e35` | Make plan-set status metadata internally consistent. | Closed | The spec and every plan are Ready for Review; the agenda says the plan set is ready for review but not approved for execution; the root plan requires a separate approved implementation card. No artifact claims current execution approval. |
+
+## Canonical Execution Source Verification
+
+The execution package is self-contained in the committed design directory:
+
+| Artifact | Role | Status |
+| --- | --- | --- |
+| `spec.md` | Complete requirements and approved design decisions | Canonical source |
+| `agenda.md` | Recorded decision resolutions and approval state | Canonical source |
+| `plan.md` | Cross-chunk sequence, authority, dependencies, and handoff | Canonical source |
+| `plans/01-authority-and-production-guardrails.md` | Baseline, authority, and production safety | Canonical chunk |
+| `plans/02-staging-workflow-base-and-operations.md` | Repository and workflow implementation | Canonical chunk |
+| `plans/03-staging-service-provisioning.md` | External service provisioning | Canonical chunk |
+| `plans/04-live-deployment-acceptance-and-promotion-proof.md` | Live acceptance and promotion proof | Canonical chunk |
+| `spec-audit.md` | Ready design-audit gate | Required baseline evidence |
+| `plan-set-audit.md` | Ready plan-set gate | Required baseline evidence |
+
+References to `.symphony` remain only in negative declarations that no
+`.symphony` file is required. No task, dependency, preflight, or handoff step
+loads mission state or derives requirements from it.
+
+## Implementation Baseline Verification
+
+The baseline contract is executable and guards against both stale code and
+missing planning artifacts:
+
+1. The approved implementation card must name a resolved commit on
+   `version/1.1.5`.
+2. Chunk 01 records that exact SHA before any mutation.
+3. The commit tree must contain the spec, agenda, roadmap, four chunks, and
+   both Ready audits byte-for-byte.
+4. Execution stops if the branch differs or an artifact is absent or
+   mismatched.
+5. `4c9f110` remains only the original repository-inspection snapshot and the
+   fixed comparison point for the untouched production workflow.
+
+This sequencing correctly allows the planning artifacts to be committed and
+merged before the implementation baseline is resolved. It does not assume
+that the current planning worktree or the earlier inspection SHA is the future
+implementation tip.
+
+## Status Consistency
+
+| Artifact | Status Meaning | Assessment |
+| --- | --- | --- |
+| `spec.md` | Ready for Review; canonical design source; full plan approval still required | Consistent |
+| `agenda.md` | Ready for plan-set review; not approved for execution | Consistent |
+| `plan.md` | Ready for Review; separate implementation approval pending | Consistent |
+| Four chunk plans | Ready for Review | Consistent |
+| `spec-audit.md` | Ready for Development | Completed audit gate |
+| `plan-set-audit.md` | Ready for Development | Completed audit gate |
+
+The audit verdict means the plan is executable once the normal approval and
+artifact-containing baseline conditions are satisfied. It does not itself
+authorize external mutations or implementation.
+
 ## File Path Verification
 
-Only artifacts changed for the final ClassKit repair were rechecked:
+All canonical source and audit paths named by the rework exist. Relative links
+from each chunk resolve to the design directory's `spec.md`, `agenda.md`, and
+`plan.md`. No removed or mission-local path is needed to understand or execute
+the plan.
 
-| Referenced Path | Status | Notes |
-| --- | --- | --- |
-| `docs/design/2026-07-24-persistent-staging-deployment/plan.md` | Exists | Authority matrix separates product access, business fixture, and signup fixture owners. |
-| `docs/design/2026-07-24-persistent-staging-deployment/plans/03-staging-service-provisioning.md` | Exists | Owns pre-deployment product/access state and production-assignment absence. |
-| `docs/design/2026-07-24-persistent-staging-deployment/plans/04-live-deployment-acceptance-and-promotion-proof.md` | Exists | Owns live administrator fixture creation, manager signup-link creation, and acceptance. |
-| `src/lib/class-kit-client.ts` | Exists | Website remains on the pinned `@class-kit/react` boundary. |
+## Carried-Forward Gates
 
-All previously verified source, workflow, PWA, plan, and expected-new paths
-remain unchanged. No repository ownership overlap was introduced.
+The rework did not alter the previously audited implementation substance:
 
-## Final Finding Closure
-
-| Prior Finding | Status | Evidence |
-| --- | --- | --- |
-| Fixture manager was not guaranteed `templates.manage` and `schedules.manage` | Closed | The root matrix and Chunk 04 assign template/schedule/class setup to a distinct ClassKit fixture administrator and require both permissions before mutation. |
-| Test manager could be over-privileged for setup | Closed | Signup-link creation remains with the staging test manager, which needs only `dashboard.can_enter` and `class_signup_links.manage`; the plan forbids granting template/schedule mutation solely for setup. |
-| Business fixture lacked supported readback | Closed | The live product context uses `management.templates.list()`, `management.schedules.list()`, and `management.classes.list()`. |
-| Signup-link evidence lacked a supported read | Closed | The test manager preserves the slug returned by `management.signupLinks.create(...)`, then `signupLinks.resolve(recordedSlug)` proves the exact class/range. |
-| Test identities might also belong to production | Closed | Chunk 03 calls `admin.users.listProductUsers("noya_website")` and compares both exact test user IDs in memory. |
-
-## ClassKit Boundary Verification
-
-### Product And Access Administration
-
-Chunk 03 remains limited to state supported by ClassKit admin surfaces:
-
-- product identity, status, environment, auth policy, origin, and redirect;
-- staging product-user assignments;
-- product roles, user-role assignments, and effective permissions; and
-- exact absence of both test IDs from the production product.
-
-Shared Supabase Auth redirect administration remains human-admin-only.
-
-### Business-Fixture Administrator
-
-After successful deployment and canonical artifact verification, Chunk 04
-authenticates a separately authorized ClassKit fixture administrator at the
-live staging origin. It requires:
-
-- product context `noya_website_staging`;
-- effective `templates.manage`; and
-- effective `schedules.manage`.
-
-That principal alone creates the minimum active template and schedule needed
-to yield one visible upcoming class. It is explicitly distinct from the
-non-manager and manager acceptance identities.
-
-This matches the current ClassKit guards:
-
-| Mutation | Required Permission | Plan Principal |
-| --- | --- | --- |
-| Create template | `templates.manage` | Fixture administrator |
-| Create schedule / generate class | `schedules.manage` | Fixture administrator |
-
-### Signup-Link Test Manager
-
-The staging test manager separately requires:
-
-- product context `noya_website_staging`;
-- `dashboard.can_enter`; and
-- `class_signup_links.manage`.
-
-It creates the review signup link for the recorded class/range, preserves the
-returned slug, and resolves that slug through the public product-context API.
-The plan explicitly does not grant this identity template or schedule mutation
-merely to facilitate setup.
-
-This preserves least privilege while still exercising the exact manager
-capability under acceptance.
-
-## Scope And Acceptance Coverage
-
-| Requirement / Acceptance Criterion | Assessment |
-| --- | --- |
-| Staging product identity/policy/origin/redirect | Complete |
-| Two staging-only acceptance identities | Complete |
-| Exact absence from production product users | Complete |
-| Live canonical product context before business writes | Complete |
-| Template/schedule mutation authority | Complete |
-| Fixture administrator separated from acceptance users | Complete |
-| Template/schedule/class readback | Complete |
-| Signup-link manager authority | Complete |
-| Exact returned-slug resolution | Complete |
-| Non-manager denial and manager access | Complete |
-| No website Supabase/raw Edge Function access | Complete |
-
-## Sequencing And Dependencies
-
-The final ClassKit sequence is deterministic:
-
-1. Chunk 03 provisions product identity, test users, roles, permissions, and
-   redirects through authorized admin surfaces.
-2. It separately proves the two test IDs are absent from production.
-3. Chunk 04 deploys and verifies the recorded artifact at the canonical origin.
-4. The distinct fixture administrator proves the staging product context and
-   both setup permissions before creating template/schedule/class state.
-5. The staging test manager proves its narrower signup-link authority, creates
-   the link for the recorded target, and preserves the slug.
-6. Supported list/resolve calls prove the complete fixture.
-7. Browser/auth acceptance exercises the non-manager and manager identities.
-
-No setup mutation relies on an unproven permission, and the acceptance
-identities are not broadened for operational convenience.
-
-## Repository-Native Contract Verification
-
-| Operation | Supported Method | Required Authority | Status |
-| --- | --- | --- | --- |
-| Read staging users/roles/permissions | ClassKit admin SDK methods | Platform admin | Complete |
-| Prove production user absence | `admin.users.listProductUsers("noya_website")` | Platform admin | Complete |
-| Create/read template | `management.templates.create/list` | `templates.manage` | Complete |
-| Create/read schedule | `management.schedules.create/list` | `schedules.manage` | Complete |
-| Read generated class | `management.classes.list` | Live staging manager context | Complete |
-| Create signup link | `management.signupLinks.create` | `class_signup_links.manage` | Complete |
-| Resolve signup slug | `signupLinks.resolve(recordedSlug)` | Live staging product context | Complete |
-
-No build, lint, test, install, browser, or external mutation was performed
-during this final audit.
-
-## Strengths
-
-### 1. Least Privilege Is Preserved
-
-Operational fixture setup and acceptance-manager behavior use separate
-principals. The plan does not distort the product's test roles to simplify
-provisioning.
-
-### 2. Every Mutation Has A Matching Preflight
-
-Template, schedule, and signup-link creation each follow an explicit product
-context and effective-permission check.
-
-### 3. Fixture Evidence Is End-To-End
-
-The plan connects administrator-created template/schedule/class IDs to the
-test-manager-created signup link and then to public slug resolution.
-
-### 4. Identity Isolation Is Objective
-
-Production absence is tested using immutable user IDs against the production
-product, not inferred from staging state or email.
-
-### 5. ClassKit Ownership Remains Intact
-
-All product, access, permission, and business behavior stays in ClassKit
-surfaces. Noya owns only workflow integration, presentation, and acceptance.
+- production remains protected and master-only;
+- the staging workflow and bounded Vite base remain isolated from production;
+- external mutations remain behind explicit target-specific authority;
+- Cloudflare, GitHub, Supabase Auth, and ClassKit responsibilities remain
+  separated;
+- evidence, rollback, quiet-window, identity-isolation, fixture-permission,
+  route/auth/signup/PWA, and promotion-proof requirements remain assigned to
+  deterministic chunks; and
+- execution remains ordered 01 → 02 → 03 → 04 with stop conditions at every
+  authority or provenance boundary.
 
 ## Critical Issues
 
-None. All previously blocking production-isolation, external-authority,
-workflow-validation, evidence, quiet-window, ClassKit method, identity, and
-fixture-permission findings are closed.
+None. The newest ledger feedback is fully closed.
 
 ## Questions For Plan Author
 
 None.
 
-## Recommendations
-
-### Execution Evidence
-
-- Record the fixture administrator and acceptance identities only through
-  pseudonyms and stable hashed IDs.
-- Preserve the effective permission pass/fail set, not raw unrelated
-  permissions.
-- Link the template, schedule, generated class, and signup target through
-  hashed IDs in the durable evidence comment.
-
-These are reporting refinements; the plan already defines the required
-redaction and evidence boundary.
-
 ## Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation |
 | --- | --- | --- | --- |
-| Fixture administrator lacks a setup permission | Low | High | Chunk 04 requires both effective permissions before mutation. |
-| Acceptance manager is accidentally broadened | Low | Medium | Explicitly forbid template/schedule grants solely for setup. |
-| Signup link targets unrelated data | Low | High | Create from the recorded class/range and resolve the exact returned slug. |
-| Test identity has production assignment | Low | High | Exact production product-user read before live acceptance. |
-| Canonical origin resolves the wrong product | Low | High | Require `noya_website_staging` before any fixture write. |
+| Executor starts from a pre-artifact `version/1.1.5` commit | Low | High | Chunk 01 requires a resolved SHA and byte-for-byte artifact gate. |
+| Executor consults unavailable mission state | Low | High | Canonical committed sources are explicit; mission artifacts are excluded from execution inputs. |
+| `4c9f110` is mistaken for the implementation tip | Low | High | Root and chunk wording limits it to inspection and production-workflow comparison. |
+| Review readiness is mistaken for mutation authority | Low | High | Agenda and root plan require separate execution approval and target-specific authority. |
 
-Highest Risk: External platform or principal authority may be unavailable at
-execution time. The existing authority matrix and stop rules correctly convert
-that condition into a blocked implementation rather than an unsafe fallback.
+Highest Risk: The future implementation card could name the wrong branch or a
+commit that predates the approved artifact set. Chunk 01 converts either case
+into a mandatory stop before repository or external-state mutation.
 
 ## Pre-Development Checklist
 
-- [x] Product/access provisioning uses supported admin surfaces.
-- [x] Both acceptance identities are absent from production.
-- [x] Live canonical product context precedes business writes.
-- [x] Fixture administrator is distinct from both acceptance identities.
-- [x] Fixture administrator has `templates.manage`.
-- [x] Fixture administrator has `schedules.manage`.
-- [x] Test manager has `dashboard.can_enter`.
-- [x] Test manager has `class_signup_links.manage`.
-- [x] Test manager is not broadened for fixture setup.
-- [x] Template, schedule, and class use supported readback.
-- [x] Signup evidence preserves and resolves the exact returned slug.
-- [x] All prior plan-set audit blockers remain closed.
-
-## Next Steps
-
-1. Approve the plan set for a separately authorized implementation card.
-2. Execute Chunks 01 → 02 → 03 → 04 without combining their authority gates.
-3. Preserve the durable redacted PR evidence comment and implementation-card
-   backlink.
+- [x] Canonical requirements and design live in committed artifacts.
+- [x] Root plan and all four chunks exclude mission state as an execution input.
+- [x] Implementation baseline is a resolved `version/1.1.5` commit.
+- [x] Baseline must contain the complete approved artifact set byte-for-byte.
+- [x] `4c9f110` is only an inspection/comparison snapshot.
+- [x] Status and approval wording is internally consistent.
+- [x] Feedback `6a638f9d14924559264d3e35` is explicitly closed.
+- [x] Previously accepted implementation gates remain unchanged.
 
 ## Evaluation Matrix
 
 | Dimension | Weight | Raw Score | Weighted Score | Notes |
 | --- | --- | --- | --- | --- |
-| Completeness | x3 | 5/5 | 15/15 | Every approved requirement, external target, fixture principal, permission, method, and evidence row has an owner. |
-| Feasibility | x3 | 5/5 | Current repository, pinned SDK, ClassKit guards, Cloudflare topology, GitHub APIs, and available tooling support the plan. |
-| Clarity | x2 | 5/5 | Product access, administrator setup, manager acceptance, and evidence responsibilities are unambiguous. |
-| Logical Flow | x2 | 5/5 | Guardrails, code validation, service provisioning, deployment, fixture setup, and acceptance are correctly ordered. |
-| Scope & Risk | x2 | 4/5 | External administration remains operationally significant, with explicit authority, stop, rollback, and redaction controls. |
-| Developer Experience | x1 | 5/5 | Exact paths, commands, principals, permissions, checkpoints, and done evidence are defined. |
-| AI Readiness | x1 | 5/5 | Autonomy boundaries, confirm-first writes, forbidden actions, ambiguity handling, verification, and durable evidence are executable. |
+| Completeness | x3 | 5/5 | 15/15 | The committed artifact set contains all requirements, decisions, chunks, audits, and handoff constraints needed for execution. |
+| Feasibility | x3 | 5/5 | 15/15 | The baseline can be resolved only after the artifacts are committed, and Chunk 01 verifies the exact tree before implementation. |
+| Clarity | x2 | 5/5 | 10/10 | Canonical sources, approval state, baseline identity, and the limited role of `4c9f110` are explicit. |
+| Logical Flow | x2 | 5/5 | 10/10 | Plan approval and artifact commit precede baseline resolution, which precedes all implementation work. |
+| Scope & Risk | x2 | 4/5 | 8/10 | External administration remains significant, but previously accepted authority, stop, rollback, and evidence controls remain intact. |
+| Developer Experience | x1 | 5/5 | 5/5 | The executor receives exact artifacts, a recorded baseline SHA, and deterministic stop conditions. |
+| AI Readiness | x1 | 5/5 | 5/5 | Execution is independent of ephemeral harness state and safe to resume from committed repository context. |
 
 Overall: 68/70 -> Ready for Development
 
-Critical Dimension Check: Pass; neither weighted x3 dimension scores 1, and no
+Critical Dimension Check: Pass; both weighted x3 dimensions score 5, and no
 critical issue remains.
 
 ## Handoff
 
-PLAN APPROVED FOR IMPLEMENTATION
+PLAN READY FOR REVIEW
 
-Key constraints:
+If the complete plan set receives separate execution approval, implementation
+must preserve these constraints:
 
-- Preserve the four-chunk authority sequence.
-- Keep the fixture administrator distinct from both acceptance identities.
-- Do not grant the test manager template/schedule authority solely for setup.
-- Stop on missing external authority, wrong origin/product, permission failure,
-  hostname drift, production observation changes, or provenance mismatch.
+- Use only the committed spec, agenda, root plan, four chunks, and audits as
+  execution sources.
+- Start from the resolved artifact-containing `version/1.1.5` commit named by
+  the approved implementation card.
+- Record and verify that commit SHA before any mutation.
+- Use `4c9f110` only as the documented inspection and production-workflow
+  comparison snapshot.
+- Preserve the four-chunk sequence and every existing authority gate.
 
-Suggested starting point: Execute Chunk 01's target-specific authority record
-and master-only production environment proof.
-
-First milestone: Production guardrails and authority evidence are complete
-without creating staging services, branches, or deployments.
+Post-approval starting point: Resolve and record the artifact-containing
+`version/1.1.5` commit named by the approved implementation card, then complete
+Chunk 01's byte-for-byte baseline and authority preflights. This audit does not
+grant that execution approval.
 
 Verdict: Ready for Development

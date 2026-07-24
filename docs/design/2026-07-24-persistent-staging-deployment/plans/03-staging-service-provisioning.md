@@ -1,8 +1,8 @@
 # Chunk 03: Staging Service Provisioning
 
 **Plan Set:** `../plan.md`
-**Approved Source:** `.symphony/assignment.md` accepted requirements;
-`../spec.md` supplies audited design detail
+**Canonical Source:** `../spec.md`, `../agenda.md`, and `../plan.md`; no
+Symphony mission file is required
 **Status:** Ready for Review
 **Depends on:** Chunks 01 and 02
 **Enables:** Chunk 04

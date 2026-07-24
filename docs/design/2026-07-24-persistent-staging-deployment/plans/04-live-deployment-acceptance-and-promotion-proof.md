@@ -1,8 +1,8 @@
 # Chunk 04: Live Deployment, Acceptance, And Promotion Proof
 
 **Plan Set:** `../plan.md`
-**Approved Source:** `.symphony/assignment.md` accepted requirements;
-`../spec.md` supplies audited design detail
+**Canonical Source:** `../spec.md`, `../agenda.md`, and `../plan.md`; no
+Symphony mission file is required
 **Status:** Ready for Review
 **Depends on:** Chunks 01, 02, and 03
 **Enables:** Client review and a later approved production-promotion decision
