@@ -39,12 +39,14 @@ export function useCustomerDirectory({
   client,
   canReadCustomers,
   onForbidden,
+  initialFilter = "all",
 }: {
   client: ClassKitClient | null;
   canReadCustomers: boolean;
   onForbidden: () => void;
+  initialFilter?: CustomerDirectoryFilter;
 }) {
-  const [filter, setFilterState] = useState<CustomerDirectoryFilter>("all");
+  const [filter, setFilterState] = useState<CustomerDirectoryFilter>(initialFilter);
   const [pages, setPages] = useState<CustomerPage[]>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");

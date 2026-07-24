@@ -18,16 +18,18 @@ type CustomerPickerProps = {
   selectedCustomerId: string;
   onSelectCustomer: (customerId: string) => void;
   onClearSelection: () => void;
+  filterOptions?: CustomerDirectoryFilter[];
   variant?: "full" | "compact";
 };
 
-const filters: CustomerDirectoryFilter[] = ["all", "active", "inactive"];
+const defaultFilters: CustomerDirectoryFilter[] = ["all", "active", "inactive"];
 
 export function CustomerPicker({
   directory,
   selectedCustomerId,
   onSelectCustomer,
   onClearSelection,
+  filterOptions = defaultFilters,
   variant = "full",
 }: CustomerPickerProps) {
   const { t } = useTranslation();
@@ -75,7 +77,7 @@ export function CustomerPicker({
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        {filters.map((filter) => (
+        {filterOptions.map((filter) => (
           <Button
             key={filter}
             type="button"
