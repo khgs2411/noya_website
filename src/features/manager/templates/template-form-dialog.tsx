@@ -1,4 +1,5 @@
 import type {
+  ClassKitClient,
   ClassTemplate,
   CreateClassTemplateInput,
   UpdateClassTemplateInput,
@@ -8,6 +9,12 @@ import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  createLocationDraft,
+  type LocationDraft,
+  serializeLocationDraft,
+} from "@/features/locations/location-draft";
+import { LocationAutocompleteField } from "@/features/locations/location-autocomplete-field";
 
 type TemplateFormMode = "create" | "edit";
 
@@ -15,6 +22,8 @@ type TemplateFormDialogProps = {
   open: boolean;
   mode: TemplateFormMode;
   template: ClassTemplate | null;
+  client: ClassKitClient | null;
+  canAutocompleteLocations: boolean;
   submitting: boolean;
   errorMessage: string | null;
   onClose: () => void;
@@ -27,7 +36,6 @@ type TemplateFormFields = {
   description: string;
   category: string;
   defaultCapacity: string;
-  defaultLocation: string;
   defaultVisibility: "public" | "hidden" | "members_only";
   defaultRegistrationPolicy:
     | "auto_approve"
@@ -42,7 +50,6 @@ const createDefaults: TemplateFormFields = {
   description: "",
   category: "",
   defaultCapacity: "12",
-  defaultLocation: "",
   defaultVisibility: "public",
   defaultRegistrationPolicy: "auto_approve",
   defaultMembershipRequirement: "none",
@@ -62,7 +69,6 @@ function fieldsFromTemplate(template: ClassTemplate | null): TemplateFormFields 
     description: template.description ?? "",
     category: template.category ?? "",
     defaultCapacity: String(template.default_capacity),
-    defaultLocation: template.default_location ?? "",
     defaultVisibility: template.default_visibility,
     defaultRegistrationPolicy: template.default_registration_policy,
     defaultMembershipRequirement: template.default_membership_requirement,
@@ -70,18 +76,30 @@ function fieldsFromTemplate(template: ClassTemplate | null): TemplateFormFields 
   };
 }
 
-function toTemplateInput(fields: TemplateFormFields): CreateClassTemplateInput {
-  return {
+function toTemplateInput(
+  fields: TemplateFormFields,
+  locationDraft: LocationDraft,
+): CreateClassTemplateInput {
+  const input: CreateClassTemplateInput = {
     name: fields.name.trim(),
     description: emptyToNull(fields.description),
     category: emptyToNull(fields.category),
     defaultCapacity: Number(fields.defaultCapacity),
-    defaultLocation: emptyToNull(fields.defaultLocation),
     defaultVisibility: fields.defaultVisibility,
     defaultRegistrationPolicy: fields.defaultRegistrationPolicy,
     defaultMembershipRequirement: fields.defaultMembershipRequirement,
     defaultNotes: emptyToNull(fields.defaultNotes),
   };
+
+  Object.assign(
+    input,
+    serializeLocationDraft(locationDraft, {
+      text: "defaultLocation",
+      snapshot: "defaultLocationSnapshot",
+    }),
+  );
+
+  return input;
 }
 
 function validateTemplateForm(
@@ -177,12 +195,20 @@ function TemplateFormDialogContent({
   onClose,
   onCreate,
   onUpdate,
+  client,
+  canAutocompleteLocations,
 }: Omit<TemplateFormDialogProps, "open">) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [fields, setFields] = useState<TemplateFormFields>(() =>
     mode === "edit" ? fieldsFromTemplate(template) : createDefaults,
   );
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [locationDraft, setLocationDraft] = useState<LocationDraft>(() =>
+    createLocationDraft(
+      template?.default_location,
+      template?.default_location_snapshot,
+    ),
+  );
 
   const updateField = <K extends keyof TemplateFormFields>(
     key: K,
@@ -197,7 +223,7 @@ function TemplateFormDialogContent({
     setValidationErrors(errors);
     if (errors.length > 0) return;
 
-    const input = toTemplateInput(fields);
+    const input = toTemplateInput(fields, locationDraft);
     const result =
       mode === "edit" && template
         ? await onUpdate({ ...input, templateId: template.id })
@@ -259,11 +285,15 @@ function TemplateFormDialogContent({
               value={fields.defaultCapacity}
               onChange={(value) => updateField("defaultCapacity", value)}
             />
-            <TextField
-              label={t("manager.templateForm.defaultLocation")}
-              value={fields.defaultLocation}
-              onChange={(value) => updateField("defaultLocation", value)}
-            />
+            <div className="sm:col-span-2">
+              <LocationAutocompleteField
+                client={client}
+                canAutocompleteLocations={canAutocompleteLocations}
+                locale={i18n.language}
+                draft={locationDraft}
+                onChange={setLocationDraft}
+              />
+            </div>
             <TextField
               label={t("manager.templateForm.category")}
               value={fields.category}

@@ -39,6 +39,7 @@ type ClassManagementTabProps = {
   canManageClasses: boolean;
   canManageRegistrations: boolean;
   canManageAttendance: boolean;
+  canAutocompleteLocations: boolean;
 };
 
 type FormSurface =
@@ -158,6 +159,7 @@ export function ClassManagementTab({
   canManageClasses,
   canManageRegistrations,
   canManageAttendance,
+  canAutocompleteLocations,
 }: ClassManagementTabProps) {
   const { t } = useTranslation();
   const [formSurface, setFormSurface] = useState<FormSurface>(null);
@@ -205,6 +207,7 @@ export function ClassManagementTab({
           startsAt: managedClass.starts_at,
           endsAt: managedClass.ends_at,
           location: managedClass.location,
+          locationSnapshot: managedClass.location_snapshot,
           capacity: managedClass.capacity,
           registeredUsersCount: managedClass.registeredUsersCount,
           pendingRegistrationCount: managedClass.pendingRegistrationCount,
@@ -617,6 +620,8 @@ export function ClassManagementTab({
             mode={formSurface?.mode ?? "create"}
             managedClass={formClass}
             templates={managedTemplates.state.activeTemplates}
+            client={client}
+            canAutocompleteLocations={canAutocompleteLocations}
             submitting={
               state.mutationStatus === "creating" ||
               state.mutationStatus === "updating"

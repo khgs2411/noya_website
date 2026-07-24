@@ -48,6 +48,7 @@ import type {
   ClassViewDateGroup,
   ClassViewItem,
 } from "@/features/classes/class-types";
+import { LocationDisplay } from "@/features/locations/location-display";
 import { captureActiveElement, restoreFocus } from "@/lib/focus";
 import { cn } from "@/lib/utils";
 import { DocumentAgreement } from "@/features/documents/document-agreement";
@@ -117,6 +118,7 @@ function toClassViewItem(
     startsAt: classSummary.startsAt,
     endsAt: classSummary.endsAt,
     location: classSummary.location,
+    locationSnapshot: classSummary.locationSnapshot,
     capacity: classSummary.capacity,
     registeredUsersCount: classSummary.registeredUsersCount,
     membershipRequirement: classSummary.membershipRequirement,
@@ -1017,10 +1019,6 @@ export function LessonsPage({
         }).formatRange(new Date(item.startsAt), new Date(item.endsAt)),
       },
       {
-        label: t("classes.detail.location"),
-        value: item.location ?? t("classes.detail.noLocation"),
-      },
-      {
         label: t("classes.detail.capacity"),
         value: item.capacityLabel ?? t("classes.capacity", { count: item.capacity }),
       },
@@ -1054,6 +1052,20 @@ export function LessonsPage({
 
     return (
       <dl className="mt-4 grid gap-2 text-sm">
+        <div className="grid gap-1 rounded-xl border border-blush/18 bg-background/34 px-3 py-2.5 sm:grid-cols-[8rem_1fr]">
+          <dt className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-foreground/46">
+            {t("classes.detail.location")}
+          </dt>
+          <dd className="break-words leading-5 text-foreground/70">
+            {item.location?.trim() || item.locationSnapshot?.label ? (
+              <LocationDisplay
+                text={item.location}
+                snapshot={item.locationSnapshot}
+                variant="detailed"
+              />
+            ) : t("classes.detail.noLocation")}
+          </dd>
+        </div>
         {facts.map((fact) => (
           <div
             key={fact.label}

@@ -1,8 +1,9 @@
 import type { ClassTemplate } from "@class-kit/react";
-import { Layers3, MapPin, Users } from "lucide-react";
+import { Layers3, Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
+import { LocationDisplay } from "@/features/locations/location-display";
 
 type TemplateCardProps = {
   template: ClassTemplate;
@@ -47,12 +48,12 @@ export function TemplateCard({
           </span>
         </div>
 
-        {template.default_location && (
-          <p className="mt-3 flex items-start gap-2 text-sm text-foreground/68">
-            <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <span className="break-words">{template.default_location}</span>
-          </p>
-        )}
+        <LocationDisplay
+          text={template.default_location}
+          snapshot={template.default_location_snapshot}
+          variant="compact"
+          className="mt-3 flex items-start gap-2 text-sm text-foreground/68"
+        />
 
         <p className="mt-3 flex items-center gap-2 text-sm text-foreground/68">
           <Users className="size-4 shrink-0" aria-hidden="true" />

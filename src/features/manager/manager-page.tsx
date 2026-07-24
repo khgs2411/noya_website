@@ -105,6 +105,9 @@ export function ManagerPage({
   const canManageChangeRequests =
     accessSnapshot === null &&
     capabilities.permissions.includes("product_change_requests.manage");
+  const canAutocompleteLocations =
+    accessSnapshot === null &&
+    capabilities.permissions.includes("locations.autocomplete");
   const canReadCancellationPolicy = managerAccess.permissions.includes(
     "product.cancellation_policy.read",
   );
@@ -176,6 +179,7 @@ export function ManagerPage({
                   canManageClasses={canManageClasses}
                   canManageRegistrations={canManageRegistrations}
                   canManageAttendance={canManageAttendance}
+                  canAutocompleteLocations={canAutocompleteLocations}
                 />
               )}
               {effectiveActiveTab === "pending" && (
@@ -184,7 +188,10 @@ export function ManagerPage({
                 />
               )}
               {effectiveActiveTab === "templates" && (
-                <TemplateManagementTab canManageTemplates={canManageClasses} />
+                <TemplateManagementTab
+                  canManageTemplates={canManageClasses}
+                  canAutocompleteLocations={canAutocompleteLocations}
+                />
               )}
               {effectiveActiveTab === "schedules" && (
                 <ScheduleManagementTab canManageSchedules={canManageClasses} />

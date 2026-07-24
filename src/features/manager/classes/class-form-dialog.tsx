@@ -1,4 +1,5 @@
 import type {
+  ClassKitClient,
   ClassTemplate,
   CreateManagedClassInput,
   ManagedClass,
@@ -9,6 +10,12 @@ import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import {
+  createLocationDraft,
+  type LocationDraft,
+  serializeLocationDraft,
+} from "@/features/locations/location-draft";
+import { LocationAutocompleteField } from "@/features/locations/location-autocomplete-field";
 
 type ClassFormMode = "create" | "edit";
 
@@ -17,6 +24,8 @@ type ClassFormDialogProps = {
   mode: ClassFormMode;
   managedClass: ManagedClass | null;
   templates: ClassTemplate[];
+  client: ClassKitClient | null;
+  canAutocompleteLocations: boolean;
   submitting: boolean;
   errorMessage: string | null;
   onClose: () => void;
@@ -35,7 +44,6 @@ type ClassFormFields = {
   startsLocal: string;
   endsLocal: string;
   capacity: string;
-  location: string;
   status: "draft" | "published";
   visibility: "public" | "hidden" | "members_only";
   registrationPolicy:
@@ -54,7 +62,6 @@ const createDefaults: ClassFormFields = {
   startsLocal: "",
   endsLocal: "",
   capacity: "12",
-  location: "",
   status: "published",
   visibility: "public",
   registrationPolicy: "auto_approve",
@@ -97,7 +104,6 @@ function fieldsFromClass(managedClass: ManagedClass | null): ClassFormFields {
     startsLocal: toLocalDateTimeInput(managedClass.starts_at),
     endsLocal: toLocalDateTimeInput(managedClass.ends_at),
     capacity: String(managedClass.capacity),
-    location: managedClass.location ?? "",
     status: managedClass.status,
     visibility: managedClass.visibility,
     registrationPolicy: managedClass.registration_policy,
@@ -117,7 +123,6 @@ function fieldsFromTemplate(
     description: template.description ?? "",
     category: template.category ?? "",
     capacity: String(template.default_capacity),
-    location: template.default_location ?? "",
     visibility: template.default_visibility,
     registrationPolicy: template.default_registration_policy,
     membershipRequirement: template.default_membership_requirement,
@@ -125,7 +130,10 @@ function fieldsFromTemplate(
   };
 }
 
-function toClassInput(fields: ClassFormFields): CreateManagedClassInput {
+function toClassInput(
+  fields: ClassFormFields,
+  locationDraft: LocationDraft,
+): CreateManagedClassInput {
   const input: CreateManagedClassInput = {
     name: fields.name.trim(),
     description: emptyToNull(fields.description),
@@ -133,13 +141,20 @@ function toClassInput(fields: ClassFormFields): CreateManagedClassInput {
     startsAt: new Date(fields.startsLocal).toISOString(),
     endsAt: new Date(fields.endsLocal).toISOString(),
     capacity: Number(fields.capacity),
-    location: emptyToNull(fields.location),
     status: fields.status,
     visibility: fields.visibility,
     registrationPolicy: fields.registrationPolicy,
     membershipRequirement: fields.membershipRequirement,
     notes: emptyToNull(fields.notes),
   };
+
+  Object.assign(
+    input,
+    serializeLocationDraft(locationDraft, {
+      text: "location",
+      snapshot: "locationSnapshot",
+    }),
+  );
 
   if (fields.templateId) input.templateId = fields.templateId;
 
@@ -249,12 +264,20 @@ function ClassFormDialogContent({
   onClose,
   onCreate,
   onUpdate,
+  client,
+  canAutocompleteLocations,
 }: Omit<ClassFormDialogProps, "open">) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [fields, setFields] = useState<ClassFormFields>(() =>
     mode === "edit" ? fieldsFromClass(managedClass) : createDefaults,
   );
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [locationDraft, setLocationDraft] = useState<LocationDraft>(() =>
+    createLocationDraft(
+      managedClass?.location,
+      managedClass?.location_snapshot,
+    ),
+  );
 
   const updateField = <K extends keyof ClassFormFields>(
     key: K,
@@ -264,11 +287,19 @@ function ClassFormDialogContent({
   };
 
   const updateTemplateId = (templateId: string) => {
-    setFields((current) => {
-      const template = templates.find((item) => item.id === templateId);
-      if (!template) return { ...current, templateId: "" };
-      return fieldsFromTemplate(template, current);
-    });
+    const template = templates.find((item) => item.id === templateId);
+    setFields((current) =>
+      template ? fieldsFromTemplate(template, current) : { ...current, templateId: "" },
+    );
+    if (template) {
+      setLocationDraft(
+        createLocationDraft(
+          template.default_location,
+          template.default_location_snapshot,
+          true,
+        ),
+      );
+    }
   };
 
   const updateStartsLocal = (value: string) => {
@@ -295,7 +326,7 @@ function ClassFormDialogContent({
     setValidationErrors(errors);
     if (errors.length > 0) return;
 
-    const input = toClassInput(fields);
+    const input = toClassInput(fields, locationDraft);
     const result =
       mode === "edit" && managedClass
         ? await onUpdate(managedClass.id, input)
@@ -388,11 +419,15 @@ function ClassFormDialogContent({
               value={fields.capacity}
               onChange={(value) => updateField("capacity", value)}
             />
-            <TextField
-              label={t("manager.form.location")}
-              value={fields.location}
-              onChange={(value) => updateField("location", value)}
-            />
+            <div className="sm:col-span-2">
+              <LocationAutocompleteField
+                client={client}
+                canAutocompleteLocations={canAutocompleteLocations}
+                locale={i18n.language}
+                draft={locationDraft}
+                onChange={setLocationDraft}
+              />
+            </div>
             <TextField
               label={t("manager.form.category")}
               value={fields.category}

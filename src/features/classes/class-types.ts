@@ -1,3 +1,5 @@
+import type { LocationSnapshot } from "@class-kit/react";
+
 type RegistrationStatusValue = "pending" | "approved" | "rejected" | "cancelled";
 type ClassTemporalStatusValue = "upcoming" | "started" | "ended" | "cancelled";
 type ClassLifecycleStatusValue =
@@ -19,6 +21,7 @@ export type ClassViewItem = {
   startsAt: string;
   endsAt: string;
   location: string | null;
+  locationSnapshot: LocationSnapshot | null;
   capacity: number;
   registeredUsersCount?: number;
   membershipRequirement?: MembershipRequirementValue;

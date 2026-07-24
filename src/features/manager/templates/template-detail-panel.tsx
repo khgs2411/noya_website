@@ -1,8 +1,10 @@
 import type { ClassTemplate } from "@class-kit/react";
+import type { ReactNode } from "react";
 import { Ban, Edit3, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { LocationDisplay } from "@/features/locations/location-display";
 
 type TemplateDetailPanelProps = {
   template: ClassTemplate | null;
@@ -11,7 +13,7 @@ type TemplateDetailPanelProps = {
   onDeactivate: () => void;
 };
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="grid gap-1 rounded-xl border border-blush/24 bg-background/46 p-3 sm:grid-cols-[8rem_1fr]">
       <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
@@ -88,7 +90,13 @@ export function TemplateDetailPanel({
           />
           <DetailRow
             label={t("manager.templateDetail.location")}
-            value={template.default_location ?? t("manager.detail.noLocation")}
+            value={template.default_location?.trim() || template.default_location_snapshot?.label ? (
+              <LocationDisplay
+                text={template.default_location}
+                snapshot={template.default_location_snapshot}
+                variant="detailed"
+              />
+            ) : t("manager.detail.noLocation")}
           />
           <DetailRow
             label={t("manager.templateDetail.visibility")}
