@@ -2,7 +2,7 @@ export type CustomerPresentationInput = {
   displayName: string | null | undefined;
   contactEmail: string | null | undefined;
   phoneNumber: string | null | undefined;
-  customerOrigin: string | null | undefined;
+  customerOrigin?: string | null | undefined;
 };
 
 function clean(value: string | null | undefined) {

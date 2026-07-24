@@ -16,6 +16,23 @@ type CustomerPage = {
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 
+export type CustomerDirectoryState = {
+  accessChanged: boolean;
+  canGoNext: boolean;
+  canGoPrevious: boolean;
+  clearForForbidden: () => void;
+  error: string | null;
+  filter: CustomerDirectoryFilter;
+  loadStatus: LoadStatus;
+  next: () => void;
+  previous: () => void;
+  records: Customer[];
+  reconcile: (customer: Customer) => void;
+  refresh: () => void;
+  retry: () => void;
+  setFilter: (filter: CustomerDirectoryFilter) => void;
+};
+
 const PAGE_SIZE = 24;
 
 export function useCustomerDirectory({
@@ -59,7 +76,6 @@ export function useCustomerDirectory({
       if (!append) setFailedNextCursor(null);
       setLoadStatus("loading");
       setError(null);
-      setAccessChanged(false);
 
       try {
         const result = await client.management.customers.list({
@@ -89,6 +105,7 @@ export function useCustomerDirectory({
         if (reset) setPageIndex(0);
         if (append) setPageIndex((index) => index + 1);
         setFailedNextCursor(null);
+        setAccessChanged(false);
         setLoadStatus("loaded");
       } catch (loadError) {
         if (requestId !== requestRef.current) return;
@@ -113,7 +130,7 @@ export function useCustomerDirectory({
   useEffect(() => {
     requestRef.current += 1;
     let timeoutId: number | null = null;
-    if (client && canReadCustomers) {
+    if (client && canReadCustomers && !accessChanged) {
       timeoutId = window.setTimeout(() => {
         void load({ cursor: null, reset: true });
       }, 0);
@@ -122,7 +139,7 @@ export function useCustomerDirectory({
       if (timeoutId !== null) window.clearTimeout(timeoutId);
       requestRef.current += 1;
     };
-  }, [canReadCustomers, client, filter, load]);
+  }, [accessChanged, canReadCustomers, client, filter, load]);
 
   const currentPage = pages[pageIndex] ?? null;
   const setFilter = useCallback((nextFilter: CustomerDirectoryFilter) => {
@@ -210,7 +227,7 @@ export function useCustomerDirectory({
     }));
   }, [filter]);
 
-  return {
+  const directory: CustomerDirectoryState = {
     accessChanged: canReadCustomers ? accessChanged : false,
     canGoNext: canReadCustomers && Boolean(currentPage?.nextCursor || pageIndex < pages.length - 1),
     canGoPrevious: canReadCustomers && pageIndex > 0,
@@ -226,4 +243,6 @@ export function useCustomerDirectory({
     retry,
     setFilter,
   };
+
+  return directory;
 }

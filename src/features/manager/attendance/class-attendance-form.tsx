@@ -4,8 +4,8 @@ import type {
   ClassParticipant,
   ManagedClass,
   ManagementRegistrationSummary,
-  ProductUserListItem,
 } from "@class-kit/react";
+import { ClassKitManagerApiError } from "@class-kit/react";
 import {
   CheckCircle2,
   Loader2,
@@ -15,14 +15,13 @@ import {
   UserCheck,
   XCircle,
 } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import {
-  getUserDisplayName,
-  getUserSupportingEmail,
-} from "@/features/users/user-labels";
+import { getCustomerLabel } from "@/features/customers/customer-labels";
+import { CustomerPicker } from "@/features/manager/customers/customer-picker";
+import { useCustomerDirectory } from "@/features/manager/customers/use-customer-directory";
 import { cn } from "@/lib/utils";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
@@ -39,16 +38,20 @@ type ClassAttendanceFormProps = {
   managedClass: ManagedClass;
   canManageAttendance: boolean;
   canManageRegistrations: boolean;
+  canReadCustomers: boolean;
+  canReadUsers: boolean;
   className?: string;
   onClassChanged: () => void | Promise<void>;
 };
 
-function getUserLabel(user?: ProductUserListItem | null) {
-  return getUserDisplayName(user);
-}
-
-function getRegistrationLabel(registration?: ManagementRegistrationSummary) {
-  return getUserDisplayName(registration?.user);
+function getRegistrationLabel(
+  registration: ManagementRegistrationSummary | undefined,
+  unnamedLabel: string,
+) {
+  if (registration?.customer) return getCustomerLabel(registration.customer, unnamedLabel);
+  const displayName = registration?.user?.displayName?.trim();
+  const email = registration?.user?.email?.trim();
+  return displayName || email || null;
 }
 
 function getAttendanceErrorMessage(
@@ -57,6 +60,8 @@ function getAttendanceErrorMessage(
   fallbackKey: string,
 ) {
   const message = error instanceof Error ? error.message : "";
+  const code =
+    error instanceof ClassKitManagerApiError ? error.code : null;
 
   if (message === "walk_in_has_live_registration") {
     return t("manager.attendance.errors.walkInHasLiveRegistration");
@@ -64,6 +69,10 @@ function getAttendanceErrorMessage(
 
   if (message === "participant_already_exists") {
     return t("manager.attendance.errors.participantAlreadyExists");
+  }
+
+  if (code === "customer_inactive" || message === "customer_inactive") {
+    return t("manager.attendance.errors.customerInactive");
   }
 
   if (message === "class_lifecycle_not_startable") {
@@ -146,6 +155,8 @@ export function ClassAttendanceForm({
   managedClass,
   canManageAttendance,
   canManageRegistrations,
+  canReadCustomers,
+  canReadUsers,
   className,
   onClassChanged,
 }: ClassAttendanceFormProps) {
@@ -156,7 +167,9 @@ export function ClassAttendanceForm({
   } | null>(null);
   const [participants, setParticipants] = useState<ClassParticipant[]>([]);
   const [registered, setRegistered] = useState<ManagementRegistrationSummary[]>([]);
-  const [users, setUsers] = useState<ProductUserListItem[]>([]);
+  const [customerLabels, setCustomerLabels] = useState<Map<string, string>>(() => new Map());
+  const [userLabels, setUserLabels] = useState<Map<string, string>>(() => new Map());
+  const [userAccessChanged, setUserAccessChanged] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [mutationState, setMutationState] = useState<MutationState>({
@@ -166,14 +179,22 @@ export function ClassAttendanceForm({
     addingTrial: false,
     updatingParticipants: {},
   });
-  const [walkInUserId, setWalkInUserId] = useState("");
+  const [walkInCustomerId, setWalkInCustomerId] = useState("");
   const [trialName, setTrialName] = useState("");
   const [trialContact, setTrialContact] = useState("");
+  const loadGenerationRef = useRef(0);
+  const effectiveWalkInCustomerId = canReadCustomers ? walkInCustomerId : "";
 
-  const userById = useMemo(
-    () => new Map(users.map((user) => [user.user_id, user])),
-    [users],
-  );
+  const clearWalkInCustomer = useCallback(() => setWalkInCustomerId(""), []);
+  const directory = useCustomerDirectory({
+    client,
+    canReadCustomers,
+    onForbidden: clearWalkInCustomer,
+  });
+  const {
+    accessChanged: customerAccessChanged,
+    clearForForbidden: clearCustomerDirectoryForForbidden,
+  } = directory;
   const registrationById = useMemo(
     () => new Map(registered.map((registration) => [registration.id, registration])),
     [registered],
@@ -227,21 +248,31 @@ export function ClassAttendanceForm({
       const registration = participant.registration_id
         ? registrationById.get(participant.registration_id)
         : undefined;
-      const registrationLabel = getRegistrationLabel(registration);
-      if (registrationLabel) return registrationLabel;
-
-      return getUserLabel(
-        participant.user_id ? userById.get(participant.user_id) : null,
+      const registrationLabel = getRegistrationLabel(
+        registration,
+        t("manager.attendance.unknownParticipant"),
       );
+      if (registrationLabel) return registrationLabel;
+      if (canReadCustomers && participant.customer_id) {
+        const customerLabel = customerLabels.get(participant.customer_id);
+        if (customerLabel) return customerLabel;
+      }
+      if (canReadUsers && participant.user_id) {
+        const userLabel = userLabels.get(participant.user_id);
+        if (userLabel) return userLabel;
+      }
+      return t("manager.attendance.unknownParticipant");
     },
-    [registrationById, userById],
+    [canReadCustomers, canReadUsers, customerLabels, registrationById, t, userLabels],
   );
 
   const loadAttendance = useCallback(async (options?: { silent?: boolean }) => {
     if (!client || !canManageAttendance) {
+      loadGenerationRef.current += 1;
       setParticipants([]);
       setRegistered([]);
-      setUsers([]);
+      setCustomerLabels(new Map());
+      setUserLabels(new Map());
       setLoadStatus("idle");
       setErrorMessage(null);
       return;
@@ -250,12 +281,15 @@ export function ClassAttendanceForm({
     if (!options?.silent) {
       setLoadStatus("loading");
       setErrorMessage(null);
+      setCustomerLabels(new Map());
+      setUserLabels(new Map());
     }
 
+    const generation = ++loadGenerationRef.current;
+
     try {
-      const [attendanceResult, usersResult, registeredResult] = await Promise.all([
+      const [attendanceResult, registeredResult] = await Promise.all([
         client.management.attendance.listForClass(managedClass.id),
-        client.management.users.list().catch(() => ({ users: [] })),
         canManageRegistrations
           ? client.management.registrations
               .listRegistered({ classId: managedClass.id })
@@ -263,11 +297,74 @@ export function ClassAttendanceForm({
           : Promise.resolve({ registrations: [] }),
       ]);
 
+      if (generation !== loadGenerationRef.current) return;
       setParticipants(attendanceResult.participants);
-      setUsers(usersResult.users);
       setRegistered(registeredResult.registrations);
       setLoadStatus("loaded");
+
+      const labelledRegistrationIds = new Set(
+        registeredResult.registrations
+          .filter((registration) =>
+            getRegistrationLabel(
+              registration,
+              t("manager.attendance.unknownParticipant"),
+            ),
+          )
+          .map((registration) => registration.id),
+      );
+      const customerIds = [...new Set(attendanceResult.participants
+        .filter((participant) => participant.customer_id && !labelledRegistrationIds.has(participant.registration_id ?? ""))
+        .map((participant) => participant.customer_id!))];
+      const customerSettled = canReadCustomers && !customerAccessChanged
+        ? await Promise.allSettled(customerIds.map(async (customerId) => {
+          const result = await client.management.customers.get(customerId);
+          return [customerId, getCustomerLabel(result.customer, t("manager.attendance.unknownParticipant"))] as const;
+        }))
+        : [];
+      if (generation !== loadGenerationRef.current) return;
+      const customerReadForbidden = customerSettled.some(
+        (result) =>
+          result.status === "rejected" &&
+          result.reason instanceof ClassKitManagerApiError &&
+          result.reason.code === "forbidden",
+      );
+      if (customerReadForbidden) {
+        clearCustomerDirectoryForForbidden();
+        setCustomerLabels(new Map());
+      } else {
+        const customerResults = customerSettled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
+        if (customerResults.length > 0) {
+          setCustomerLabels((current) => new Map([...current, ...customerResults]));
+        }
+      }
+
+      const resolvedCustomerIds = new Set(customerReadForbidden ? [] : customerSettled.flatMap((result) => result.status === "fulfilled" ? [result.value[0]] : []));
+      const userIds = canReadUsers && !userAccessChanged
+        ? [...new Set(attendanceResult.participants
+          .filter((participant) =>
+            participant.user_id &&
+            !labelledRegistrationIds.has(participant.registration_id ?? "") &&
+            (!participant.customer_id || !resolvedCustomerIds.has(participant.customer_id)),
+          )
+          .map((participant) => participant.user_id!))]
+        : [];
+      const userSettled = await Promise.allSettled(userIds.map(async (userId) => {
+        const result = await client.management.users.get(userId);
+        const label = result.user.display_name?.trim() || result.user.email?.trim();
+        return label ? [userId, label] as const : null;
+      }));
+      if (generation !== loadGenerationRef.current) return;
+      if (userSettled.some((result) => result.status === "rejected" && result.reason instanceof ClassKitManagerApiError && result.reason.code === "forbidden")) {
+        setUserAccessChanged(true);
+        setUserLabels(new Map());
+      } else {
+        const userResults = userSettled.flatMap((result) => result.status === "fulfilled" && result.value ? [result.value] : []);
+        if (userResults.length > 0) {
+          setUserLabels((current) => new Map([...current, ...userResults]));
+        }
+      }
     } catch (error) {
+      if (generation !== loadGenerationRef.current) return;
       if (options?.silent) return;
 
       setErrorMessage(
@@ -278,9 +375,14 @@ export function ClassAttendanceForm({
   }, [
     canManageAttendance,
     canManageRegistrations,
+    canReadCustomers,
+    canReadUsers,
     client,
+    clearCustomerDirectoryForForbidden,
+    customerAccessChanged,
     managedClass.id,
     t,
+    userAccessChanged,
   ]);
 
   useEffect(() => {
@@ -288,8 +390,28 @@ export function ClassAttendanceForm({
       void loadAttendance();
     }, 0);
 
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      window.clearTimeout(timeoutId);
+      loadGenerationRef.current += 1;
+    };
   }, [loadAttendance]);
+
+  useEffect(() => {
+    if (!canReadCustomers) {
+      const resetId = window.setTimeout(() => {
+        clearWalkInCustomer();
+        setCustomerLabels(new Map());
+      }, 0);
+      return () => window.clearTimeout(resetId);
+    }
+  }, [canReadCustomers, clearWalkInCustomer]);
+
+  useEffect(() => {
+    if (!canReadUsers) {
+      const resetId = window.setTimeout(() => setUserLabels(new Map()), 0);
+      return () => window.clearTimeout(resetId);
+    }
+  }, [canReadUsers]);
 
   function reconcileAttendance() {
     void loadAttendance({ silent: true });
@@ -374,7 +496,7 @@ export function ClassAttendanceForm({
 
   async function addWalkIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!client || !canEditAttendance || !walkInUserId || mutationState.addingWalkIn) {
+    if (!client || !canEditAttendance || !canReadCustomers || directory.accessChanged || !effectiveWalkInCustomerId || mutationState.addingWalkIn) {
       return;
     }
 
@@ -382,12 +504,12 @@ export function ClassAttendanceForm({
     setErrorMessage(null);
 
     try {
-      const result = await client.management.attendance.addWalkIn(managedClass.id, {
-        userId: walkInUserId,
+      const result = await client.management.attendance.addCustomerWalkIn(managedClass.id, {
+        customerId: effectiveWalkInCustomerId,
         attendanceStatus: "present",
       });
       setParticipants((current) => [...current, result.participant]);
-      setWalkInUserId("");
+      setWalkInCustomerId("");
       void loadAttendance({ silent: true });
     } catch (error) {
       setErrorMessage(
@@ -580,35 +702,31 @@ export function ClassAttendanceForm({
           {isInProgress && (
             <div className="mt-4 grid gap-3 border-t border-blush/24 pt-4">
               <form className="grid gap-2" onSubmit={addWalkIn}>
-                <label className="grid gap-1.5">
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
-                    {t("manager.attendance.chooseWalkIn")}
-                  </span>
-                  <select
-                    className="min-h-11 min-w-0 rounded-xl border border-blush/24 bg-background/70 px-3 text-foreground outline-none focus:border-blush-strong"
-                    value={walkInUserId}
-                    onChange={(event) => setWalkInUserId(event.target.value)}
-                  >
-                    <option value="">
-                      {t("manager.attendance.chooseWalkIn")}
-                    </option>
-                    {users.map((user) => (
-                      <option key={user.user_id} value={user.user_id}>
-                        {[
-                          getUserLabel(user),
-                          getUserSupportingEmail(user),
-                        ].filter(Boolean).join(" · ")}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
+                  {t("manager.attendance.chooseWalkIn")}
+                </span>
+                {canReadCustomers ? (
+                  <CustomerPicker
+                    directory={directory}
+                    selectedCustomerId={effectiveWalkInCustomerId}
+                    onSelectCustomer={setWalkInCustomerId}
+                    onClearSelection={clearWalkInCustomer}
+                    variant="compact"
+                  />
+                ) : (
+                  <p className="rounded-xl border border-blush/24 bg-card/40 p-3 text-sm leading-6 text-foreground/60">
+                    {t("manager.customers.denied")}
+                  </p>
+                )}
                 <Button
                   type="submit"
                   variant="outline"
                   className="w-full rounded-full"
                   disabled={
                     !canEditAttendance ||
-                    !walkInUserId ||
+                    !canReadCustomers ||
+                    directory.accessChanged ||
+                    !effectiveWalkInCustomerId ||
                     mutationState.addingWalkIn
                   }
                 >

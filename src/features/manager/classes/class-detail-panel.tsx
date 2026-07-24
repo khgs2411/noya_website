@@ -14,6 +14,8 @@ type ClassDetailPanelProps = {
   canManageClasses: boolean;
   canManageRegistrations: boolean;
   canManageAttendance: boolean;
+  canReadCustomers: boolean;
+  canReadUsers: boolean;
   onClose: () => void;
   onEdit: () => void;
   onCancel: () => void;
@@ -41,6 +43,8 @@ export function ClassDetailPanel({
   canManageClasses,
   canManageRegistrations,
   canManageAttendance,
+  canReadCustomers,
+  canReadUsers,
   onClose,
   onEdit,
   onCancel,
@@ -160,6 +164,8 @@ export function ClassDetailPanel({
           managedClass={managedClass}
           canManageAttendance={canManageAttendance}
           canManageRegistrations={canManageRegistrations}
+          canReadCustomers={canReadCustomers}
+          canReadUsers={canReadUsers}
           onClassChanged={onClassChanged}
         />
         {canManageClasses && (
