@@ -1,19 +1,23 @@
 import {
   ClassKitManagerApiError,
   type AssignableProductRole,
+  type CreateCustomerInput,
   type Customer,
   type MembershipGrant,
   type MembershipLedgerEntry,
   type MembershipType,
   type ProductUserListItem,
+  type UpdateCustomerInput,
   useProductContext,
 } from "@class-kit/react";
-import { AlertCircle, Loader2, RefreshCw, UsersRound } from "lucide-react";
+import { AlertCircle, Loader2, Plus, RefreshCw, UsersRound } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { CustomerCard } from "@/features/manager/customers/customer-card";
+import { CustomerFormDialog } from "@/features/manager/customers/customer-form-dialog";
+import { CustomerLifecycleDialog } from "@/features/manager/customers/customer-lifecycle-dialog";
 import {
   CustomerDetailPanel,
   type ContextState,
@@ -36,6 +40,18 @@ type MembershipContext = {
   types: MembershipType[];
 };
 
+type CustomerMutationState =
+  | "idle"
+  | "assigning"
+  | "revoking"
+  | "creating"
+  | "updating"
+  | "deactivating"
+  | "reactivating";
+
+type CustomerFormSurface = "create" | "edit" | null;
+type CustomerLifecycleSurface = "deactivate" | "reactivate" | null;
+
 export function CustomerManagementTab({
   canReadCustomers,
   canReadMemberships,
@@ -53,11 +69,16 @@ export function CustomerManagementTab({
   const [linkedState, setLinkedState] = useState<ContextState>("idle");
   const [roles, setRoles] = useState<AssignableProductRole[]>([]);
   const [roleState, setRoleState] = useState<ContextState>("idle");
-  const [mutationState, setMutationState] = useState<"idle" | "assigning" | "revoking">("idle");
+  const [mutationState, setMutationState] = useState<CustomerMutationState>("idle");
   const [notice, setNotice] = useState<string | null>(null);
+  const [formSurface, setFormSurface] = useState<CustomerFormSurface>(null);
+  const [lifecycleSurface, setLifecycleSurface] = useState<CustomerLifecycleSurface>(null);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [mutationAccessDenied, setMutationAccessDenied] = useState(false);
   const selectionTokenRef = useRef(0);
   const membershipRequestRef = useRef(0);
   const linkedRequestRef = useRef(0);
+  const customerMutationRequestRef = useRef(false);
   const clientRef = useRef(client);
   const canReadMembershipsRef = useRef(canReadMemberships);
   const canReadUsersRef = useRef(canReadUsers);
@@ -326,6 +347,114 @@ export function CustomerManagementTab({
     }
   }, [canManageUsers, canReadUsers, classifySectionFailure, client, loadLinkedAccess, mutationState, selectedCustomer]);
 
+  const mutationFailureMessage = useCallback((error: unknown) => {
+    if (!(error instanceof ClassKitManagerApiError)) {
+      return t("manager.customerActions.mutation.failed");
+    }
+    if (error.code === "forbidden") return t("manager.customerActions.mutation.forbidden");
+    if (error.code === "conflict") return t("manager.customerActions.mutation.conflict");
+    if (error.code === "bad_request") return t("manager.customerActions.mutation.validation");
+    if (error.code === "not_found") return t("manager.customers.selectedMissing");
+    if (error.code === "customer_inactive") return t("manager.customerActions.mutation.inactive");
+    return t("manager.customerActions.mutation.failed");
+  }, [t]);
+
+  const runCustomerMutation = useCallback(async (
+    state: Extract<CustomerMutationState, "creating" | "updating" | "deactivating" | "reactivating">,
+    mutation: () => Promise<{ customer: Customer }>,
+  ) => {
+    if (
+      !client ||
+      mutationState !== "idle" ||
+      mutationAccessDenied ||
+      customerMutationRequestRef.current
+    ) return null;
+
+    customerMutationRequestRef.current = true;
+    setMutationState(state);
+    setMutationError(null);
+    try {
+      return await mutation();
+    } catch (error) {
+      if (error instanceof ClassKitManagerApiError && error.code === "forbidden") {
+        setMutationAccessDenied(true);
+      }
+      setMutationError(mutationFailureMessage(error));
+      return null;
+    } finally {
+      customerMutationRequestRef.current = false;
+      setMutationState("idle");
+    }
+  }, [client, mutationAccessDenied, mutationFailureMessage, mutationState]);
+
+  const reconcileCustomer = useCallback((customer: Customer) => {
+    directory.reconcile(customer);
+    setSelectedCustomer((current) =>
+      current?.customerId === customer.customerId ? customer : current,
+    );
+  }, [directory]);
+
+  const createCustomer = useCallback(async (input: CreateCustomerInput) => {
+    const result = await runCustomerMutation(
+      "creating",
+      () => client!.management.customers.create(input),
+    );
+    if (!result) return { ok: false };
+
+    selectionTokenRef.current += 1;
+    setSelectedCustomerId(result.customer.customerId);
+    setSelectedCustomer(result.customer);
+    setDetailState("ready");
+    setMembership(null);
+    setMembershipState("idle");
+    setLinkedUser(null);
+    setLinkedState("idle");
+    setRoles([]);
+    setRoleState("idle");
+    setNotice(t("manager.customerActions.mutation.created"));
+    directory.refresh();
+    return { ok: true };
+  }, [client, directory, runCustomerMutation, t]);
+
+  const updateCustomer = useCallback(async (input: UpdateCustomerInput) => {
+    const result = await runCustomerMutation(
+      "updating",
+      () => client!.management.customers.update(input),
+    );
+    if (!result) return { ok: false };
+
+    reconcileCustomer(result.customer);
+    setNotice(t("manager.customerActions.mutation.updated"));
+    return { ok: true };
+  }, [client, reconcileCustomer, runCustomerMutation, t]);
+
+  const changeLifecycle = useCallback(async (action: "deactivate" | "reactivate") => {
+    if (!selectedCustomer) return { ok: false };
+
+    const customerId = selectedCustomer.customerId;
+    const result = await runCustomerMutation(
+      action === "deactivate" ? "deactivating" : "reactivating",
+      () => action === "deactivate"
+        ? client!.management.customers.deactivate(customerId)
+        : client!.management.customers.reactivate(customerId),
+    );
+    if (!result) return { ok: false };
+
+    reconcileCustomer(result.customer);
+    setNotice(t(`manager.customerActions.mutation.${action}d`));
+    return { ok: true };
+  }, [client, reconcileCustomer, runCustomerMutation, selectedCustomer, t]);
+
+  const openForm = useCallback((surface: Exclude<CustomerFormSurface, null>) => {
+    setMutationError(null);
+    setFormSurface(surface);
+  }, []);
+
+  const openLifecycle = useCallback((surface: CustomerLifecycleSurface) => {
+    setMutationError(null);
+    setLifecycleSurface(surface);
+  }, []);
+
   if (!canReadCustomers) return <Denied />;
 
   return (
@@ -347,9 +476,15 @@ export function CustomerManagementTab({
             </p>
           </div>
         </div>
-        <Button type="button" variant="outline" size="icon" className="size-10 shrink-0 rounded-full" disabled={directory.loadStatus === "loading"} onClick={refresh} aria-label={t("manager.customers.refresh")}>
-          <RefreshCw className={directory.loadStatus === "loading" ? "size-4 animate-spin" : "size-4"} />
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button type="button" className="rounded-full" disabled={directory.loadStatus === "loading" || mutationState !== "idle" || mutationAccessDenied} onClick={() => openForm("create")}>
+            <Plus className="size-4" aria-hidden="true" />
+            {t("manager.customerActions.add")}
+          </Button>
+          <Button type="button" variant="outline" size="icon" className="size-10 rounded-full" disabled={directory.loadStatus === "loading"} onClick={refresh} aria-label={t("manager.customers.refresh")}>
+            <RefreshCw className={directory.loadStatus === "loading" ? "size-4 animate-spin" : "size-4"} />
+          </Button>
+        </div>
       </header>
 
       <div className="flex flex-wrap gap-2">
@@ -384,7 +519,7 @@ export function CustomerManagementTab({
         </Button>
       </div>
 
-      {selectedCustomer && detailState === "ready" && (
+      {selectedCustomer && detailState === "ready" && formSurface === null && lifecycleSurface === null && (
         <CustomerDetailPanel
           customer={selectedCustomer}
           membership={membership}
@@ -394,8 +529,11 @@ export function CustomerManagementTab({
           roles={roles}
           roleState={roleState}
           mutationState={mutationState}
+          canMutateCustomers={!mutationAccessDenied}
           onAssign={(roleId) => void mutateRole(roleId, "assign")}
           onClose={closeDetail}
+          onEdit={() => openForm("edit")}
+          onLifecycle={openLifecycle}
           onRevoke={(roleId) => void mutateRole(roleId, "revoke")}
           onRetryMembership={() => {
             if (selectedCustomer) void loadMembership(selectedCustomer.customerId, selectionTokenRef.current);
@@ -409,6 +547,27 @@ export function CustomerManagementTab({
       {selectedCustomerId && detailState === "error" && (
         <Notice text={t("manager.customers.detailError")} icon={<AlertCircle className="size-4" />} action={<Button size="sm" variant="outline" onClick={() => void loadCustomer(selectedCustomerId)}>{t("manager.customers.retry")}</Button>} />
       )}
+      <CustomerFormDialog
+        open={formSurface !== null}
+        mode={formSurface ?? "create"}
+        customer={formSurface === "edit" ? selectedCustomer : null}
+        submitting={mutationState === "creating" || mutationState === "updating"}
+        canSubmit={!mutationAccessDenied}
+        errorMessage={mutationError}
+        onClose={() => setFormSurface(null)}
+        onCreate={createCustomer}
+        onUpdate={updateCustomer}
+      />
+      <CustomerLifecycleDialog
+        open={lifecycleSurface !== null}
+        action={lifecycleSurface ?? "deactivate"}
+        customer={selectedCustomer}
+        submitting={mutationState === "deactivating" || mutationState === "reactivating"}
+        canSubmit={!mutationAccessDenied}
+        errorMessage={mutationError}
+        onClose={() => setLifecycleSurface(null)}
+        onConfirm={() => changeLifecycle(lifecycleSurface ?? "deactivate")}
+      />
     </section>
   );
 }
