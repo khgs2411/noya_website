@@ -5,7 +5,7 @@
     "": {
       "name": "noya_website",
       "dependencies": {
-        "@class-kit/react": "git+ssh://git@github.com/khgs2411/class-kit-sdk.git#v0.1.22",
+        "@class-kit/react": "git+ssh://git@github.com/khgs2411/class-kit-sdk.git#a158bc588f5ec3421788475ccab2c5c2cb47ce9f",
         "@fontsource/allura": "^5.2.8",
         "@fontsource/cormorant-garamond": "^5.2.11",
         "@fontsource/montserrat": "^5.2.8",
@@ -75,7 +75,7 @@
 
     "@babel/types": ["@babel/types@7.29.7", "", { "dependencies": { "@babel/helper-string-parser": "^7.29.7", "@babel/helper-validator-identifier": "^7.29.7" } }, "sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA=="],
 
-    "@class-kit/react": ["@class-kit/react@git+ssh://git@github.com/khgs2411/class-kit-sdk.git#bae7d746397e1ff473477ca9337b90e5a69e1d6d", { "peerDependencies": { "@supabase/supabase-js": "^2.106.1", "react": "^19.2.6", "react-dom": "^19.2.6" } }, "bae7d746397e1ff473477ca9337b90e5a69e1d6d"],
+    "@class-kit/react": ["@class-kit/react@git+ssh://git@github.com/khgs2411/class-kit-sdk.git#a158bc588f5ec3421788475ccab2c5c2cb47ce9f", { "peerDependencies": { "@supabase/supabase-js": "^2.106.1", "react": "^19.2.6", "react-dom": "^19.2.6" } }, "a158bc588f5ec3421788475ccab2c5c2cb47ce9f"],
 
     "@emnapi/core": ["@emnapi/core@1.11.1", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.2", "tslib": "^2.4.0" } }, "sha512-RSvbQmHzdKzNsLYa/wHrbc3KN4sYLKAdPZxqiM2HATqv/SBk2/ENSHpvXGaLOMcsAyz0poEGqkmmKYG3OWiJEQ=="],
 

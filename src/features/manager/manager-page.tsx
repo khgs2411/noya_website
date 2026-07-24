@@ -45,10 +45,10 @@ const TemplateManagementTab = lazy(() =>
     }),
   ),
 );
-const UserRoleManagementTab = lazy(() =>
-  import("@/features/manager/users/user-role-management-tab").then(
+const CustomerManagementTab = lazy(() =>
+  import("@/features/manager/customers/customer-management-tab").then(
     (module) => ({
-      default: module.UserRoleManagementTab,
+      default: module.CustomerManagementTab,
     }),
   ),
 );
@@ -108,9 +108,17 @@ export function ManagerPage({
     "product_documents.manage",
   );
   const canManageRoles = Boolean(capabilities.dashboard.can_manage_roles);
-  const canManageUsers = Boolean(capabilities.dashboard.can_manage_users);
-  const canReadUsers = capabilities.permissions.includes("users.read");
-  const canAccessUsers = canManageUsers && canReadUsers;
+  const hasLiveCapabilities = accessSnapshot === null;
+  const canReadCustomers =
+    hasLiveCapabilities && capabilities.dashboard.can_read_customers;
+  const canReadMemberships =
+    hasLiveCapabilities && capabilities.dashboard.can_read_memberships;
+  const canReadUsers =
+    hasLiveCapabilities && capabilities.permissions.includes("users.read");
+  const canManageUsers =
+    hasLiveCapabilities &&
+    capabilities.dashboard.can_manage_users &&
+    capabilities.permissions.includes("product_user_roles.manage");
   const canManageChangeRequests =
     accessSnapshot === null &&
     capabilities.permissions.includes("product_change_requests.manage");
@@ -126,7 +134,7 @@ export function ManagerPage({
   const canAccessCancellationPolicy =
     canReadCancellationPolicy || canUpdateCancellationPolicy;
   const effectiveActiveTab =
-    (activeTab === "users" && !canAccessUsers) ||
+    (activeTab === "customers" && !canReadCustomers) ||
     (activeTab === "permissions" && !canManageRoles) ||
     (activeTab === "change-requests" && !canManageChangeRequests) ||
     (activeTab === "settings" && !canAccessCancellationPolicy)
@@ -181,7 +189,7 @@ export function ManagerPage({
             <ManagerTabs
               activeTab={effectiveActiveTab}
               onChange={setActiveTab}
-              canAccessUsers={canAccessUsers}
+              canAccessCustomers={canReadCustomers}
               canManageRoles={canManageRoles}
               canManageChangeRequests={canManageChangeRequests}
               canAccessCancellationPolicy={canAccessCancellationPolicy}
@@ -219,8 +227,10 @@ export function ManagerPage({
                   canManageMemberships={canManageMemberships}
                 />
               )}
-              {effectiveActiveTab === "users" && canAccessUsers && (
-                <UserRoleManagementTab
+              {effectiveActiveTab === "customers" && canReadCustomers && (
+                <CustomerManagementTab
+                  canReadCustomers={canReadCustomers}
+                  canReadMemberships={canReadMemberships}
                   canManageUsers={canManageUsers}
                   canReadUsers={canReadUsers}
                 />
