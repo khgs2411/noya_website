@@ -140,7 +140,11 @@ export function CustomerManagementTab({
     }
   }, [canReadMemberships, classifySectionFailure, client]);
 
-  const loadLinkedAccess = useCallback(async (customer: Customer, token: number) => {
+  const loadLinkedAccess = useCallback(async (
+    customer: Customer,
+    token: number,
+    silent = false,
+  ) => {
     const requestId = ++linkedRequestRef.current;
     const userId = customer.userId;
     const linked = customer.userId !== null && customer.identityStatus === "linked";
@@ -161,8 +165,10 @@ export function CustomerManagementTab({
       setRoleState("unavailable");
       return;
     }
-    setLinkedState("loading");
-    setRoleState(canManageUsers ? "loading" : "unavailable");
+    if (!silent) {
+      setLinkedState("loading");
+      setRoleState(canManageUsers ? "loading" : "unavailable");
+    }
     try {
       const userResult = await client.management.users.get(userId);
       if (
@@ -191,6 +197,10 @@ export function CustomerManagementTab({
         setRoleState("ready");
       } catch (error) {
         if (token !== selectionTokenRef.current) return;
+        if (
+          silent &&
+          !(error instanceof ClassKitManagerApiError && error.code === "forbidden")
+        ) return;
         classifySectionFailure(error, () => setRoles([]), setRoleState);
       }
     } catch (error) {
@@ -199,6 +209,10 @@ export function CustomerManagementTab({
         requestId !== linkedRequestRef.current ||
         !canReadUsersRef.current ||
         client !== clientRef.current
+      ) return;
+      if (
+        silent &&
+        !(error instanceof ClassKitManagerApiError && error.code === "forbidden")
       ) return;
       setRoles([]);
       setRoleState("unavailable");
@@ -288,10 +302,22 @@ export function CustomerManagementTab({
     const token = selectionTokenRef.current;
     setMutationState(action === "assign" ? "assigning" : "revoking");
     try {
-      if (action === "assign") await client.management.users.roles.assign({ userId: selectedCustomer.userId, roleId });
-      else await client.management.users.roles.revoke({ userId: selectedCustomer.userId, roleId });
+      const result = action === "assign"
+        ? await client.management.users.roles.assign({ userId: selectedCustomer.userId, roleId })
+        : await client.management.users.roles.revoke({ userId: selectedCustomer.userId, roleId });
       if (token !== selectionTokenRef.current) return;
-      void loadLinkedAccess(selectedCustomer, token);
+      setLinkedUser((current) => current?.user_id === selectedCustomer.userId
+        ? {
+            ...current,
+            roles: action === "assign"
+              ? [
+                  ...(current.roles ?? []).filter((role) => role.role_id !== roleId),
+                  result.assignment,
+                ]
+              : (current.roles ?? []).filter((role) => role.role_id !== roleId),
+          }
+        : current);
+      void loadLinkedAccess(selectedCustomer, token, true);
     } catch (error) {
       if (token !== selectionTokenRef.current) return;
       classifySectionFailure(error, () => setRoles([]), setRoleState);

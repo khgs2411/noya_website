@@ -142,6 +142,7 @@ export function useCustomerDirectory({
       setPageIndex((index) => index + 1);
       setError(null);
       setFailedNextCursor(null);
+      setLoadStatus("loaded");
       return;
     }
     if (!currentPage?.nextCursor) return;
@@ -154,6 +155,7 @@ export function useCustomerDirectory({
     setPageIndex((index) => Math.max(0, index - 1));
     setError(null);
     setFailedNextCursor(null);
+    setLoadStatus("loaded");
   }, [loadStatus, pageIndex]);
 
   const refresh = useCallback(() => {
