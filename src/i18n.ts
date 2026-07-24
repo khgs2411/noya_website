@@ -282,6 +282,23 @@ const resources = {
         customers: {
           eyebrow: 'Customers', title: 'Customers', body: 'Browse the people your studio serves and review their available service and access context.', denied: 'Customer access is not enabled for your manager role.', refresh: 'Refresh', loading: 'Loading customers.', empty: 'No customers match this view.', errorBody: 'Customers could not load. Try again.', retry: 'Retry', previous: 'Previous', next: 'Next', loadingDetail: 'Loading customer details.', detailError: 'Customer details could not load.', unnamed: 'Unnamed customer', linked: 'Login linked', unlinked: 'No login linked', lifecycleLabel: 'Lifecycle', linkageLabel: 'Login access', originLabel: 'Source', identity: 'Customer identity', detailTitle: 'Customer details', detailEyebrow: 'Customer', close: 'Close details', memberships: 'Membership context', linkedAccess: 'Linked access', loadingContext: 'Loading context.', contextUnavailable: 'This context is not available to your manager role.', contextError: 'This context could not load.', accessChanged: 'Your access changed. Protected customer data was cleared.', membershipUnknown: 'Membership', remainingStock: '{{count}} entries remaining', noMemberships: 'No membership grants yet.', recentActivity: 'Recent activity', linkageError: 'This customer has inconsistent login linkage data. Linked access was not loaded.', noLogin: 'No login linked.', accessStatus: 'Access status', accessScope: 'Access scope', assignedRoles: 'Assigned roles', unknownRole: 'Unnamed role', noRoles: 'No roles assigned', effectivePermissions: 'Effective permissions', revokeRole: 'Remove role', chooseRole: 'Choose a role', assignRole: 'Assign role', selectedMissing: 'The selected customer is no longer available.', validUntil: 'Valid until {{date}}', noExpiry: 'No expiry date', filters: { all: 'All', active: 'Active', inactive: 'Inactive' }, lifecycle: { active: 'Active', inactive: 'Inactive' }, origin: { managerCreated: 'Created by manager', signup: 'Signup', other: 'Other source' }, membershipStatus: { active: 'Active', inactive: 'Inactive', revoked: 'Revoked', replaced: 'Replaced', expired: 'Expired' }, membershipEvent: { membership_granted: 'Membership granted', membership_set: 'Membership set', membership_upgraded: 'Membership upgraded', membership_revoked: 'Membership revoked', class_registration: 'Class registration', registration_cancelled: 'Registration cancelled', class_cancelled_restore: 'Class cancellation restored', manager_adjustment: 'Manager adjustment' }, userStatus: { active: 'Active', inactive: 'Inactive' }, scope: { product: 'Studio', platform: 'Platform' },
         },
+        customerActions: {
+          add: 'Add customer', edit: 'Edit customer', deactivate: 'Deactivate customer', reactivate: 'Reactivate customer',
+          form: {
+            createTitle: 'Add customer', editTitle: 'Edit customer', description: 'Manage service identity only. This does not create a login or send an invitation.',
+            displayName: 'Display name', displayNameRequired: 'Enter a display name.', contactEmail: 'Contact email', phoneNumber: 'Phone number', contactHint: 'Leave contact fields blank to omit them. Saving an edit with a blank contact field clears it.',
+            create: 'Create customer', save: 'Save changes', saving: 'Saving…',
+          },
+          lifecycle: {
+            keep: 'Keep customer active', saving: 'Saving…',
+            deactivate: { title: 'Deactivate customer?', body: 'This stops the customer from using studio services. Their login access and roles are not changed.', confirm: 'Deactivate customer' },
+            reactivate: { title: 'Reactivate customer?', body: 'This restores the customer’s studio service eligibility. Their login access and roles are not changed.', confirm: 'Reactivate customer' },
+          },
+          mutation: {
+            created: 'Customer created.', updated: 'Customer details updated.', deactivated: 'Customer deactivated. Their login access was not changed.', reactivated: 'Customer reactivated. Their login access was not changed.',
+            forbidden: 'Your manager role cannot change customer lifecycle records.', conflict: 'This customer changed elsewhere. Refresh and try again.', validation: 'Check the customer details and try again.', inactive: 'This lifecycle action is no longer available for this customer.', failed: 'This customer change could not be saved. Try again.',
+          },
+        },
         permissions: {
           eyebrow: 'Role definitions',
           title: 'Permissions',
@@ -1250,6 +1267,23 @@ const resources = {
         customers: {
           eyebrow: 'Клиенты', title: 'Клиенты', body: 'Просматривайте людей, которых обслуживает студия, и их доступный сервисный контекст.', denied: 'Доступ к клиентам не включён для вашей роли.', refresh: 'Обновить', loading: 'Загружаем клиентов.', empty: 'В этом представлении нет клиентов.', errorBody: 'Не удалось загрузить клиентов. Попробуйте ещё раз.', retry: 'Повторить', previous: 'Назад', next: 'Далее', loadingDetail: 'Загружаем данные клиента.', detailError: 'Не удалось загрузить данные клиента.', unnamed: 'Клиент без имени', linked: 'Вход привязан', unlinked: 'Вход не привязан', lifecycleLabel: 'Статус клиента', linkageLabel: 'Доступ к входу', originLabel: 'Источник', identity: 'Данные клиента', detailTitle: 'Данные клиента', detailEyebrow: 'Клиент', close: 'Закрыть данные', memberships: 'Контекст абонемента', linkedAccess: 'Связанный доступ', loadingContext: 'Загружаем контекст.', contextUnavailable: 'Этот контекст недоступен вашей роли.', contextError: 'Не удалось загрузить этот контекст.', accessChanged: 'Ваш доступ изменился. Защищённые данные клиента очищены.', membershipUnknown: 'Абонемент', remainingStock: 'Осталось занятий: {{count}}', noMemberships: 'Абонементов пока нет.', recentActivity: 'Недавняя активность', linkageError: 'Данные о привязке входа противоречивы. Связанный доступ не загружен.', noLogin: 'Вход не привязан.', accessStatus: 'Статус доступа', accessScope: 'Область доступа', assignedRoles: 'Назначенные роли', unknownRole: 'Роль без имени', noRoles: 'Роли не назначены', effectivePermissions: 'Эффективные разрешения', revokeRole: 'Удалить роль', chooseRole: 'Выберите роль', assignRole: 'Назначить роль', selectedMissing: 'Выбранный клиент больше недоступен.', validUntil: 'Действует до {{date}}', noExpiry: 'Без срока окончания', filters: { all: 'Все', active: 'Активные', inactive: 'Неактивные' }, lifecycle: { active: 'Активный', inactive: 'Неактивный' }, origin: { managerCreated: 'Создан менеджером', signup: 'Регистрация', other: 'Другой источник' }, membershipStatus: { active: 'Активен', inactive: 'Неактивен', revoked: 'Отозван', replaced: 'Заменён', expired: 'Истёк' }, membershipEvent: { membership_granted: 'Абонемент выдан', membership_set: 'Абонемент установлен', membership_upgraded: 'Абонемент обновлён', membership_revoked: 'Абонемент отозван', class_registration: 'Запись на занятие', registration_cancelled: 'Запись отменена', class_cancelled_restore: 'Отмена занятия восстановлена', manager_adjustment: 'Корректировка менеджера' }, userStatus: { active: 'Активен', inactive: 'Неактивен' }, scope: { product: 'Студия', platform: 'Платформа' },
         },
+        customerActions: {
+          add: 'Добавить клиента', edit: 'Редактировать клиента', deactivate: 'Деактивировать клиента', reactivate: 'Активировать клиента снова',
+          form: {
+            createTitle: 'Добавить клиента', editTitle: 'Редактировать клиента', description: 'Здесь меняются только данные клиента. Вход и приглашение не создаются.',
+            displayName: 'Отображаемое имя', displayNameRequired: 'Укажите отображаемое имя.', contactEmail: 'Контактный email', phoneNumber: 'Номер телефона', contactHint: 'Оставьте контактное поле пустым, чтобы не указывать его. Пустое поле при сохранении изменений очистит его.',
+            create: 'Создать клиента', save: 'Сохранить изменения', saving: 'Сохраняем…',
+          },
+          lifecycle: {
+            keep: 'Оставить клиента активным', saving: 'Сохраняем…',
+            deactivate: { title: 'Деактивировать клиента?', body: 'Клиент больше не сможет пользоваться услугами студии. Доступ к входу и роли не изменятся.', confirm: 'Деактивировать клиента' },
+            reactivate: { title: 'Активировать клиента снова?', body: 'Клиент снова сможет пользоваться услугами студии. Доступ к входу и роли не изменятся.', confirm: 'Активировать клиента' },
+          },
+          mutation: {
+            created: 'Клиент создан.', updated: 'Данные клиента обновлены.', deactivated: 'Клиент деактивирован. Доступ к входу не изменён.', reactivated: 'Клиент снова активен. Доступ к входу не изменён.',
+            forbidden: 'Ваша роль менеджера не может изменять записи жизненного цикла клиентов.', conflict: 'Данные клиента были изменены в другом месте. Обновите страницу и попробуйте снова.', validation: 'Проверьте данные клиента и попробуйте снова.', inactive: 'Это действие жизненного цикла больше недоступно для этого клиента.', failed: 'Не удалось сохранить изменения клиента. Попробуйте снова.',
+          },
+        },
         permissions: {
           eyebrow: 'Определения ролей',
           title: 'Разрешения',
@@ -2217,6 +2251,23 @@ const resources = {
         },
         customers: {
           eyebrow: 'לקוחות', title: 'לקוחות', body: 'עיון באנשים שהסטודיו משרת ובהקשר השירות והגישה הזמין עבורם.', denied: 'גישת לקוחות אינה זמינה לתפקיד הניהול שלך.', refresh: 'רענון', loading: 'טוענים לקוחות.', empty: 'אין לקוחות בתצוגה הזו.', errorBody: 'לא ניתן לטעון לקוחות. אפשר לנסות שוב.', retry: 'ניסיון נוסף', previous: 'הקודם', next: 'הבא', loadingDetail: 'טוענים פרטי לקוחה.', detailError: 'לא ניתן לטעון פרטי לקוחה.', unnamed: 'לקוחה ללא שם', linked: 'כניסה מקושרת', unlinked: 'אין כניסה מקושרת', lifecycleLabel: 'מצב לקוחה', linkageLabel: 'גישת כניסה', originLabel: 'מקור', identity: 'זהות לקוחה', detailTitle: 'פרטי לקוחה', detailEyebrow: 'לקוחה', close: 'סגירת פרטים', memberships: 'הקשר מנוי', linkedAccess: 'גישה מקושרת', loadingContext: 'טוענים הקשר.', contextUnavailable: 'ההקשר הזה אינו זמין לתפקיד הניהול שלך.', contextError: 'לא ניתן לטעון את ההקשר הזה.', accessChanged: 'הגישה שלך השתנתה. נתוני לקוחות מוגנים נוקו.', membershipUnknown: 'מנוי', remainingStock: 'נותרו {{count}} כניסות', noMemberships: 'אין עדיין הקצאות מנוי.', recentActivity: 'פעילות אחרונה', linkageError: 'נתוני קישור הכניסה סותרים. גישה מקושרת לא נטענה.', noLogin: 'אין כניסה מקושרת.', accessStatus: 'מצב גישה', accessScope: 'תחום גישה', assignedRoles: 'תפקידים משויכים', unknownRole: 'תפקיד ללא שם', noRoles: 'אין תפקידים משויכים', effectivePermissions: 'הרשאות בפועל', revokeRole: 'הסרת תפקיד', chooseRole: 'בחירת תפקיד', assignRole: 'שיוך תפקיד', selectedMissing: 'הלקוחה שנבחרה אינה זמינה יותר.', validUntil: 'בתוקף עד {{date}}', noExpiry: 'ללא תאריך תפוגה', filters: { all: 'הכול', active: 'פעילות', inactive: 'לא פעילות' }, lifecycle: { active: 'פעילה', inactive: 'לא פעילה' }, origin: { managerCreated: 'נוצרה על ידי מנהלת', signup: 'הרשמה', other: 'מקור אחר' }, membershipStatus: { active: 'פעיל', inactive: 'לא פעיל', revoked: 'בוטל', replaced: 'הוחלף', expired: 'פג תוקף' }, membershipEvent: { membership_granted: 'מנוי הוקצה', membership_set: 'מנוי הוגדר', membership_upgraded: 'מנוי שודרג', membership_revoked: 'מנוי בוטל', class_registration: 'הרשמה לשיעור', registration_cancelled: 'הרשמה בוטלה', class_cancelled_restore: 'שחזור ביטול שיעור', manager_adjustment: 'התאמת מנהלת' }, userStatus: { active: 'פעילה', inactive: 'לא פעילה' }, scope: { product: 'סטודיו', platform: 'פלטפורמה' },
+        },
+        customerActions: {
+          add: 'הוספת לקוחה', edit: 'עריכת לקוחה', deactivate: 'השבתת לקוחה', reactivate: 'הפעלה מחדש של לקוחה',
+          form: {
+            createTitle: 'הוספת לקוחה', editTitle: 'עריכת לקוחה', description: 'כאן מעדכנים רק את זהות השירות. לא נוצרת כניסה ולא נשלחת הזמנה.',
+            displayName: 'שם תצוגה', displayNameRequired: 'יש להזין שם תצוגה.', contactEmail: 'אימייל ליצירת קשר', phoneNumber: 'מספר טלפון', contactHint: 'אפשר להשאיר שדה קשר ריק כדי לא לשמור אותו. שמירת עריכה עם שדה קשר ריק תנקה אותו.',
+            create: 'יצירת לקוחה', save: 'שמירת שינויים', saving: 'שומרות…',
+          },
+          lifecycle: {
+            keep: 'השארת הלקוחה פעילה', saving: 'שומרות…',
+            deactivate: { title: 'להשבית את הלקוחה?', body: 'הלקוחה לא תוכל להשתמש בשירותי הסטודיו. גישת הכניסה והתפקידים שלה לא ישתנו.', confirm: 'השבתת לקוחה' },
+            reactivate: { title: 'להפעיל מחדש את הלקוחה?', body: 'הלקוחה תוכל שוב להשתמש בשירותי הסטודיו. גישת הכניסה והתפקידים שלה לא ישתנו.', confirm: 'הפעלה מחדש של לקוחה' },
+          },
+          mutation: {
+            created: 'הלקוחה נוצרה.', updated: 'פרטי הלקוחה עודכנו.', deactivated: 'הלקוחה הושבתה. גישת הכניסה לא השתנתה.', reactivated: 'הלקוחה הופעלה מחדש. גישת הכניסה לא השתנתה.',
+            forbidden: 'לתפקיד הניהול שלך אין אפשרות לשנות רשומות מחזור חיים של לקוחות.', conflict: 'פרטי הלקוחה השתנו במקום אחר. אפשר לרענן ולנסות שוב.', validation: 'יש לבדוק את פרטי הלקוחה ולנסות שוב.', inactive: 'פעולת מחזור החיים הזו אינה זמינה עוד עבור הלקוחה.', failed: 'לא ניתן לשמור את השינוי ללקוחה. אפשר לנסות שוב.',
+          },
         },
         permissions: {
           eyebrow: 'הגדרות תפקידים',

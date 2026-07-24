@@ -185,6 +185,31 @@ export function useCustomerDirectory({
     setLoadStatus("error");
   }, []);
 
+  const reconcile = useCallback((customer: Customer) => {
+    setPages((current) => current.slice(0, pageIndexRef.current + 1).map((page) => {
+      const containsCustomer = page.records.some(
+        (record) => record.customerId === customer.customerId,
+      );
+      if (!containsCustomer) return page;
+
+      if (filter !== "all" && customer.status !== filter) {
+        return {
+          ...page,
+          records: page.records.filter(
+            (record) => record.customerId !== customer.customerId,
+          ),
+        };
+      }
+
+      return {
+        ...page,
+        records: page.records.map((record) =>
+          record.customerId === customer.customerId ? customer : record,
+        ),
+      };
+    }));
+  }, [filter]);
+
   return {
     accessChanged: canReadCustomers ? accessChanged : false,
     canGoNext: canReadCustomers && Boolean(currentPage?.nextCursor || pageIndex < pages.length - 1),
@@ -196,6 +221,7 @@ export function useCustomerDirectory({
     next,
     previous,
     records: canReadCustomers ? currentPage?.records ?? [] : [],
+    reconcile,
     refresh,
     retry,
     setFilter,

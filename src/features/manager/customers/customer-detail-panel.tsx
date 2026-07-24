@@ -6,7 +6,7 @@ import type {
   MembershipType,
   ProductUserListItem,
 } from "@class-kit/react";
-import { AlertCircle, Loader2, X } from "lucide-react";
+import { AlertCircle, Loader2, Pencil, X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -31,8 +31,11 @@ export function CustomerDetailPanel({
   roles,
   roleState,
   mutationState,
+  canMutateCustomers,
   onAssign,
   onClose,
+  onEdit,
+  onLifecycle,
   onRevoke,
   onRetryMembership,
   onRetryLinked,
@@ -44,9 +47,12 @@ export function CustomerDetailPanel({
   linkedState: ContextState;
   roles: AssignableProductRole[];
   roleState: ContextState;
-  mutationState: "idle" | "assigning" | "revoking";
+  mutationState: "idle" | "assigning" | "revoking" | "creating" | "updating" | "deactivating" | "reactivating";
+  canMutateCustomers: boolean;
   onAssign: (roleId: string) => void;
   onClose: () => void;
+  onEdit: () => void;
+  onLifecycle: (action: "deactivate" | "reactivate") => void;
   onRevoke: (roleId: string) => void;
   onRetryMembership: () => void;
   onRetryLinked: () => void;
@@ -146,6 +152,15 @@ export function CustomerDetailPanel({
               <DetailRow label={t("manager.customers.originLabel")} value={t(`manager.customers.origin.${customer.customerOrigin === "manager_created" ? "managerCreated" : customer.customerOrigin === "signup" ? "signup" : "other"}`)} />
               <DetailRow label={t("manager.customers.linkageLabel")} value={t(isLinked ? "manager.customers.linked" : "manager.customers.unlinked")} />
             </dl>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" disabled={mutationState !== "idle" || !canMutateCustomers} onClick={onEdit}>
+                <Pencil className="size-4" aria-hidden="true" />
+                {t("manager.customerActions.edit")}
+              </Button>
+              <Button size="sm" variant="outline" disabled={mutationState !== "idle" || !canMutateCustomers} onClick={() => onLifecycle(customer.status === "active" ? "deactivate" : "reactivate")}>
+                {t(customer.status === "active" ? "manager.customerActions.deactivate" : "manager.customerActions.reactivate")}
+              </Button>
+            </div>
           </section>
 
           <MembershipSection
@@ -158,7 +173,11 @@ export function CustomerDetailPanel({
             isLinked={isLinked}
             linkedUser={linkedUser}
             linkedState={linkedState}
-            mutationState={mutationState}
+            mutationState={
+              mutationState === "assigning" || mutationState === "revoking"
+                ? mutationState
+                : "idle"
+            }
             roles={roles}
             roleState={roleState}
             onAssign={onAssign}
