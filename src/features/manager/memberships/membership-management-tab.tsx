@@ -1,9 +1,11 @@
+import {
+  ClassKitManagerApiError,
+} from "@class-kit/react";
 import type {
   MembershipGrant,
   MembershipLedgerEntry,
   MembershipMode,
   MembershipType,
-  ProductUserListItem,
   ClassTemplate,
 } from "@class-kit/react";
 import { useProductContext } from "@class-kit/react";
@@ -14,18 +16,20 @@ import {
   Loader2,
   Plus,
   RefreshCw,
-  UserRound,
   WalletCards,
   X,
 } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
-  getUserDisplayName,
-  getUserSupportingEmail,
-} from "@/features/users/user-labels";
+  getCustomerContact,
+  getCustomerInitials,
+  getCustomerLabel,
+} from "@/features/customers/customer-labels";
+import { CustomerPicker } from "@/features/manager/customers/customer-picker";
+import { useCustomerDirectory } from "@/features/manager/customers/use-customer-directory";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 
@@ -37,7 +41,7 @@ type MembershipForm = {
   defaultDurationDays: string;
 };
 
-type UserMembershipState = {
+type CustomerMembershipState = {
   loadStatus: LoadStatus;
   grants: MembershipGrant[];
   ledger: MembershipLedgerEntry[];
@@ -62,6 +66,8 @@ type EditingMembershipForm = MembershipForm & {
 
 type MembershipManagementTabProps = {
   canManageMemberships: boolean;
+  canReadCustomers: boolean;
+  canReadMemberships: boolean;
 };
 
 const modeOptions: MembershipMode[] = [
@@ -255,17 +261,6 @@ function formatStockRatio(remaining: number, total: number) {
   return `${ltrIsolate}${remaining} / ${total}${popDirectionalIsolate}`;
 }
 
-function getUserLabel(user: ProductUserListItem) {
-  return getUserDisplayName(user);
-}
-
-function getUserInitials(user: ProductUserListItem) {
-  const label = getUserLabel(user).trim();
-  const parts = label.split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  return label.slice(0, 2).toUpperCase();
-}
-
 function getGrantStockLabel(
   grant: MembershipGrant,
   t: (key: string, options?: Record<string, unknown>) => string,
@@ -296,13 +291,15 @@ function parseOptionalDate(value: string) {
 
 export function MembershipManagementTab({
   canManageMemberships,
+  canReadCustomers,
+  canReadMemberships,
 }: MembershipManagementTabProps) {
   const { t, i18n } = useTranslation();
   const { client } = useProductContext();
   const [membershipTypes, setMembershipTypes] = useState<MembershipType[]>([]);
   const [templates, setTemplates] = useState<ClassTemplate[]>([]);
-  const [users, setUsers] = useState<ProductUserListItem[]>([]);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
+  const [membershipAccessChanged, setMembershipAccessChanged] = useState(false);
   const [templateLoadStatus, setTemplateLoadStatus] =
     useState<LoadStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -316,10 +313,9 @@ export function MembershipManagementTab({
   const [stockAdjustmentForms, setStockAdjustmentForms] = useState<
     Record<string, StockAdjustmentForm>
   >({});
-  const [userSearch, setUserSearch] = useState("");
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [selectedUserMembership, setSelectedUserMembership] =
-    useState<UserMembershipState>({
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [selectedCustomerMembership, setSelectedCustomerMembership] =
+    useState<CustomerMembershipState>({
       loadStatus: "idle",
       grants: [],
       ledger: [],
@@ -328,6 +324,18 @@ export function MembershipManagementTab({
   const [editingForm, setEditingForm] = useState<EditingMembershipForm | null>(
     null,
   );
+  const typeRequestRef = useRef(0);
+  const customerRequestRef = useRef(0);
+  const selectedCustomerRef = useRef("");
+  const canManageMembershipsRef = useRef(canManageMemberships);
+  const canReadCustomersRef = useRef(canReadCustomers);
+  const canReadMembershipsRef = useRef(canReadMemberships);
+  const membershipAccessChangedRef = useRef(membershipAccessChanged);
+  const customerDirectoryAccessChangedRef = useRef(false);
+  canManageMembershipsRef.current = canManageMemberships;
+  canReadCustomersRef.current = canReadCustomers;
+  canReadMembershipsRef.current = canReadMemberships;
+  membershipAccessChangedRef.current = membershipAccessChanged;
   const dateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(i18n.language, {
@@ -371,35 +379,44 @@ export function MembershipManagementTab({
         .sort((a, b) => a.name.localeCompare(b.name)),
     [templates],
   );
-  const filteredUsers = useMemo(() => {
-    const query = userSearch.trim().toLowerCase();
-    if (!query) return users.slice(0, 8);
-
-    return users
-      .filter((user) =>
-        [
-          user.display_name,
-          user.email,
-          user.phone_number,
-          user.user_id,
-          user.status,
-          user.scope,
-        ]
-          .filter((value): value is string => Boolean(value))
-          .some((value) => value.toLowerCase().includes(query)),
-      )
-      .slice(0, 12);
-  }, [userSearch, users]);
-  const selectedUser = useMemo(
-    () => users.find((user) => user.user_id === selectedUserId) ?? null,
-    [selectedUserId, users],
+  const clearCustomerSelection = useCallback(() => {
+    customerRequestRef.current += 1;
+    selectedCustomerRef.current = "";
+    setSelectedCustomerId("");
+    setSelectedCustomerMembership({ loadStatus: "idle", grants: [], ledger: [], errorMessage: null });
+    setGrantForm(initialGrantForm);
+    setStockAdjustmentForms({});
+  }, []);
+  const clearMembershipReadState = useCallback(() => {
+    typeRequestRef.current += 1;
+    customerRequestRef.current += 1;
+    setMembershipTypes([]);
+    setTemplates([]);
+    setEditingForm(null);
+    setForm(initialForm);
+    setOperationError(null);
+    setMutatingKey(null);
+    clearCustomerSelection();
+  }, [clearCustomerSelection]);
+  const selectCustomer = useCallback((customerId: string) => {
+    customerRequestRef.current += 1;
+    selectedCustomerRef.current = customerId;
+    setSelectedCustomerId(customerId);
+  }, []);
+  const directory = useCustomerDirectory({
+    client,
+    canReadCustomers,
+    onForbidden: clearCustomerSelection,
+  });
+  customerDirectoryAccessChangedRef.current = directory.accessChanged;
+  const selectedCustomer = useMemo(
+    () => directory.records.find((customer) => customer.customerId === selectedCustomerId) ?? null,
+    [directory.records, selectedCustomerId],
   );
 
   const loadMembershipTypes = useCallback(async (options?: { silent?: boolean }) => {
-    if (!client || !canManageMemberships) {
-      setMembershipTypes([]);
-      setTemplates([]);
-      setUsers([]);
+    if (!client || !canManageMemberships || !canReadMemberships) {
+      clearMembershipReadState();
       setLoadStatus("idle");
       setTemplateLoadStatus("idle");
       setTemplateErrorMessage(null);
@@ -413,12 +430,14 @@ export function MembershipManagementTab({
       setTemplateErrorMessage(null);
     }
 
-    const [membershipTypeResult, userResult, templateResult] =
+    const requestId = ++typeRequestRef.current;
+    const [membershipTypeResult, templateResult] =
       await Promise.allSettled([
         client.management.memberships.listTypes(),
-        client.management.users.list(),
         client.management.templates.list(),
       ]);
+
+    if (requestId !== typeRequestRef.current || !canReadMembershipsRef.current) return;
 
     if (templateResult.status === "fulfilled") {
       setTemplates(templateResult.value.templates);
@@ -435,35 +454,38 @@ export function MembershipManagementTab({
     }
 
     if (
-      membershipTypeResult.status === "fulfilled" &&
-      userResult.status === "fulfilled"
+      membershipTypeResult.status === "fulfilled"
     ) {
       setMembershipTypes(membershipTypeResult.value.membership_types);
-      setUsers(userResult.value.users);
+      setMembershipAccessChanged(false);
       setLoadStatus("loaded");
       return;
     }
 
-    if (options?.silent) return;
-
     const error =
       membershipTypeResult.status === "rejected"
         ? membershipTypeResult.reason
-        : userResult.status === "rejected"
-          ? userResult.reason
-          : null;
+        : null;
+    if (error instanceof ClassKitManagerApiError && error.code === "forbidden") {
+      membershipAccessChangedRef.current = true;
+      setMembershipAccessChanged(true);
+      clearMembershipReadState();
+      return;
+    }
+    if (options?.silent) return;
     setErrorMessage(
       error instanceof Error ? error.message : t("manager.memberships.errorBody"),
     );
     setLoadStatus("error");
-  }, [canManageMemberships, client, t]);
+  }, [canManageMemberships, canReadMemberships, clearMembershipReadState, client, t]);
 
-  const loadUserMemberships = useCallback(
-    async (userId: string, options?: { silent?: boolean }) => {
-      if (!client || !canManageMemberships || !userId) return;
+  const loadCustomerMemberships = useCallback(
+    async (customerId: string, options?: { silent?: boolean }) => {
+      if (!client || !canManageMemberships || !canReadMemberships || membershipAccessChanged || !canReadCustomers || directory.accessChanged || !customerId) return;
+      const requestId = ++customerRequestRef.current;
 
       if (!options?.silent) {
-        setSelectedUserMembership((current) => ({
+        setSelectedCustomerMembership((current) => ({
           loadStatus: "loading",
           grants: current.grants,
           ledger: current.ledger,
@@ -473,34 +495,42 @@ export function MembershipManagementTab({
 
       try {
         const [grantResult, ledgerResult] = await Promise.all([
-          client.management.memberships.listUserGrants(userId),
+          client.management.memberships.listCustomerGrants(customerId),
           client.management.memberships.listLedger({
-            userId,
+            customerId,
             limit: membershipLedgerLimit,
           }),
         ]);
 
-        setSelectedUserMembership({
+        if (requestId !== customerRequestRef.current || selectedCustomerRef.current !== customerId || !canReadMembershipsRef.current || membershipAccessChangedRef.current) return;
+        setSelectedCustomerMembership({
           loadStatus: "loaded",
           grants: grantResult.membership_grants,
           ledger: ledgerResult.membership_ledger,
           errorMessage: null,
         });
       } catch (error) {
+        if (error instanceof ClassKitManagerApiError && error.code === "forbidden") {
+          if (requestId !== customerRequestRef.current) return;
+          membershipAccessChangedRef.current = true;
+          setMembershipAccessChanged(true);
+          clearMembershipReadState();
+          return;
+        }
+        if (requestId !== customerRequestRef.current || selectedCustomerRef.current !== customerId || !canReadMembershipsRef.current || membershipAccessChangedRef.current) return;
         if (options?.silent) return;
-
-        setSelectedUserMembership((current) => ({
+        setSelectedCustomerMembership((current) => ({
           loadStatus: "error",
           grants: current.grants,
           ledger: current.ledger,
           errorMessage:
             error instanceof Error
               ? error.message
-              : t("manager.memberships.userErrorBody"),
+              : t("manager.memberships.customerErrorBody"),
         }));
       }
     },
-    [canManageMemberships, client, t],
+    [canManageMemberships, canReadCustomers, canReadMemberships, clearMembershipReadState, client, directory.accessChanged, membershipAccessChanged, t],
   );
 
   useEffect(() => {
@@ -512,15 +542,16 @@ export function MembershipManagementTab({
   }, [loadMembershipTypes]);
 
   useEffect(() => {
-    if (!selectedUserId) {
-      setSelectedUserMembership({
-        loadStatus: "idle",
-        grants: [],
-        ledger: [],
-        errorMessage: null,
-      });
-      setGrantForm(initialGrantForm);
-      setStockAdjustmentForms({});
+    if (!canReadMemberships) clearMembershipReadState();
+  }, [canReadMemberships, clearMembershipReadState]);
+
+  useEffect(() => {
+    if (!canReadCustomers) clearCustomerSelection();
+  }, [canReadCustomers, clearCustomerSelection]);
+
+  useEffect(() => {
+    if (!selectedCustomerId) {
+      clearCustomerSelection();
       return;
     }
 
@@ -530,11 +561,16 @@ export function MembershipManagementTab({
       membershipTypeId: defaultMembershipType?.id ?? "",
       validFrom: getDateInputValue(new Date()),
     });
-    void loadUserMemberships(selectedUserId);
-  }, [activeMembershipTypes, loadUserMemberships, selectedUserId]);
+    selectedCustomerRef.current = selectedCustomerId;
+    void loadCustomerMemberships(selectedCustomerId);
+  }, [activeMembershipTypes, clearCustomerSelection, loadCustomerMemberships, selectedCustomerId]);
 
   const runMembershipMutation = useCallback(
-    async <T,>(key: string, command: () => Promise<T>) => {
+    async <T,>(
+      key: string,
+      command: () => Promise<T>,
+      options?: { customerId?: string },
+    ) => {
       if (!client || mutatingKey) return { ok: false as const };
 
       setOperationError(null);
@@ -542,13 +578,38 @@ export function MembershipManagementTab({
 
       try {
         const result = await command();
+        const customerId = options?.customerId;
+        const canCommit =
+          canManageMembershipsRef.current &&
+          canReadMembershipsRef.current &&
+          !membershipAccessChangedRef.current &&
+          (!customerId || (
+            canReadCustomersRef.current &&
+            !customerDirectoryAccessChangedRef.current &&
+            selectedCustomerRef.current === customerId
+          ));
+        if (!canCommit) return { ok: false as const };
         void loadMembershipTypes({ silent: true });
         return { ok: true as const, result };
       } catch (error) {
+        const customerId = options?.customerId;
+        const canCommit =
+          canManageMembershipsRef.current &&
+          canReadMembershipsRef.current &&
+          !membershipAccessChangedRef.current &&
+          (!customerId || (
+            canReadCustomersRef.current &&
+            !customerDirectoryAccessChangedRef.current &&
+            selectedCustomerRef.current === customerId
+          ));
+        if (!canCommit) return { ok: false as const };
+        const message = error instanceof Error ? error.message : "";
         setOperationError(
-          error instanceof Error
-            ? error.message
-            : t("manager.memberships.actionFailed"),
+          message === "customer_inactive"
+            ? t("manager.memberships.customerInactive")
+            : error instanceof Error
+              ? error.message
+              : t("manager.memberships.actionFailed"),
         );
         return { ok: false as const };
       } finally {
@@ -648,7 +709,7 @@ export function MembershipManagementTab({
   const grantMembership = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (!client || !canManageMemberships || !selectedUserId) return;
+      if (!client || !canManageMemberships || !canReadMemberships || membershipAccessChanged || !canReadCustomers || directory.accessChanged || !selectedCustomerId) return;
 
       const selectedMembershipType = membershipTypesById.get(
         grantForm.membershipTypeId,
@@ -667,7 +728,7 @@ export function MembershipManagementTab({
       }
 
       const input = {
-        userId: selectedUserId,
+        customerId: selectedCustomerId,
         membershipTypeId: selectedMembershipType.id,
         validFrom: parseOptionalDate(grantForm.validFrom),
         validUntil: parseOptionalDate(grantForm.validUntil),
@@ -675,12 +736,13 @@ export function MembershipManagementTab({
       };
 
       const granted = await runMembershipMutation(
-        `set-${selectedUserId}`,
-        () => client.management.memberships.setForUser(input),
+        `set-${selectedCustomerId}`,
+        () => client.management.memberships.setForCustomer(input),
+        { customerId: selectedCustomerId },
       );
 
       if (granted.ok) {
-        setSelectedUserMembership((current) => ({
+        setSelectedCustomerMembership((current) => ({
           ...current,
           loadStatus: "loaded",
           grants: mergeMembershipGrant(
@@ -688,30 +750,31 @@ export function MembershipManagementTab({
             granted.result.membership_grant,
           ),
         }));
-        void loadUserMemberships(selectedUserId, { silent: true });
+        void loadCustomerMemberships(selectedCustomerId, { silent: true });
       }
     },
     [
-      canManageMemberships,
+      canManageMemberships, canReadCustomers, canReadMemberships, directory.accessChanged, membershipAccessChanged,
       client,
       grantForm,
-      loadUserMemberships,
+      loadCustomerMemberships,
       membershipTypesById,
       runMembershipMutation,
-      selectedUserId,
+      selectedCustomerId,
       t,
     ],
   );
 
   const revokeMembership = useCallback(
     (membershipGrantId: string) => {
-      if (!client || !canManageMemberships || !selectedUserId) return;
+      if (!client || !canManageMemberships || !canReadMemberships || membershipAccessChanged || !canReadCustomers || directory.accessChanged || !selectedCustomerId) return;
 
       void runMembershipMutation(membershipGrantId, () =>
         client.management.memberships.revoke(membershipGrantId),
+      { customerId: selectedCustomerId },
       ).then((result) => {
         if (result.ok) {
-          setSelectedUserMembership((current) => ({
+          setSelectedCustomerMembership((current) => ({
             ...current,
             loadStatus: "loaded",
             grants: mergeMembershipGrant(
@@ -719,16 +782,16 @@ export function MembershipManagementTab({
               result.result.membership_grant,
             ),
           }));
-          void loadUserMemberships(selectedUserId, { silent: true });
+          void loadCustomerMemberships(selectedCustomerId, { silent: true });
         }
       });
     },
     [
-      canManageMemberships,
+      canManageMemberships, canReadCustomers, canReadMemberships, directory.accessChanged, membershipAccessChanged,
       client,
-      loadUserMemberships,
+      loadCustomerMemberships,
       runMembershipMutation,
-      selectedUserId,
+      selectedCustomerId,
     ],
   );
 
@@ -744,7 +807,7 @@ export function MembershipManagementTab({
   const adjustMembershipStock = useCallback(
     async (event: FormEvent<HTMLFormElement>, grant: MembershipGrant) => {
       event.preventDefault();
-      if (!client || !canManageMemberships || !selectedUserId) return;
+      if (!client || !canManageMemberships || !canReadMemberships || membershipAccessChanged || !canReadCustomers || directory.accessChanged || !selectedCustomerId) return;
 
       const stockDelta = parseRequiredNonZeroInteger(
         stockAdjustmentForms[grant.id]?.stockDelta ?? "",
@@ -759,10 +822,11 @@ export function MembershipManagementTab({
           membershipGrantId: grant.id,
           stockDelta,
         }),
+      { customerId: selectedCustomerId },
       );
 
       if (adjusted.ok) {
-        setSelectedUserMembership((current) => ({
+        setSelectedCustomerMembership((current) => ({
           ...current,
           loadStatus: "loaded",
           grants: mergeMembershipGrant(
@@ -774,15 +838,15 @@ export function MembershipManagementTab({
           ...current,
           [grant.id]: { stockDelta: "" },
         }));
-        void loadUserMemberships(selectedUserId, { silent: true });
+        void loadCustomerMemberships(selectedCustomerId, { silent: true });
       }
     },
     [
-      canManageMemberships,
+      canManageMemberships, canReadCustomers, canReadMemberships, directory.accessChanged, membershipAccessChanged,
       client,
-      loadUserMemberships,
+      loadCustomerMemberships,
       runMembershipMutation,
-      selectedUserId,
+      selectedCustomerId,
       stockAdjustmentForms,
       t,
     ],
@@ -797,6 +861,24 @@ export function MembershipManagementTab({
         <p className="mt-2 text-sm leading-6 text-foreground/68">
           {t("manager.memberships.noAccessBody")}
         </p>
+      </section>
+    );
+  }
+
+  if (!canReadMemberships || membershipAccessChanged) {
+    return (
+      <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-5 shadow-soft">
+        <p className="font-serif text-xl text-foreground">
+          {t("manager.memberships.readUnavailableTitle")}
+        </p>
+        <p className="mt-2 text-sm leading-6 text-foreground/68">
+          {t("manager.memberships.readUnavailableBody")}
+        </p>
+        {canReadMemberships && (
+          <Button type="button" variant="outline" className="mt-4 rounded-full" onClick={() => void loadMembershipTypes()}>
+            {t("manager.memberships.retry")}
+          </Button>
+        )}
       </section>
     );
   }
@@ -841,90 +923,29 @@ export function MembershipManagementTab({
       </div>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(18rem,25rem)_minmax(0,1fr)]">
-        <aside className="rounded-[1.2rem] border border-blush/22 bg-background/30 p-3 sm:rounded-[1.3rem] sm:border-blush/24 sm:bg-background/34 sm:p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="font-serif text-3xl leading-none text-foreground sm:text-2xl">
-                {t("manager.memberships.usersTitle")}
-              </h3>
-              <p className="mt-1 text-sm text-foreground/58">
-                {t("manager.memberships.userSearch")}
-              </p>
-            </div>
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong/18 text-blush-strong">
-              <UserRound className="size-5" aria-hidden="true" />
-            </span>
-          </div>
-
-          <label className="mt-4 block">
-            <span className="sr-only">{t("manager.memberships.userSearch")}</span>
-            <input
-              className="h-11 w-full rounded-xl border border-blush/24 bg-background/70 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
-              value={userSearch}
-              placeholder={t("manager.memberships.userSearchPlaceholder")}
-              onChange={(event) => setUserSearch(event.target.value)}
+        <aside>
+          {canReadCustomers ? (
+            <CustomerPicker
+              directory={directory}
+              selectedCustomerId={selectedCustomerId}
+              onSelectCustomer={selectCustomer}
+              onClearSelection={clearCustomerSelection}
             />
-          </label>
-
-          <div className="mt-3 grid max-h-none gap-2 overflow-y-visible pe-0 sm:max-h-[38rem] sm:overflow-y-auto sm:pe-1">
-            {filteredUsers.length === 0 ? (
-              <p className="rounded-xl border border-blush/24 bg-card/40 p-3 text-sm leading-6 text-foreground/60">
-                {t("manager.memberships.noUsers")}
-              </p>
-            ) : (
-              filteredUsers.map((user) => {
-                const selected = user.user_id === selectedUserId;
-                const supportingEmail = getUserSupportingEmail(user);
-
-                return (
-                  <button
-                    key={user.user_id}
-                    type="button"
-                    className={[
-                      "grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border p-3 text-start transition-colors",
-                      selected
-                        ? "border-blush-strong bg-blush-strong/14"
-                        : "border-blush/20 bg-card/42 hover:border-blush-strong/55",
-                    ].join(" ")}
-                    aria-pressed={selected}
-                    onClick={() => setSelectedUserId(user.user_id)}
-                  >
-                    <span className="min-w-0">
-                      <span className="block break-words font-serif text-lg leading-5 text-foreground [overflow-wrap:anywhere] sm:text-lg">
-                        {getUserLabel(user)}
-                      </span>
-                      {supportingEmail && (
-                        <span className="mt-1 block break-words text-sm text-foreground/60 [overflow-wrap:anywhere]">
-                          {supportingEmail}
-                        </span>
-                      )}
-                      {user.phone_number && (
-                        <span className="mt-1 block text-sm text-foreground/50">
-                          {user.phone_number}
-                        </span>
-                      )}
-                      <span className="mt-2 inline-flex rounded-full border border-blush/18 px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.14em] text-foreground/50">
-                        {user.status} · {user.scope}
-                      </span>
-                    </span>
-                    <span className="grid size-12 shrink-0 place-items-center rounded-full bg-blush-strong/24 font-serif text-lg text-foreground">
-                      {getUserInitials(user)}
-                    </span>
-                  </button>
-                );
-              })
-            )}
-          </div>
+          ) : (
+            <p className="rounded-xl border border-blush/24 bg-card/40 p-3 text-sm leading-6 text-foreground/60">
+              {t("manager.customers.denied")}
+            </p>
+          )}
         </aside>
 
         <div
           className={[
-            selectedUser
+            selectedCustomer
               ? "fixed inset-0 z-50 grid place-items-end bg-black/50 p-0 xl:static xl:block xl:bg-transparent"
               : "hidden xl:block",
           ].join(" ")}
           onClick={() => {
-            if (selectedUser) setSelectedUserId("");
+            if (selectedCustomer) clearCustomerSelection();
           }}
         >
           <div
@@ -932,14 +953,14 @@ export function MembershipManagementTab({
             onClick={(event) => event.stopPropagation()}
           >
           <span className="mx-auto mb-3 block h-1 w-12 rounded-full bg-blush/28 xl:hidden" />
-          {!selectedUser ? (
+          {!selectedCustomer ? (
             <div className="grid min-h-72 place-items-center rounded-[1.1rem] border border-blush/18 bg-card/38 p-6 text-center">
               <div className="max-w-sm">
                 <span className="mx-auto grid size-12 place-items-center rounded-full bg-blush-strong/18 text-blush-strong">
                   <WalletCards className="size-6" aria-hidden="true" />
                 </span>
                 <p className="mt-4 font-serif text-2xl text-foreground">
-                  {t("manager.memberships.selectUser")}
+                  {t("manager.memberships.selectCustomer")}
                 </p>
               </div>
             </div>
@@ -948,20 +969,17 @@ export function MembershipManagementTab({
               <div className="relative flex flex-col gap-3 rounded-[1.1rem] border border-blush/18 bg-card/45 p-4 pe-12 lg:flex-row lg:items-center lg:justify-between xl:pe-4">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="grid size-14 shrink-0 place-items-center rounded-full bg-blush-strong/24 font-serif text-xl text-foreground">
-                    {getUserInitials(selectedUser)}
+                    {getCustomerInitials(selectedCustomer, t("manager.customers.unnamed"))}
                   </span>
                   <div className="min-w-0">
                     <p className="break-words font-serif text-2xl text-foreground [overflow-wrap:anywhere]">
-                      {getUserLabel(selectedUser)}
+                      {getCustomerLabel(selectedCustomer, t("manager.customers.unnamed"))}
                     </p>
                     <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm text-foreground/60">
-                      {getUserSupportingEmail(selectedUser) && (
+                      {getCustomerContact(selectedCustomer) && (
                         <span className="break-words [overflow-wrap:anywhere]">
-                          {getUserSupportingEmail(selectedUser)}
+                          {getCustomerContact(selectedCustomer)}
                         </span>
-                      )}
-                      {selectedUser.phone_number && (
-                        <span>{selectedUser.phone_number}</span>
                       )}
                     </p>
                   </div>
@@ -971,26 +989,26 @@ export function MembershipManagementTab({
                   variant="outline"
                   size="sm"
                   className="w-fit shrink-0 rounded-full"
-                  disabled={selectedUserMembership.loadStatus === "loading"}
-                  onClick={() => void loadUserMemberships(selectedUser.user_id)}
+                  disabled={selectedCustomerMembership.loadStatus === "loading"}
+                  onClick={() => void loadCustomerMemberships(selectedCustomer.customerId)}
                 >
                   <RefreshCw
                     className={[
                       "size-4",
-                      selectedUserMembership.loadStatus === "loading"
+                      selectedCustomerMembership.loadStatus === "loading"
                         ? "animate-spin"
                         : "",
                     ].join(" ")}
                     aria-hidden="true"
                   />
-                  {t("manager.memberships.refreshUser")}
+                  {t("manager.memberships.refreshCustomer")}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   className="absolute end-4 top-4 size-9 rounded-full xl:hidden"
-                  onClick={() => setSelectedUserId("")}
+                  onClick={clearCustomerSelection}
                   aria-label={t("actions.close")}
                 >
                   <X className="size-5" aria-hidden="true" />
@@ -1104,32 +1122,32 @@ export function MembershipManagementTab({
               </form>
               </details>
 
-              {selectedUserMembership.loadStatus === "loading" && (
+              {selectedCustomerMembership.loadStatus === "loading" && (
                 <p className="rounded-xl border border-blush/24 bg-card/36 p-3 text-sm text-foreground/68">
                   <Loader2
                     className="me-2 inline size-4 animate-spin text-blush-strong"
                     aria-hidden="true"
                   />
-                  {t("manager.memberships.loadingUser")}
+                  {t("manager.memberships.loadingCustomer")}
                 </p>
               )}
 
-              {selectedUserMembership.loadStatus === "error" && (
+              {selectedCustomerMembership.loadStatus === "error" && (
                 <p className="rounded-xl border border-blush/24 bg-card/36 p-3 text-sm leading-6 text-blush-strong">
-                  {selectedUserMembership.errorMessage ??
-                    t("manager.memberships.userErrorBody")}
+                  {selectedCustomerMembership.errorMessage ??
+                    t("manager.memberships.customerErrorBody")}
                 </p>
               )}
 
-              {selectedUserMembership.loadStatus === "loaded" && (
+              {selectedCustomerMembership.loadStatus === "loaded" && (
                 <div className="grid gap-4">
                   <div className="grid gap-3 2xl:grid-cols-2">
-                    {selectedUserMembership.grants.length === 0 ? (
+                    {selectedCustomerMembership.grants.length === 0 ? (
                       <p className="rounded-xl border border-blush/24 bg-card/36 p-4 text-sm leading-6 text-foreground/60 2xl:col-span-2">
                         {t("manager.memberships.noGrants")}
                       </p>
                     ) : (
-                      selectedUserMembership.grants.map((grant) => {
+                      selectedCustomerMembership.grants.map((grant) => {
                         const membershipType = membershipTypesById.get(
                           grant.membership_type_id,
                         );
@@ -1288,13 +1306,13 @@ export function MembershipManagementTab({
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
                       {t("manager.memberships.ledgerTitle")}
                     </p>
-                    {selectedUserMembership.ledger.length === 0 ? (
+                    {selectedCustomerMembership.ledger.length === 0 ? (
                       <p className="mt-2 text-sm leading-6 text-foreground/60">
                         {t("manager.memberships.noLedger")}
                       </p>
                     ) : (
                       <div className="mt-3 grid gap-2">
-                        {selectedUserMembership.ledger.map((entry) => (
+                        {selectedCustomerMembership.ledger.map((entry) => (
                           <div
                             key={entry.id}
                             className="flex flex-col gap-1 rounded-lg border border-blush/16 bg-background/36 p-2 text-sm sm:flex-row sm:items-center sm:justify-between"

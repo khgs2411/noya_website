@@ -200,6 +200,8 @@ export function ManagerPage({
                   canManageClasses={canManageClasses}
                   canManageRegistrations={canManageRegistrations}
                   canManageAttendance={canManageAttendance}
+                  canReadCustomers={canReadCustomers}
+                  canReadUsers={canReadUsers}
                   canAutocompleteLocations={canAutocompleteLocations}
                 />
               )}
@@ -225,6 +227,8 @@ export function ManagerPage({
               {effectiveActiveTab === "memberships" && (
                 <MembershipManagementTab
                   canManageMemberships={canManageMemberships}
+                  canReadCustomers={canReadCustomers}
+                  canReadMemberships={canReadMemberships}
                 />
               )}
               {effectiveActiveTab === "customers" && canReadCustomers && (
