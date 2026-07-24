@@ -1,7 +1,7 @@
-# Chunk 03: Manager Integration, Localization, And Verification
+# Chunk 03: Manager Integration, Permission Grantability, Localization, And Verification
 
 **Plan Set:** `../plan.md`
-**Approved Source:** `../spec.md` and latest `.symphony/assignment.md`
+**Approved Source:** `../spec.md`
 **Status:** Ready for Review
 **Depends on:** Chunks 01–02
 **Enables:** Complete assignment
@@ -9,9 +9,10 @@
 ## Goal
 
 Replace the manager Users entry with the live-gated Customers workspace,
-preserve Permissions ownership, complete English/Russian/Hebrew copy and
-responsive semantics, remove superseded artifacts, and produce final static and
-available browser acceptance evidence.
+make both customer read authorities independently grantable without moving
+ownership out of Permissions, complete English/Russian/Hebrew copy and
+responsive semantics, remove superseded artifacts, and produce final static
+and available browser acceptance evidence.
 
 ## Source Artifacts And Constraints
 
@@ -43,9 +44,12 @@ available browser acceptance evidence.
   capability derivation, safe active-tab repair, and four independent props.
 - `src/features/manager/manager-tabs.tsx` — replace primary Users with
   capability-filtered Customers while preserving Permissions in More.
+- `src/features/manager/access/role-permission-presentation.ts` — add separate
+  one-permission groups for `customers.read` and `memberships.read`, preserving
+  the existing pure filter/summary contract.
 - `src/i18n.ts` — replace obsolete `manager.users`/tab copy with complete
   `manager.customers` and `manager.tabs.customers` keys in English, Russian,
-  and Hebrew; preserve Permissions keys.
+  and Hebrew; add labels/descriptions for both new Permissions groups.
 
 **Delete:**
 
@@ -91,6 +95,13 @@ linked-user, and role controls remain independently gated inside the mounted
 workspace. If customer-read authority becomes false while active, derive
 `classes` before render and repair stored state afterward.
 
+Permissions presents `customers.read` and `memberships.read` in separate
+one-permission groups. This is required because its existing group toggle
+grants/revokes every key in the selected group. Both keys must survive
+`filterAvailablePermissionGroups()` when advertised by ClassKit and flow
+through the existing Permissions mutation path. These catalog entries do not
+replace the live dashboard booleans above.
+
 ## Implementation Tasks
 
 - [ ] Replace the Users lazy import and render branch with
@@ -109,6 +120,11 @@ workspace. If customer-read authority becomes false while active, derive
       and Hebrew. Include filters, pagination, states, customer labels,
       lifecycle/linkage/origin, membership/access context, forbidden recovery,
       role actions, overlay labels, and announcements.
+- [ ] Add localized **Customer directory access** and **Customer membership
+      access** Permissions groups in English, Russian, and Hebrew. Each group
+      contains exactly one key (`customers.read` or `memberships.read`) so a
+      future custom role can grant/revoke them independently through the
+      existing Permissions controls.
 - [ ] Remove the now-unused `manager.users` copy and delete the superseded Users
       component. Remove only imports/symbols made unused by this replacement.
 - [ ] Review narrow/wide markup and logical utilities for themes and Hebrew RTL.
@@ -132,6 +148,12 @@ workspace. If customer-read authority becomes false while active, derive
   — returns no superseded manager Users workspace/navigation references.
 - `rg -n 'manager\\.tabs\\.customers|manager\\.customers' src/features/manager src/i18n.ts`
   — confirms the new navigation and workspace copy references.
+- Focused inspection or a repository-native unit check confirms
+  `filterAvailablePermissionGroups(["customers.read", "memberships.read"])`
+  returns two distinct one-key groups, and that the Permissions UI can grant
+  and revoke each group independently through its existing mutation handlers.
+- `rg -n 'customers\\.read|memberships\\.read' src/features/manager/access/role-permission-presentation.ts src/i18n.ts`
+  — both curated keys and all localized group copy are present.
 - Focused locale parity inspection confirms every consumed Customers key exists
   in English, Russian, and Hebrew.
 - `rg -n 'management\\.roles\\.(list|listPermissions|create|update|grantPermission|revokePermission)' src/features/manager`
@@ -141,6 +163,9 @@ workspace. If customer-read authority becomes false while active, derive
   - all/active/inactive pages, next/previous, refresh, empty, and failures;
   - linked/ghost and active/inactive combinations;
   - customer read with and without membership read;
+  - future custom role with neither permission, each permission independently,
+    and both permissions; after each grant/revoke and live capability refresh,
+    Customers and membership visibility match the spec matrix;
   - linked identity unreadable, read-only, and assignable;
   - role assign/revoke without Permissions authority;
   - authoritative forbidden cleanup and capability loss;
@@ -151,6 +176,9 @@ workspace. If customer-read authority becomes false while active, derive
 
 - Customers replaces Users while Permissions remains separate.
 - Live customer and membership read gates match ClassKit v0.1.23.
+- Future custom roles can grant/revoke `customers.read` and
+  `memberships.read` independently in Permissions, while Customers continues
+  to use live runtime gates.
 - Capability combinations are visible and fail closed.
 - All copy exists in English, Russian, and Hebrew.
 - Mobile, desktop, theme, RTL, loading, refresh, selection, and error behavior

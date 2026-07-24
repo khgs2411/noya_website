@@ -4,7 +4,8 @@
 
 Rationale: The plan spans a dependency baseline, authorization-sensitive async
 state, a new customer workspace, manager-shell integration, localization, and
-responsive acceptance for AI-assisted execution.
+Permissions catalog integration, and responsive acceptance for AI-assisted
+execution.
 
 ## Plan Overview
 
@@ -13,9 +14,10 @@ ClassKit v0.1.23 and the merged Permissions boundary.
 
 Scope: Three ordered chunks covering SDK/foundation contracts, customer
 list/detail and context behavior, then manager integration/localization/final
-verification. Backend/SDK source work, new dependency families, lifecycle and
-service mutations, unrelated service-screen migrations, and dev-server startup
-are excluded.
+verification, including two independently grantable customer read groups.
+Backend/SDK source work, new dependency families, lifecycle and service
+mutations, unrelated service-screen migrations, and dev-server startup are
+excluded.
 
 Target Audience: Human developers and AI implementation agents.
 
@@ -29,6 +31,8 @@ Key Technical Decisions:
   authorized and independently recoverable.
 - Replace Users only after the new import target is stable; preserve
   Permissions and cached/live authority boundaries.
+- Add `customers.read` and `memberships.read` to Permissions as separate
+  one-key groups so its whole-group toggles can grant/revoke them independently.
 
 ## File Path Verification
 
@@ -43,7 +47,7 @@ Verified using local codebase inspection:
 | `src/features/manager/manager-tabs.tsx` | Exists | Chunk 03 navigation owner. |
 | `src/features/manager/users/user-role-management-tab.tsx` | Exists | Superseded file deleted in Chunk 03 after behavior transfer. |
 | `src/features/manager/permissions/permission-management-tab.tsx` | Exists | Preserved role-definition owner. |
-| `src/features/manager/access/role-permission-presentation.ts` | Exists | Pure shared permission presentation seam. |
+| `src/features/manager/access/role-permission-presentation.ts` | Exists | Chunk 03 owns the two separate one-key group additions. |
 | `src/features/manager/memberships/membership-management-tab.tsx` | Exists | Explicit adjacent non-goal. |
 | `src/App.tsx` | Exists | Inspection-only cached snapshot owner. |
 | `src/i18n.ts` | Exists | Chunk 03 locale owner. |
@@ -67,8 +71,8 @@ manager navigation only after a stable import target exists.
 ### 2. Exact Ownership Map
 
 Every created, modified, deleted, and inspection-only file has one owning chunk.
-No two chunks claim the same mutable surface, and Permissions remains outside
-the replacement boundary.
+No two chunks claim the same mutable surface. Chunk 03 makes the bounded
+presentation-catalog change while Permissions retains all mutation ownership.
 
 ### 3. Authorization And Data-Integrity Coverage
 
@@ -81,6 +85,12 @@ guard customer/detail commits with identity tokens.
 Every assignment requirement maps to one or more chunks, with exact commands
 for dependency resolution, type/build, lint, source ownership, locale parity,
 and conditional browser evidence.
+
+### 5. Self-Contained Executor Contract
+
+The committed spec, roadmap, and chunks contain all implementation-critical
+requirements. Runtime-only orchestration evidence is not an implementation
+input.
 
 ## Critical Issues
 
@@ -108,6 +118,8 @@ rules and contains no unresolved product or architecture decision.
   exist.
 - Preserve the exact forbidden-response evidence separately for customer,
   membership, and linked access.
+- Exercise each one-key Permissions group independently and record the
+  resulting refreshed Customers and membership visibility.
 
 ## Risk Assessment
 
@@ -118,6 +130,7 @@ rules and contains no unresolved product or architecture decision.
 | Protected data survives forbidden | Medium | High | Section-specific clearing and focused inspection in Chunk 02. |
 | Navigation briefly mounts denied Customers | Medium | High | Render-time effective tab before state repair in Chunk 03. |
 | Role configuration leaks into Customers | Low | High | Facade ownership checks and preserved Permissions owner. |
+| Read keys are filtered out or coupled in Permissions | Low | High | Chunk 03 owns two one-key groups, locale copy, filter inspection, and independent grant/revoke acceptance. |
 | RTL/overlay defect lacks automation | Medium | Medium | Conditional existing-server matrix with disclosed gaps. |
 
 Highest Risk: Cross-section authorization drift under stale context. The plan
@@ -126,7 +139,7 @@ independently.
 
 ## Pre-Development Checklist
 
-- [x] Explicit approved rework source and v0.1.23 release named.
+- [x] Committed spec is the self-contained approved source and v0.1.23 release is named.
 - [x] Design and design audit are ready.
 - [x] Every existing path verified and every planned path has one owner.
 - [x] Dependencies and parallelism are coherent.
@@ -144,7 +157,7 @@ independently.
 
 | Dimension | Weight | Raw Score | Weighted Score | Notes |
 | --- | --- | --- | --- | --- |
-| Completeness | x3 | 5/5 | 15/15 | Every requirement, failure state, file, and verification layer is assigned. |
+| Completeness | x3 | 5/5 | 15/15 | Every requirement, permission-grant state, failure state, file, and verification layer is assigned. |
 | Feasibility | x3 | 5/5 | 15/15 | Released SDK and current merged repository provide all required contracts. |
 | Clarity | x2 | 5/5 | 10/10 | Tasks, decision rules, ownership, and expected signals are explicit. |
 | Logical Flow | x2 | 5/5 | 10/10 | Dependency, domain, then integration ordering avoids broken intermediate exposure. |
@@ -166,6 +179,8 @@ Key constraints:
 - Use only exact live capability sources and ClassKit facades.
 - Reject stale async commits and clear protected data on forbidden.
 - Keep role definition and permission mutation exclusively in Permissions.
+- Keep both new read permissions independently grantable while using only live
+  dashboard booleans for Customers runtime gates.
 - Do not add service/lifecycle mutations or start a server.
 
 Suggested starting point: Chunk 01 dependency and customer foundation files.

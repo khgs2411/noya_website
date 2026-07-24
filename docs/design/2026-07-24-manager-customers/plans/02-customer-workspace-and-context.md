@@ -1,7 +1,7 @@
 # Chunk 02: Customer Workspace And Context
 
 **Plan Set:** `../plan.md`
-**Approved Source:** `../spec.md` and latest `.symphony/assignment.md`
+**Approved Source:** `../spec.md`
 **Status:** Ready for Review
 **Depends on:** Chunk 01
 **Enables:** Chunk 03
@@ -45,12 +45,6 @@ behavior, authoritative forbidden cleanup, and accessible mobile/wide overlays.
 - `src/features/manager/customers/customer-management-tab.tsx` — workspace
   composition, selection/detail loads, capability-specific context, catalog
   cache, role mutations, and section recovery.
-
-**Modify:**
-
-- `src/features/manager/access/role-permission-presentation.ts` — only if the
-  existing pure summary signature needs a narrow customer-detail-compatible
-  export; preserve Permissions behavior and keep ClassKit/state out.
 
 **Test:**
 

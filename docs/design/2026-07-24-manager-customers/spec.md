@@ -20,6 +20,8 @@ The feature succeeds when:
 - linked-user role assignment and revocation remain available through
   `client.management.users.roles`, while role creation and permission
   configuration remain exclusively in the prerequisite Permissions workspace;
+- future custom roles can be granted and revoked `customers.read` and
+  `memberships.read` independently through two explicit Permissions groups;
 - customer, membership, and linked-access capability combinations have
   explicit, independent states instead of blank or partially misleading UI;
 - the workspace is usable on mobile and desktop, in light and dark themes, and
@@ -84,6 +86,11 @@ The feature succeeds when:
   the manager's More menu. Customers must not contain role creation, role
   editing, permission-catalog configuration, or permission grant/revoke
   controls.
+- Extend the curated Permissions catalog with two separate one-permission
+  groups: **Customer directory access** for `customers.read` and **Customer
+  membership access** for `memberships.read`. The existing Permissions UI
+  toggles whole presented groups, so combining these keys would prevent
+  independent assignment.
 - Do not use `dashboard.can_manage_users` as a proxy for the whole page. The
   integration uses independent, live signals matching the released v0.1.23
   operation matrix:
@@ -265,9 +272,11 @@ manager customer feature rather than leaking into the shared helper.
 The merged Permissions workspace remains separately capability-gated.
 
 Replace the current Users directory/assignment component with Customers.
-Permissions and the shared role-permission presentation module remain. Reuse
-the assignment behavior and pure permission-summary seam without moving
-role-definition ownership back into Customers.
+Permissions remains the only permission-mutation owner. Extend the shared
+role-permission presentation module with the two one-permission read groups,
+then reuse its pure summary behavior without moving role-definition ownership
+back into Customers. The group catalog is presentation/configuration only; it
+must not become a source of runtime authorization.
 
 No new route, global state, persisted cursor cache, website data model, backend
 API, dependency, direct Supabase call, or raw Edge Function call is introduced.
@@ -335,6 +344,14 @@ before relying on those types.
   only after linked identity is readable.
 - Role-definition capability does not grant or substitute for customer
   authority. `dashboard.can_manage_roles` remains owned by Permissions.
+- `customers.read` and `memberships.read` must survive
+  `filterAvailablePermissionGroups()` as distinct groups whenever ClassKit
+  exposes those permission keys. Permissions grants/revokes them through its
+  existing role-permission mutation flow.
+- Grantability in Permissions does not authorize Customers by itself. Customers
+  continues to use refreshed live `dashboard.can_read_customers` and
+  `dashboard.can_read_memberships` signals and fails closed while either
+  relevant signal is absent or stale.
 - Cached manager access is a shell-loading optimization, never positive
   authority for customer or service data.
 - Frontend guards improve UX but do not replace ClassKit server authorization.
@@ -410,6 +427,9 @@ Static and type verification:
   ghosts never reach linked-user calls;
 - inspect that role create/update and permission grant/revoke operations exist
   only in Permissions after the prerequisite is integrated; and
+- inspect that `customers.read` and `memberships.read` are separate curated
+  groups, both survive `filterAvailablePermissionGroups()`, and neither is used
+  directly as the Customers mount or membership-section runtime gate; and
 - compare all consumed Customers and navigation keys across English, Russian,
   and Hebrew locale trees.
 
@@ -422,6 +442,20 @@ Browser smoke verification uses an already-running approved local server only:
 - customer-read without membership-read; linked identity unreadable; linked
   identity read-only; linked role assignment/revocation without
   role-definition authority; and full-context combinations;
+- a future custom role can be granted and revoked `customers.read` and
+  `memberships.read` independently in Permissions, with refreshed live
+  capabilities producing this matrix:
+
+  | Custom-role grants | Customers workspace | Membership context |
+  | --- | --- | --- |
+  | Neither read permission | Hidden and unmounted | Unreachable |
+  | `customers.read` only | Visible after live capability refresh | Hidden/denied |
+  | `memberships.read` only | Hidden and unmounted | Unreachable until customer read is also granted |
+  | Both read permissions | Visible after live capability refresh | Visible after live capability refresh |
+
+- revoking `memberships.read` clears only membership context after live
+  capability refresh, while revoking `customers.read` unmounts Customers and
+  clears all protected customer state;
 - capability loss while active;
 - narrow and wide layouts, light and dark themes, English/Russian, and Hebrew
   RTL.
@@ -449,8 +483,8 @@ interaction matrix rows explicitly. Do not start a server or fabricate evidence.
 
 ## Assumptions And Provenance
 
-- Outcome, data boundaries, scope, exclusions, required SDK version, and
-  acceptance criteria come from `.symphony/assignment.md`.
+- This committed spec is the implementation authority for outcome, data
+  boundaries, scope, exclusions, required SDK version, and acceptance criteria.
 - Current page, capability-cache, localization, and styling facts come from the
   repository files named above.
 - Exact customer, membership, cursor, nullable-link, and user-role method shapes

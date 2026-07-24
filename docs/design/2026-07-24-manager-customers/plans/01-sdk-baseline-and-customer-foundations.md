@@ -1,7 +1,7 @@
 # Chunk 01: SDK Baseline And Customer Foundations
 
 **Plan Set:** `../plan.md`
-**Approved Source:** `../spec.md` and latest `.symphony/assignment.md`
+**Approved Source:** `../spec.md`
 **Status:** Ready for Review
 **Depends on:** None
 **Enables:** Chunks 02–03

@@ -15,7 +15,8 @@ is used only for access identity and role assignment.
 Scope: Customer list/detail, status filtering, opaque cursor pagination,
 read-only membership context, linked-user access context, role
 assignment/revocation, capability transitions, reusable customer labels,
-localization, and responsive overlays. Customer lifecycle mutations, membership
+independent grantability of both customer read permissions, localization, and
+responsive overlays. Customer lifecycle mutations, membership
 mutations, registration/attendance mutations, matching, and backend/SDK
 development are excluded.
 
@@ -31,6 +32,9 @@ Key Technical Decisions:
 - `users.read` and `dashboard.can_manage_users` independently govern linked
   identity reads and role mutations; assignment choices come only from
   `management.users.roles.listAssignable()`.
+- The grouped Permissions catalog exposes `customers.read` and
+  `memberships.read` as separate one-permission groups, while refreshed live
+  dashboard booleans remain the only Customers runtime gates.
 - Every protected section clears stale data on an authoritative
   `ClassKitManagerApiError` with code `forbidden`.
 - Cursor pages are committed immutable triples with generation/token guards,
@@ -90,6 +94,13 @@ Permissions remains the sole role-definition surface. Customers reuses only
 the assignment facade and pure presentation logic, with no new global state,
 direct backend access, or speculative framework.
 
+### 5. Independent Permission Grantability
+
+The design accounts for the existing whole-group toggle behavior: each new
+read key has its own localized group, both must survive
+`filterAvailablePermissionGroups()`, and acceptance covers neither, either, and
+both grants plus independent revocation.
+
 ## Critical Issues
 
 None.
@@ -108,8 +119,8 @@ product, authorization, data, and sequencing decisions.
   to drawer markup.
 - Reuse `ClassKitManagerApiError` for exact `forbidden` classification rather
   than parsing messages.
-- Preserve the current Permissions files untouched except for any locale
-  grouping required by the Customers navigation rename.
+- Limit Permissions changes to the shared presentation catalog and localized
+  group copy; preserve its existing mutation handlers and ownership.
 
 ### Verification
 
@@ -117,6 +128,8 @@ product, authorization, data, and sequencing decisions.
   resolution check.
 - Use focused source inspection for capability ownership and forbidden cleanup,
   then lint/build and approved-server browser verification when available.
+- Verify each new one-key group reaches the existing grant/revoke controls and
+  that Customers still gates on live dashboard capabilities after refresh.
 
 ## Risk Assessment
 
@@ -126,6 +139,7 @@ product, authorization, data, and sequencing decisions.
 | Stale cursor response overwrites a newer filter/page | Medium | High | Generation and request-token commit rules. |
 | Ghost reaches linked-user APIs | Low | High | `userId` fail-closed discriminator and explicit inconsistency state. |
 | Role-definition behavior drifts back into Customers | Low | High | Use only user-role facade; keep merged Permissions ownership. |
+| Future custom roles cannot receive one read permission independently | Low | High | Two separate one-key catalog groups plus filter and grant/revoke verification. |
 | Membership failure blanks customer identity | Medium | Medium | Independent section state and recovery. |
 | Responsive/RTL regressions lack automation | Medium | Medium | Existing-server browser matrix and explicit evidence gap when unavailable. |
 
@@ -139,6 +153,7 @@ forbidden handling.
 - [x] v0.1.23 capability and assignable-role contracts are verified.
 - [x] Every referenced existing path is verified.
 - [x] Acceptance criteria are objective and testable.
+- [x] Independent permission grantability and resulting live visibility matrix are explicit.
 - [x] AI autonomy and stop conditions are defined.
 - [x] No material design blocker remains.
 
@@ -148,13 +163,13 @@ forbidden handling.
    boundary.
 2. Build the customer presentation and directory state seams.
 3. Integrate the localized workspace and run the complete capability,
-   pagination, identity, and responsive verification matrix.
+   permission-grant, pagination, identity, and responsive verification matrix.
 
 ## Evaluation Matrix
 
 | Dimension | Weight | Raw Score | Weighted Score | Notes |
 | --- | --- | --- | --- | --- |
-| Completeness | x3 | 5/5 | 15/15 | All requested states, exclusions, failures, and acceptance evidence are explicit. |
+| Completeness | x3 | 5/5 | 15/15 | All requested states, permission grants, exclusions, failures, and acceptance evidence are explicit. |
 | Feasibility | x3 | 5/5 | 15/15 | Current repository owners and released v0.1.23 contracts support the design. |
 | Clarity | x2 | 5/5 | 10/10 | Identity, capability, cursor, and ownership terms are unambiguous. |
 | Logical Flow | x2 | 5/5 | 10/10 | Dependency, data, state, recovery, and verification boundaries align. |
@@ -176,6 +191,8 @@ Key constraints:
 - Never infer customer or membership read authority in Noya.
 - Clear protected data on authoritative forbidden responses.
 - Preserve the merged Permissions ownership boundary.
+- Keep each new read permission independently grantable and keep grant
+  presentation distinct from runtime authorization.
 
 Suggested starting point: dependency baseline and customer presentation/state
 seams.

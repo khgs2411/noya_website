@@ -1,7 +1,6 @@
 # Manager Customers Workspace Implementation Plan Set
 
-**Approved Source:** Latest explicit requirements in `.symphony/assignment.md`
-and `docs/design/2026-07-24-manager-customers/spec.md`
+**Approved Source:** `docs/design/2026-07-24-manager-customers/spec.md`
 **Agenda:** `docs/design/2026-07-24-manager-customers/agenda.md`
 **Pseudocode:** Absent
 **Context:** Current `version/1.1.5` at merged Permissions commit `77727b9`
@@ -18,7 +17,6 @@ behavior out of Permissions.
 
 ## Source Artifacts And Repository Evidence
 
-- Explicit rework contract: `.symphony/assignment.md`, newest entry.
 - Design: `docs/design/2026-07-24-manager-customers/spec.md`.
 - Closed decision ledger:
   `docs/design/2026-07-24-manager-customers/agenda.md`.
@@ -82,7 +80,7 @@ capability, facade, and failure boundaries directly.
 | --- | --- | --- | --- | --- | --- |
 | [01 — SDK baseline and customer foundations](plans/01-sdk-baseline-and-customer-foundations.md) | v0.1.23 dependency contract, safe reusable customer labels, and race-safe opaque-cursor directory state | None | Customer list/detail implementation | Lock resolution, exported types, label privacy, cursor transitions | Ready for Review |
 | [02 — Customer detail and service/access context](plans/02-customer-workspace-and-context.md) | Branded customer list/detail workspace with independent membership and linked-access states plus role mutations | Chunk 01 | Manager exposure | Ghost boundary, capability matrix, forbidden cleanup, overlay behavior | Ready for Review |
-| [03 — Manager integration, localization, and acceptance](plans/03-manager-integration-localization-and-verification.md) | Customers replaces Users in live-gated navigation; obsolete user workspace/copy removed; EN/RU/HE and final checks complete | Chunks 01–02 | Complete assignment | Safe tab repair, cached/live boundary, locale parity, lint/build/browser matrix | Ready for Review |
+| [03 — Manager integration, permission grantability, localization, and acceptance](plans/03-manager-integration-localization-and-verification.md) | Customers replaces Users in live-gated navigation; both customer read keys become independently grantable in Permissions; obsolete user workspace/copy removed; EN/RU/HE and final checks complete | Chunks 01–02 | Complete assignment | Safe tab repair, grant/revoke independence, cached/live boundary, locale parity, lint/build/browser matrix | Ready for Review |
 
 ## Dependency And Parallelism Order
 
@@ -118,7 +116,10 @@ forbidden cleanup, and selection token behavior must be reviewed together.
 - `src/features/customers/customer-labels.ts` owns pure, ID-free customer label
   and contact presentation. It owns no SDK client, capability, or UI state.
 - `src/features/manager/access/role-permission-presentation.ts` remains the
-  pure effective-permission grouping seam shared with Permissions.
+  pure effective-permission grouping seam shared with Permissions. Chunk 03
+  adds separate one-permission `customers.read` and `memberships.read` groups;
+  their presence makes the keys grantable but never substitutes for Customers'
+  live runtime gates.
 
 ## Approved-Source Coverage
 
@@ -132,6 +133,7 @@ forbidden cleanup, and selection token behavior must be reviewed together.
 | Read-only membership context | Chunk 02 | Independently gated by `can_read_memberships` |
 | Linked access and role assignment/revocation | Chunk 02 | `users.read` plus user-role facade; no role-definition calls |
 | Capability combinations and stale authorization | Chunks 02–03 | Exact live gates and authoritative forbidden cleanup |
+| Future custom roles can receive customer and membership read independently | Chunk 03 | Two localized one-permission groups survive filtering and use existing Permissions grant/revoke flow |
 | Reusable customer selection/label seam | Chunk 01 | Pure shared feature module |
 | Loading, empty, error, refresh, selection | Chunks 01–02 | Includes stale response and partial-section failures |
 | Mobile, desktop, themes, and Hebrew RTL | Chunks 02–03 | Drawer/dialog and browser matrix |

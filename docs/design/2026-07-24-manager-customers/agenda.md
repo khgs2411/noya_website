@@ -31,6 +31,10 @@
 - Linked-user assignment/revocation remains under
   `management.users.roles`; Customers never owns role-definition or permission
   configuration.
+- Permissions presents `customers.read` and `memberships.read` as two separate
+  one-permission groups, so future custom roles can grant and revoke each
+  authority independently. Customers still trusts only the corresponding
+  refreshed live dashboard capability for runtime visibility.
 - A reusable customer presentation helper supplies safe labels and supporting
   contact values without exposing raw IDs. It contains no client, state,
   capability, or mutation logic.
@@ -45,6 +49,10 @@
 
 - Permissions is merged into `version/1.1.5` at `77727b9` and exclusively owns
   role definition and permission configuration.
+- The grouped Permissions UI requires one curated group per independently
+  assignable customer read key; implementation adds localized
+  customer-directory and membership-context groups to its shared presentation
+  catalog.
 - ClassKit v0.1.23 at `a158bc5` supplies live
   `dashboard.can_read_customers` and `dashboard.can_read_memberships` with
   predicates matching the protected read endpoints.
