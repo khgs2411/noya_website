@@ -61,6 +61,10 @@ import {
   productDocumentFallbackLocale,
   productDocumentTypes,
 } from "@/features/documents/product-document-types";
+import {
+  hasAcceptedTerms,
+  termsAcceptanceVersionKey,
+} from "@/features/documents/terms-acceptance";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 type RegistrationMutation =
@@ -215,6 +219,7 @@ export function LessonsPage({
   const [healthDeclarationError, setHealthDeclarationError] =
     useState<string | null>(null);
   const [termsStatus, setTermsStatus] = useState<TermsStatus>("idle");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
   const [agreementLoadAttempt, setAgreementLoadAttempt] = useState(0);
@@ -597,6 +602,7 @@ export function LessonsPage({
         setHealthDeclarationChecked(false);
         setHealthDeclarationError(null);
         setTermsStatus("idle");
+        setTermsAccepted(false);
         setTermsChecked(false);
         setTermsError(null);
       }, 0);
@@ -628,8 +634,6 @@ export function LessonsPage({
         } else if (termsResult.error) {
           setTermsStatus("error");
           setTermsError(t("classes.terms.loadError"));
-        } else {
-          setTermsStatus("ready");
         }
 
         if (healthDeclarationResult.error?.code === "not_found") {
@@ -646,6 +650,16 @@ export function LessonsPage({
         }
 
         const profile = profileResult.data as ProductProfile;
+        setTermsAccepted(
+          !termsResult.error &&
+            hasAcceptedTerms(
+              profile.user.metadata,
+              termsResult.data.document.version,
+            ),
+        );
+        if (!termsResult.error) {
+          setTermsStatus("ready");
+        }
         setHealthDeclarationAccepted(
           hasAcceptedHealthDeclaration(
             profile.user.metadata,
@@ -670,6 +684,7 @@ export function LessonsPage({
       setHealthDeclarationChecked(false);
       setHealthDeclarationError(null);
       setTermsStatus("loading");
+      setTermsAccepted(false);
       setTermsChecked(false);
       setTermsError(null);
       void loadRegistrationAgreements();
@@ -728,7 +743,7 @@ export function LessonsPage({
         return;
       }
 
-      if (!termsChecked) {
+      if (!termsAccepted && !termsChecked) {
         setTermsError(t("classes.terms.required"));
         return;
       }
@@ -756,7 +771,7 @@ export function LessonsPage({
     setRegistrationMutation({ type: "register", classId: item.id });
 
     try {
-      if (options?.requiresTerms) {
+      if (options?.requiresTerms && !termsAccepted) {
         const acceptanceResult = await acceptProductDocument(
           client,
           productDocumentTypes.terms,
@@ -769,6 +784,20 @@ export function LessonsPage({
           return;
         }
 
+        const profileResult = await client.profile.update({
+          metadata: {
+            [termsAcceptanceVersionKey]:
+              acceptanceResult.data.acceptance.document_version,
+          },
+        });
+
+        if (profileResult.error) {
+          setTermsError(t("classes.terms.acceptanceError"));
+          return;
+        }
+
+        setTermsAccepted(true);
+        setTermsChecked(false);
         setTermsError(null);
       }
 
@@ -1306,63 +1335,67 @@ export function LessonsPage({
                     selectedClass.canRegister &&
                     !selectedClass.userRegistrationState && (
                       <section className="mt-5 grid gap-3 rounded-xl border border-blush/24 bg-background/46 p-4">
-                        <div className="grid gap-1">
-                          <p className="font-serif text-xl text-foreground">
-                            {t("classes.terms.title")}
-                          </p>
-                          <p className="text-sm leading-6 text-foreground/68">
-                            {t("classes.terms.body")}
-                          </p>
-                        </div>
+                        {!termsAccepted && (
+                          <>
+                            <div className="grid gap-1">
+                              <p className="font-serif text-xl text-foreground">
+                                {t("classes.terms.title")}
+                              </p>
+                              <p className="text-sm leading-6 text-foreground/68">
+                                {t("classes.terms.body")}
+                              </p>
+                            </div>
 
-                        {termsStatus === "loading" && (
-                          <div className="flex items-center gap-2 text-sm text-foreground/64">
-                            <Loader2 className="size-4 animate-spin text-blush-strong" aria-hidden="true" />
-                            {t("classes.terms.loading")}
-                          </div>
+                            {termsStatus === "loading" && (
+                              <div className="flex items-center gap-2 text-sm text-foreground/64">
+                                <Loader2 className="size-4 animate-spin text-blush-strong" aria-hidden="true" />
+                                {t("classes.terms.loading")}
+                              </div>
+                            )}
+
+                            {termsStatus === "unavailable" && (
+                              <p className="text-sm leading-6 text-blush-strong">
+                                {t("classes.terms.unavailable")}
+                              </p>
+                            )}
+
+                            {termsStatus === "error" && (
+                              <div className="grid justify-items-start gap-2">
+                                <p className="text-sm leading-6 text-blush-strong">
+                                  {termsError ?? t("classes.terms.loadError")}
+                                </p>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    setAgreementLoadAttempt((attempt) => attempt + 1)
+                                  }
+                                >
+                                  <RefreshCw className="size-4" aria-hidden="true" />
+                                  {t("classes.retry")}
+                                </Button>
+                              </div>
+                            )}
+
+                            {termsStatus === "ready" && (
+                              <DocumentAgreement
+                                checked={termsChecked}
+                                labelKey="classes.terms.agreement"
+                                linkLabelKey="documents.terms.label"
+                                documentPath={termsPath}
+                                disabled={registrationMutation?.classId === selectedClass.id}
+                                error={termsError}
+                                onCheckedChange={(checked) => {
+                                  setTermsChecked(checked);
+                                  setTermsError(null);
+                                }}
+                              />
+                            )}
+
+                            <div className="border-t border-blush/18 pt-3" />
+                          </>
                         )}
-
-                        {termsStatus === "unavailable" && (
-                          <p className="text-sm leading-6 text-blush-strong">
-                            {t("classes.terms.unavailable")}
-                          </p>
-                        )}
-
-                        {termsStatus === "error" && (
-                          <div className="grid justify-items-start gap-2">
-                            <p className="text-sm leading-6 text-blush-strong">
-                              {termsError ?? t("classes.terms.loadError")}
-                            </p>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                setAgreementLoadAttempt((attempt) => attempt + 1)
-                              }
-                            >
-                              <RefreshCw className="size-4" aria-hidden="true" />
-                              {t("classes.retry")}
-                            </Button>
-                          </div>
-                        )}
-
-                        {termsStatus === "ready" && (
-                          <DocumentAgreement
-                            checked={termsChecked}
-                            labelKey="classes.terms.agreement"
-                            linkLabelKey="documents.terms.label"
-                            documentPath={termsPath}
-                            disabled={registrationMutation?.classId === selectedClass.id}
-                            error={termsError}
-                            onCheckedChange={(checked) => {
-                              setTermsChecked(checked);
-                              setTermsError(null);
-                            }}
-                          />
-                        )}
-
-                        <div className="border-t border-blush/18 pt-3" />
 
                         <div className="grid gap-1">
                           <p className="font-serif text-xl text-foreground">
@@ -1415,7 +1448,7 @@ export function LessonsPage({
                           disabled={
                             registrationMutation?.classId === selectedClass.id ||
                             termsStatus !== "ready" ||
-                            !termsChecked ||
+                            (!termsAccepted && !termsChecked) ||
                             healthDeclarationStatus !== "ready" ||
                             (!healthDeclarationAccepted && !healthDeclarationChecked)
                           }

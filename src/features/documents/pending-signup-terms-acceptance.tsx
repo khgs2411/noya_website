@@ -10,6 +10,7 @@ import {
   hasPendingSignupTermsAcceptance,
 } from "@/features/documents/pending-signup-terms";
 import { productDocumentTypes } from "@/features/documents/product-document-types";
+import { termsAcceptanceVersionKey } from "@/features/documents/terms-acceptance";
 
 export function PendingSignupTermsAcceptance() {
   const { t, i18n } = useTranslation();
@@ -36,6 +37,14 @@ export function PendingSignupTermsAcceptance() {
     );
 
     if (result.error) return false;
+
+    const profileResult = await client.profile.update({
+      metadata: {
+        [termsAcceptanceVersionKey]: result.data.acceptance.document_version,
+      },
+    });
+
+    if (profileResult.error) return false;
 
     clearPendingSignupTermsAcceptance();
     setFailed(false);
