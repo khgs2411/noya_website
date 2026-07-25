@@ -1,6 +1,7 @@
 import { Loader2, RefreshCw, UsersRound } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import type { Customer } from "@class-kit/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ type CustomerPickerProps = {
   onClearSelection: () => void;
   filterOptions?: CustomerDirectoryFilter[];
   variant?: "full" | "compact";
+  getRecordAvailability?: (customer: Customer) => { selectable: boolean; reason?: string };
 };
 
 const defaultFilters: CustomerDirectoryFilter[] = ["all", "active", "inactive"];
@@ -31,6 +33,7 @@ export function CustomerPicker({
   onClearSelection,
   filterOptions = defaultFilters,
   variant = "full",
+  getRecordAvailability,
 }: CustomerPickerProps) {
   const { t } = useTranslation();
   const compact = variant === "compact";
@@ -125,6 +128,7 @@ export function CustomerPicker({
         <div className={compact ? "grid max-h-80 gap-2 overflow-y-auto pe-1" : "grid max-h-[38rem] gap-2 overflow-y-auto pe-1"}>
           {directory.records.map((customer) => {
             const selected = customer.customerId === selectedCustomerId;
+            const availability = getRecordAvailability?.(customer) ?? { selectable: true };
             const label = getCustomerLabel(customer, t("manager.customers.unnamed"));
             const contact = getCustomerContact(customer);
             return (
@@ -134,8 +138,11 @@ export function CustomerPicker({
                 className={[
                   "grid grid-cols-[1fr_auto] items-center gap-3 rounded-xl border p-3 text-start transition-colors",
                   selected ? "border-blush-strong bg-blush-strong/14" : "border-blush/20 bg-card/42 hover:border-blush-strong/55",
+                  !availability.selectable ? "cursor-not-allowed opacity-60" : "",
                 ].join(" ")}
                 aria-pressed={selected}
+                aria-describedby={availability.reason ? `customer-unavailable-${customer.customerId}` : undefined}
+                disabled={!availability.selectable}
                 onClick={() => onSelectCustomer(customer.customerId)}
               >
                 <span className="min-w-0">
@@ -144,6 +151,7 @@ export function CustomerPicker({
                   <span className="mt-2 inline-flex rounded-full border border-blush/18 px-2 py-0.5 text-xs font-semibold text-foreground/50">
                     {t(`manager.customers.lifecycle.${customer.status}`)} · {customer.userId ? t("manager.customers.linked") : t("manager.customers.unlinked")}
                   </span>
+                  {availability.reason && <span id={`customer-unavailable-${customer.customerId}`} className="mt-1 block text-xs leading-5 text-foreground/58">{availability.reason}</span>}
                 </span>
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-blush-strong/24 font-serif text-sm text-foreground">
                   {getCustomerInitials(customer, t("manager.customers.unnamed"))}
