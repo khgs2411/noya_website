@@ -1,10 +1,13 @@
 import type { ClassKitClient, ManagedClass } from "@class-kit/react";
+import { useCallback, useState, type ReactNode } from "react";
 import { Ban, Edit3, Link2, Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { ClassAttendanceForm } from "@/features/manager/attendance/class-attendance-form";
+import { ClassRegistrationRoster } from "@/features/manager/registrations/class-registration-roster";
 import { PendingRegistrationsPanel } from "@/features/manager/registrations/pending-registrations-panel";
+import { LocationDisplay } from "@/features/locations/location-display";
 
 type ClassDetailPanelProps = {
   client: ClassKitClient | null;
@@ -12,6 +15,8 @@ type ClassDetailPanelProps = {
   canManageClasses: boolean;
   canManageRegistrations: boolean;
   canManageAttendance: boolean;
+  canReadCustomers: boolean;
+  canReadUsers: boolean;
   onClose: () => void;
   onEdit: () => void;
   onCancel: () => void;
@@ -22,7 +27,7 @@ type ClassDetailPanelProps = {
   signupLinkNotice: string | null;
 };
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="grid gap-1 rounded-xl border border-blush/24 bg-background/46 p-3 sm:grid-cols-[8rem_1fr]">
       <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/48">
@@ -39,6 +44,8 @@ export function ClassDetailPanel({
   canManageClasses,
   canManageRegistrations,
   canManageAttendance,
+  canReadCustomers,
+  canReadUsers,
   onClose,
   onEdit,
   onCancel,
@@ -49,6 +56,11 @@ export function ClassDetailPanel({
   signupLinkNotice,
 }: ClassDetailPanelProps) {
   const { t, i18n } = useTranslation();
+  const [registrationRefreshKey, setRegistrationRefreshKey] = useState(0);
+  const handleRegistrationsChanged = useCallback(() => {
+    setRegistrationRefreshKey((current) => current + 1);
+    return onRegistrationsChanged();
+  }, [onRegistrationsChanged]);
 
   if (!managedClass) return null;
 
@@ -107,7 +119,13 @@ export function ClassDetailPanel({
           />
           <DetailRow
             label={t("manager.detail.location")}
-            value={managedClass.location ?? t("manager.detail.noLocation")}
+            value={managedClass.location?.trim() || managedClass.location_snapshot?.label ? (
+              <LocationDisplay
+                text={managedClass.location}
+                snapshot={managedClass.location_snapshot}
+                variant="detailed"
+              />
+            ) : t("manager.detail.noLocation")}
           />
           {description && (
             <DetailRow
@@ -144,14 +162,27 @@ export function ClassDetailPanel({
             canManageRegistrations={canManageRegistrations}
             classId={managedClass.id}
             compact
-            onChanged={onRegistrationsChanged}
+            refreshKey={registrationRefreshKey}
+            onChanged={handleRegistrationsChanged}
           />
         </section>
+        <ClassRegistrationRoster
+          client={client}
+          classId={managedClass.id}
+          registrationOpen={managedClass.registration_open}
+          canManageRegistrations={canManageRegistrations}
+          canReadCustomers={canReadCustomers}
+          refreshKey={registrationRefreshKey}
+          onChanged={handleRegistrationsChanged}
+        />
         <ClassAttendanceForm
           client={client}
           managedClass={managedClass}
           canManageAttendance={canManageAttendance}
           canManageRegistrations={canManageRegistrations}
+          canReadCustomers={canReadCustomers}
+          canReadUsers={canReadUsers}
+          registrationRefreshKey={registrationRefreshKey}
           onClassChanged={onClassChanged}
         />
         {canManageClasses && (

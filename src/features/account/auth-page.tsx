@@ -4,7 +4,13 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { authPath, images } from "@/content/site-content";
+import { authPath, images, termsPath } from "@/content/site-content";
+import { DocumentAgreement } from "@/features/documents/document-agreement";
+import {
+  clearPendingSignupTermsAcceptance,
+  markPendingSignupTermsAcceptance,
+} from "@/features/documents/pending-signup-terms";
+import { classKitClient } from "@/lib/class-kit-client";
 
 type AuthMode = "signin" | "signup";
 
@@ -22,13 +28,16 @@ export function AuthPage({
     loading,
     error,
     signIn,
-    signUp,
     signInWithGoogle,
+    refreshProductContext,
   } = useProductContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsAcceptanceError, setTermsAcceptanceError] = useState<string | null>(null);
+  const [authActionError, setAuthActionError] = useState<string | null>(null);
 
   const canUsePassword = Boolean(product?.email_password_enabled);
   const canUseGoogle = Boolean(product?.google_oauth_enabled);
@@ -64,14 +73,66 @@ export function AuthPage({
     visibleMode,
   ]);
 
+  function getSdkErrorMessage(result: unknown) {
+    if (!result || typeof result !== "object" || !("error" in result)) {
+      return null;
+    }
+
+    const { error: sdkError } = result as { error?: unknown };
+    if (!sdkError) return null;
+    if (typeof sdkError === "string") return sdkError;
+
+    if (
+      typeof sdkError === "object" &&
+      sdkError !== null &&
+      "message" in sdkError &&
+      typeof (sdkError as { message?: unknown }).message === "string"
+    ) {
+      return (sdkError as { message: string }).message;
+    }
+
+    return t("auth.unavailable");
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitted(true);
+
+    if (visibleMode === "signup" && !termsAccepted) {
+      setTermsAcceptanceError(t("auth.documents.termsRequired"));
+      return;
+    }
+
     setSubmitting(true);
+    setAuthActionError(null);
 
     try {
       if (visibleMode === "signup") {
-        await signUp(email, password);
+        if (!classKitClient) {
+          setAuthActionError(t("auth.unavailable"));
+          return;
+        }
+
+        markPendingSignupTermsAcceptance();
+
+        try {
+          const result = await classKitClient.auth.signUp(email, password);
+          const sdkErrorMessage = getSdkErrorMessage(result);
+
+          if (sdkErrorMessage) {
+            clearPendingSignupTermsAcceptance();
+            setAuthActionError(sdkErrorMessage);
+            return;
+          }
+
+          await refreshProductContext();
+        } catch (error) {
+          clearPendingSignupTermsAcceptance();
+          setAuthActionError(
+            error instanceof Error ? error.message : t("auth.unavailable"),
+          );
+          return;
+        }
       } else {
         await signIn(email, password);
       }
@@ -82,9 +143,44 @@ export function AuthPage({
 
   async function handleGoogle() {
     setSubmitted(true);
+
+    if (visibleMode === "signup" && !termsAccepted) {
+      setTermsAcceptanceError(t("auth.documents.termsRequired"));
+      return;
+    }
+
     setSubmitting(true);
+    setAuthActionError(null);
 
     try {
+      if (visibleMode === "signup") {
+        if (!classKitClient) {
+          setAuthActionError(t("auth.unavailable"));
+          return;
+        }
+
+        markPendingSignupTermsAcceptance();
+
+        try {
+          const result = await classKitClient.auth.signInWithGoogle();
+          const sdkErrorMessage = getSdkErrorMessage(result);
+
+          if (sdkErrorMessage) {
+            clearPendingSignupTermsAcceptance();
+            setAuthActionError(sdkErrorMessage);
+            return;
+          }
+        } catch (error) {
+          clearPendingSignupTermsAcceptance();
+          setAuthActionError(
+            error instanceof Error ? error.message : t("auth.unavailable"),
+          );
+          return;
+        }
+
+        return;
+      }
+
       await signInWithGoogle();
     } finally {
       setSubmitting(false);
@@ -93,6 +189,8 @@ export function AuthPage({
 
   function switchMode(nextMode: AuthMode) {
     setSubmitted(false);
+    setTermsAcceptanceError(null);
+    setAuthActionError(null);
     onNavigate(nextMode === "signup" ? `${authPath}?mode=signup` : authPath);
   }
 
@@ -175,6 +273,24 @@ export function AuthPage({
               </div>
             )}
 
+            {visibleMode === "signup" && (
+              <div className="mt-6">
+                <DocumentAgreement
+                  checked={termsAccepted}
+                  labelKey="auth.documents.acceptTerms"
+                  linkLabelKey="documents.terms.label"
+                  documentPath={termsPath}
+                  disabled={submitting || loading}
+                  error={termsAcceptanceError}
+                  onCheckedChange={(checked) => {
+                    setTermsAccepted(checked);
+                    setAuthActionError(null);
+                    if (checked) setTermsAcceptanceError(null);
+                  }}
+                />
+              </div>
+            )}
+
             {(visibleMode === "signin" ? canUsePassword : canSignUp) && (
               <form className="mt-6 grid gap-4" onSubmit={handleSubmit}>
                 <label className="grid gap-2 text-sm font-semibold text-foreground/76">
@@ -227,9 +343,9 @@ export function AuthPage({
               </Button>
             )}
 
-            {submitted && error && (
+            {submitted && (authActionError || error) && (
               <p className="mt-5 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm leading-6 text-red-700 dark:text-red-200">
-                {error}
+                {authActionError ?? error}
               </p>
             )}
           </section>

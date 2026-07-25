@@ -17,7 +17,6 @@ with the existing brand.
 
 ## Implementation Rules
 
-- Read `ROADMAP.md` before choosing the next product slice.
 - Follow `DESIGN_GUIDE.md` for visual and interaction decisions.
 - Build UI with Tailwind utilities and the existing shadcn-compatible component
   pattern.

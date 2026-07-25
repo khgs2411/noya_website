@@ -7,10 +7,12 @@ import {
   Building2,
   CalendarDays,
   Check,
+  ChevronRight,
   CircleUserRound,
   Info,
   Loader2,
   LogOut,
+  Phone,
   RefreshCw,
   Ticket,
   UsersRound,
@@ -35,6 +37,7 @@ type ProductProfileResponse = NonNullable<
 >;
 type ProductProfileMembershipGrant =
 ProductProfileResponse["memberships"]["grants"][number];
+type OnboardingStep = "name" | "phone";
 
 function MetricTile({
   icon: Icon,
@@ -93,29 +96,76 @@ function ProfileInput({
   value,
   onChange,
   autoComplete,
+  type = "text",
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   autoComplete: string;
+  type?: "text" | "date";
 }) {
   return (
     <label className="grid min-w-0 gap-2">
       <span className="text-sm font-medium text-foreground/68">{label}</span>
       <input
         className="min-h-12 rounded-xl border border-blush/24 bg-background/54 px-4 text-base text-foreground outline-none transition-colors [overflow-wrap:anywhere] placeholder:text-foreground/34 focus:border-blush-strong"
+        type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         autoComplete={autoComplete}
+        dir={type === "date" ? "ltr" : undefined}
       />
     </label>
   );
 }
 
+function isValidDateOnly(value: string) {
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!parts) return false;
+
+  const year = Number(parts[1]);
+  const month = Number(parts[2]);
+  const day = Number(parts[3]);
+
+  return (
+    year > 0 &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= new Date(year, month, 0).getDate()
+  );
+}
+
+function getBirthDateInputValue(value: unknown) {
+  return typeof value === "string" && isValidDateOnly(value) ? value : "";
+}
+
+function getTodayDateOnly() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function isOnboardingComplete(profile: ProductProfileResponse | null) {
   return (
     profile?.user.metadata.onboarding_completed === true ||
-    Boolean(profile?.user.display_name?.trim())
+    hasOnboardingProfileFields(profile)
+  );
+}
+
+function hasOnboardingProfileFields(profile: ProductProfileResponse | null) {
+  return Boolean(
+    profile?.user.display_name?.trim() || profile?.user.phone_number?.trim(),
+  );
+}
+
+function shouldBackfillOnboarding(profile: ProductProfileResponse | null) {
+  return (
+    profile?.user.metadata.onboarding_completed !== true &&
+    hasOnboardingProfileFields(profile)
   );
 }
 
@@ -164,6 +214,8 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [displayNameInput, setDisplayNameInput] = useState("");
   const [phoneNumberInput, setPhoneNumberInput] = useState("");
+  const [birthDateInput, setBirthDateInput] = useState("");
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>("name");
 
   async function handleSignOut() {
     await signOut();
@@ -196,8 +248,34 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     setProfile(result.data);
     setDisplayNameInput(result.data.user.display_name ?? "");
     setPhoneNumberInput(result.data.user.phone_number ?? "");
+    setBirthDateInput(getBirthDateInputValue(result.data.user.metadata.birth_date));
     setLoadStatus("loaded");
     setErrorMessage(null);
+
+    if (shouldBackfillOnboarding(result.data)) {
+      void client
+        .profile
+        .update({
+          metadata: {
+            onboarding_completed: true,
+          },
+        })
+        .then((updateResult) => {
+          if (updateResult.error) return;
+
+          setProfile((current) =>
+            current
+              ? {
+                  ...current,
+                  user: {
+                    ...current.user,
+                    metadata: updateResult.data.product_user.metadata,
+                  },
+                }
+              : current,
+          );
+        });
+    }
   }, [client, session]);
 
   useEffect(() => {
@@ -251,19 +329,33 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     Boolean(session) &&
     saveStatus !== "saving" &&
     displayNameInput.trim().length > 0;
+  const canContinueOnboarding =
+    saveStatus !== "saving" && displayNameInput.trim().length > 0;
 
-  async function saveProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function persistProfile(input: {
+    displayName: string;
+    phoneNumber: string;
+    markOnboardingComplete: boolean;
+    birthDate?: string;
+  }) {
+    if (!client || !session || saveStatus === "saving") return false;
 
-    if (!client || !session || saveStatus === "saving") return;
-
-    const displayName = displayNameInput.trim();
-    const phoneNumber = phoneNumberInput.trim();
+    const displayName = input.displayName.trim();
+    const phoneNumber = input.phoneNumber.trim();
 
     if (!displayName) {
       setSaveStatus("error");
       setSaveErrorMessage(t("profile.validation.displayNameRequired"));
-      return;
+      return false;
+    }
+
+    if (
+      input.birthDate &&
+      (!isValidDateOnly(input.birthDate) || input.birthDate > getTodayDateOnly())
+    ) {
+      setSaveStatus("error");
+      setSaveErrorMessage(t("profile.validation.birthDateFuture"));
+      return false;
     }
 
     setSaveStatus("saving");
@@ -272,15 +364,23 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     const result = await client.profile.update({
       displayName,
       phoneNumber: phoneNumber || null,
-      metadata: {
-        onboarding_completed: true,
-      },
+      metadata:
+        input.markOnboardingComplete || input.birthDate !== undefined
+        ? {
+            ...(input.markOnboardingComplete
+              ? { onboarding_completed: true }
+              : {}),
+            ...(input.birthDate !== undefined
+              ? { birth_date: input.birthDate || null }
+              : {}),
+          }
+        : undefined,
     });
 
     if (result.error) {
       setSaveStatus("error");
       setSaveErrorMessage(result.error.message);
-      return;
+      return false;
     }
 
     setProfile((current) =>
@@ -298,8 +398,30 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     );
     setDisplayNameInput(result.data.profile.display_name ?? "");
     setPhoneNumberInput(result.data.profile.phone_number ?? "");
+    setBirthDateInput(
+      getBirthDateInputValue(result.data.product_user.metadata.birth_date),
+    );
     setSaveStatus("saved");
     void loadProfile({ silent: true });
+    return true;
+  }
+
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await persistProfile({
+      displayName: displayNameInput,
+      phoneNumber: phoneNumberInput,
+      markOnboardingComplete: true,
+      birthDate: birthDateInput,
+    });
+  }
+
+  async function completeOnboarding(phoneNumber: string) {
+    await persistProfile({
+      displayName: displayNameInput,
+      phoneNumber,
+      markOnboardingComplete: true,
+    });
   }
 
   return (
@@ -414,7 +536,134 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
                   </div>
                 )}
 
-                {profile && profileUser && (
+                {profile && profileUser && !onboardingComplete && (
+                  <section className="grid gap-6">
+                    <div className="flex items-start gap-4">
+                      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
+                        {onboardingStep === "name" ? (
+                          <CircleUserRound className="size-6" aria-hidden="true" />
+                        ) : (
+                          <Phone className="size-6" aria-hidden="true" />
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blush-strong">
+                          {t("profile.onboarding")}
+                        </p>
+                        <h2 className="mt-2 font-serif text-3xl leading-8 text-foreground">
+                          {onboardingStep === "name"
+                            ? t("profile.onboardingNameTitle")
+                            : t("profile.onboardingPhoneTitle")}
+                        </h2>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground/64">
+                          {onboardingStep === "name"
+                            ? t("profile.onboardingNameBody")
+                            : t("profile.onboardingPhoneBody")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {onboardingStep === "name" ? (
+                      <div className="grid gap-5">
+                        <ProfileInput
+                          label={t("profile.displayName")}
+                          value={displayNameInput}
+                          onChange={(value) => {
+                            setDisplayNameInput(value);
+                            setSaveStatus("idle");
+                            setSaveErrorMessage(null);
+                          }}
+                          autoComplete="name"
+                        />
+                        {saveErrorMessage && (
+                          <p className="text-sm leading-6 text-blush-strong">
+                            {saveErrorMessage}
+                          </p>
+                        )}
+                        <div className="flex justify-end">
+                          <Button
+                            type="button"
+                            className="h-12 w-full rounded-full bg-blush px-7 text-primary-foreground hover:bg-blush-strong sm:w-fit"
+                            disabled={!canContinueOnboarding}
+                            onClick={() => {
+                              if (!displayNameInput.trim()) {
+                                setSaveStatus("error");
+                                setSaveErrorMessage(
+                                  t("profile.validation.displayNameRequired"),
+                                );
+                                return;
+                              }
+
+                              setSaveStatus("idle");
+                              setSaveErrorMessage(null);
+                              setOnboardingStep("phone");
+                            }}
+                          >
+                            {t("profile.onboardingContinue")}
+                            <ChevronRight
+                              className="size-4 rtl:rotate-180"
+                              aria-hidden="true"
+                            />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid gap-5">
+                        <ProfileInput
+                          label={t("profile.phone")}
+                          value={phoneNumberInput}
+                          onChange={(value) => {
+                            setPhoneNumberInput(value);
+                            setSaveStatus("idle");
+                            setSaveErrorMessage(null);
+                          }}
+                          autoComplete="tel"
+                        />
+                        <p className="flex items-start gap-3 rounded-xl border border-blush/20 bg-background/38 p-4 text-sm leading-6 text-foreground/66">
+                          <Info
+                            className="mt-1 size-4 shrink-0 text-blush-strong"
+                            aria-hidden="true"
+                          />
+                          {t("profile.onboardingPhoneEncouragement")}
+                        </p>
+                        {saveErrorMessage && (
+                          <p className="text-sm leading-6 text-blush-strong">
+                            {saveErrorMessage}
+                          </p>
+                        )}
+                        <div className="grid gap-3 sm:grid-cols-[auto_auto] sm:justify-end">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-12 rounded-full border-blush/38 bg-background/42 px-7 text-foreground hover:bg-blush/10"
+                            disabled={saveStatus === "saving"}
+                            onClick={() => void completeOnboarding("")}
+                          >
+                            {t("profile.onboardingSkipPhone")}
+                          </Button>
+                          <Button
+                            type="button"
+                            className="h-12 rounded-full bg-blush px-7 text-primary-foreground hover:bg-blush-strong"
+                            disabled={saveStatus === "saving"}
+                            onClick={() => void completeOnboarding(phoneNumberInput)}
+                          >
+                            {saveStatus === "saving" ? (
+                              <Loader2
+                                className="size-4 animate-spin"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Check className="size-4" aria-hidden="true" />
+                            )}
+                            {t("profile.onboardingFinish")}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {profile && profileUser && onboardingComplete && (
                   <>
                     <form className="grid gap-6" onSubmit={saveProfile}>
                       <div className="flex items-start gap-4">
@@ -431,7 +680,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
                         </div>
                       </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid gap-4 md:grid-cols-3">
                         <ProfileInput
                           label={t("profile.displayName")}
                           value={displayNameInput}
@@ -451,6 +700,17 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
                             setSaveErrorMessage(null);
                           }}
                           autoComplete="tel"
+                        />
+                        <ProfileInput
+                          label={t("profile.birthDate")}
+                          value={birthDateInput}
+                          onChange={(value) => {
+                            setBirthDateInput(value);
+                            setSaveStatus("idle");
+                            setSaveErrorMessage(null);
+                          }}
+                          autoComplete="bday"
+                          type="date"
                         />
                       </div>
 

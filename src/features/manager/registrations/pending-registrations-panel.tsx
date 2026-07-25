@@ -7,10 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import {
-  getUserDisplayName,
-  getUserSupportingEmail,
-} from "@/features/users/user-labels";
+import { getCustomerContact, getCustomerLabel } from "@/features/customers/customer-labels";
 
 type LoadStatus = "idle" | "loading" | "loaded" | "error";
 type MutationStatuses = Record<string, "approve" | "reject">;
@@ -20,11 +17,16 @@ type PendingRegistrationsPanelProps = {
   canManageRegistrations: boolean;
   classId?: string;
   compact?: boolean;
+  refreshKey?: number;
   onChanged?: () => void | Promise<void>;
 };
 
-function getRegistrationUserLabel(registration: ManagementRegistrationSummary) {
-  return getUserDisplayName(registration.user);
+function getRegistrationCustomerLabel(
+  registration: ManagementRegistrationSummary,
+  unnamedLabel: string,
+) {
+  if (registration.customer) return getCustomerLabel(registration.customer, unnamedLabel);
+  return registration.user?.displayName?.trim() || registration.user?.email?.trim() || unnamedLabel;
 }
 
 function getClassLabel(
@@ -41,6 +43,7 @@ export function PendingRegistrationsPanel({
   canManageRegistrations,
   classId,
   compact = false,
+  refreshKey = 0,
   onChanged,
 }: PendingRegistrationsPanelProps) {
   const { t, i18n } = useTranslation();
@@ -103,7 +106,7 @@ export function PendingRegistrationsPanel({
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [loadPending]);
+  }, [loadPending, refreshKey]);
 
   const runAction = useCallback(
     async (registrationId: string, action: "approve" | "reject") => {
@@ -268,7 +271,9 @@ export function PendingRegistrationsPanel({
             const approving = mutationStatus === "approve";
             const rejecting = mutationStatus === "reject";
             const classLabel = getClassLabel(registration, classFormatter);
-            const supportingEmail = getUserSupportingEmail(registration.user);
+            const supportingEmail = registration.customer
+              ? getCustomerContact(registration.customer)
+              : registration.user?.email?.trim();
 
             return (
               <article
@@ -278,7 +283,10 @@ export function PendingRegistrationsPanel({
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <p className="font-serif text-xl text-foreground">
-                      {getRegistrationUserLabel(registration)}
+                      {getRegistrationCustomerLabel(
+                        registration,
+                        t("manager.customers.unnamed"),
+                      )}
                     </p>
                     {supportingEmail && (
                       <p className="mt-1 break-words text-sm text-foreground/60">

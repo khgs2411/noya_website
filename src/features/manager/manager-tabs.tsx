@@ -1,4 +1,15 @@
-import { CalendarDays, Clock3, Layers3, Repeat, UserCog, WalletCards } from "lucide-react";
+import {
+  CalendarDays,
+  Clock3,
+  FileText,
+  MessageSquareText,
+  Layers3,
+  Repeat,
+  Settings2,
+  UsersRound,
+  WalletCards,
+  ShieldCheck,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -9,56 +20,124 @@ export type ManagerTab =
   | "pending"
   | "templates"
   | "schedules"
+  | "documents"
   | "memberships"
-  | "users";
+  | "customers"
+  | "permissions"
+  | "change-requests"
+  | "settings";
 
-const tabs: Array<{
+const primaryTabs: Array<{
   id: ManagerTab;
   icon: typeof CalendarDays;
   labelKey: string;
 }> = [
   { id: "classes", icon: CalendarDays, labelKey: "manager.tabs.classes" },
   { id: "pending", icon: Clock3, labelKey: "manager.tabs.pending" },
+  { id: "customers", icon: UsersRound, labelKey: "manager.tabs.customers" },
+];
+
+const moreTabs: Array<{
+  id: ManagerTab;
+  icon: typeof CalendarDays;
+  labelKey: string;
+}> = [
   { id: "templates", icon: Layers3, labelKey: "manager.tabs.templates" },
   { id: "schedules", icon: Repeat, labelKey: "manager.tabs.schedules" },
-  { id: "memberships", icon: WalletCards, labelKey: "manager.tabs.memberships" },
-  { id: "users", icon: UserCog, labelKey: "manager.tabs.users" },
+  { id: "documents", icon: FileText, labelKey: "manager.tabs.documents" },
+  {
+    id: "memberships",
+    icon: WalletCards,
+    labelKey: "manager.tabs.memberships",
+  },
 ];
 
 type ManagerTabsProps = {
   activeTab: ManagerTab;
   onChange: (tab: ManagerTab) => void;
+  canAccessCustomers: boolean;
+  canManageRoles: boolean;
+  canManageChangeRequests: boolean;
+  canAccessCancellationPolicy: boolean;
 };
 
-export function ManagerTabs({ activeTab, onChange }: ManagerTabsProps) {
+export function ManagerTabs({
+  activeTab,
+  onChange,
+  canAccessCustomers,
+  canManageRoles,
+  canManageChangeRequests,
+  canAccessCancellationPolicy,
+}: ManagerTabsProps) {
   const { t } = useTranslation();
+  const visiblePrimaryTabs = primaryTabs.filter(
+    (tab) => tab.id !== "customers" || canAccessCustomers,
+  );
+  const visibleTabs = [
+    ...visiblePrimaryTabs,
+    ...moreTabs,
+    ...(canManageRoles
+      ? [
+          {
+            id: "permissions" as const,
+            icon: ShieldCheck,
+            labelKey: "manager.tabs.permissions",
+          },
+        ]
+      : []),
+    ...(canAccessCancellationPolicy
+      ? [
+          {
+            id: "settings" as const,
+            icon: Settings2,
+            labelKey: "manager.tabs.settings",
+          },
+        ]
+      : []),
+    ...(canManageChangeRequests
+      ? [
+        {
+          id: "change-requests" as const,
+          icon: MessageSquareText,
+          labelKey: "manager.tabs.changeRequests",
+        },
+      ]
+      : []),
+  ];
+
+  function selectTab(tab: ManagerTab) {
+    onChange(tab);
+  }
 
   return (
-    <div className="flex max-w-full gap-1 overflow-x-auto rounded-[1.2rem] border border-blush/24 bg-card/78 p-1 lg:grid lg:grid-cols-6 lg:gap-2 lg:overflow-visible">
-      {tabs.map((tab) => {
-        const Icon = tab.icon;
-        const active = tab.id === activeTab;
+    <nav
+      className="w-full min-w-0 max-w-full overflow-hidden rounded-[1.2rem] border border-blush/24 bg-card/78 p-1 lg:h-fit lg:w-48 lg:shrink-0 lg:p-2"
+      aria-label={t("manager.menu")}
+    >
+      <div className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto overscroll-x-contain lg:flex-col lg:overflow-visible">
+        {visibleTabs.map((tab) => {
+          const Icon = tab.icon;
+          const active = tab.id === activeTab;
 
-        return (
-          <Button
-            key={tab.id}
-            type="button"
-            variant="ghost"
-            className={cn(
-              "h-10 min-w-12 shrink-0 gap-2 rounded-xl px-3 font-serif text-sm lg:min-w-0",
-              active ? "min-w-28" : "w-12 px-0 lg:w-auto lg:px-3",
-              active && "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
-            )}
-            aria-pressed={active}
-            onClick={() => onChange(tab.id)}
-          >
-            <Icon className="size-4 shrink-0" aria-hidden="true" />
-            <span className={cn("truncate", !active && "sr-only lg:not-sr-only")}>
-              {t(tab.labelKey)}
-            </span>
-          </Button>
-        );
-      })}
-    </div>
+          return (
+            <Button
+              key={tab.id}
+              type="button"
+              variant="ghost"
+              className={cn(
+                "h-9 min-w-max shrink-0 justify-start gap-2 rounded-lg px-3 font-serif text-sm whitespace-nowrap lg:w-full lg:min-w-0 lg:whitespace-normal",
+                active &&
+                  "bg-blush-strong text-background hover:bg-blush-strong/90 hover:text-background",
+              )}
+              aria-pressed={active}
+              onClick={() => selectTab(tab.id)}
+            >
+              <Icon className="size-4 shrink-0" aria-hidden="true" />
+              <span className="lg:text-start">{t(tab.labelKey)}</span>
+            </Button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }

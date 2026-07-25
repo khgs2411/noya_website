@@ -39,6 +39,9 @@ type ClassManagementTabProps = {
   canManageClasses: boolean;
   canManageRegistrations: boolean;
   canManageAttendance: boolean;
+  canReadCustomers: boolean;
+  canReadUsers: boolean;
+  canAutocompleteLocations: boolean;
 };
 
 type FormSurface =
@@ -95,6 +98,8 @@ function AttendanceSurfaceDialog({
   managedClass,
   canManageAttendance,
   canManageRegistrations,
+  canReadCustomers,
+  canReadUsers,
   onClose,
   onClassChanged,
 }: {
@@ -102,6 +107,8 @@ function AttendanceSurfaceDialog({
   managedClass: ManagedClass | null;
   canManageAttendance: boolean;
   canManageRegistrations: boolean;
+  canReadCustomers: boolean;
+  canReadUsers: boolean;
   onClose: () => void;
   onClassChanged: () => void | Promise<void>;
 }) {
@@ -146,6 +153,8 @@ function AttendanceSurfaceDialog({
           managedClass={managedClass}
           canManageAttendance={canManageAttendance}
           canManageRegistrations={canManageRegistrations}
+          canReadCustomers={canReadCustomers}
+          canReadUsers={canReadUsers}
           className="mt-5"
           onClassChanged={onClassChanged}
         />
@@ -158,6 +167,9 @@ export function ClassManagementTab({
   canManageClasses,
   canManageRegistrations,
   canManageAttendance,
+  canReadCustomers,
+  canReadUsers,
+  canAutocompleteLocations,
 }: ClassManagementTabProps) {
   const { t } = useTranslation();
   const [formSurface, setFormSurface] = useState<FormSurface>(null);
@@ -205,6 +217,7 @@ export function ClassManagementTab({
           startsAt: managedClass.starts_at,
           endsAt: managedClass.ends_at,
           location: managedClass.location,
+          locationSnapshot: managedClass.location_snapshot,
           capacity: managedClass.capacity,
           registeredUsersCount: managedClass.registeredUsersCount,
           pendingRegistrationCount: managedClass.pendingRegistrationCount,
@@ -582,6 +595,8 @@ export function ClassManagementTab({
             canManageClasses={state.canManageClasses}
             canManageRegistrations={canManageRegistrations}
             canManageAttendance={canManageAttendance}
+            canReadCustomers={canReadCustomers}
+            canReadUsers={canReadUsers}
             onClose={closeManagedClassDetail}
             onEdit={() => {
               if (!state.selectedClass) return;
@@ -617,6 +632,8 @@ export function ClassManagementTab({
             mode={formSurface?.mode ?? "create"}
             managedClass={formClass}
             templates={managedTemplates.state.activeTemplates}
+            client={client}
+            canAutocompleteLocations={canAutocompleteLocations}
             submitting={
               state.mutationStatus === "creating" ||
               state.mutationStatus === "updating"
@@ -641,6 +658,8 @@ export function ClassManagementTab({
             managedClass={attendanceClass}
             canManageAttendance={canManageAttendance}
             canManageRegistrations={canManageRegistrations}
+            canReadCustomers={canReadCustomers}
+            canReadUsers={canReadUsers}
             onClose={closeAttendanceSurface}
             onClassChanged={async () => {
               await actions.refreshVisibleRange({
