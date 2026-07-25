@@ -32,6 +32,7 @@ type ClassRegistrationRosterProps = {
   classId: string;
   canManageRegistrations: boolean;
   canReadCustomers: boolean;
+  canRegisterCustomers: boolean;
   refreshKey?: number;
   onChanged?: () => void | Promise<void>;
 };
@@ -117,6 +118,7 @@ export function ClassRegistrationRoster({
   classId,
   canManageRegistrations,
   canReadCustomers,
+  canRegisterCustomers,
   refreshKey = 0,
   onChanged,
 }: ClassRegistrationRosterProps) {
@@ -133,7 +135,7 @@ export function ClassRegistrationRoster({
   const clearSelection = useCallback(() => setSelectedCustomerId(""), []);
   const directory = useCustomerDirectory({
     client,
-    canReadCustomers,
+    canReadCustomers: canReadCustomers && canRegisterCustomers,
     onForbidden: clearSelection,
     initialFilter: "active",
   });
@@ -204,6 +206,7 @@ export function ClassRegistrationRoster({
       !client ||
       !canManageRegistrations ||
       !canReadCustomers ||
+      !canRegisterCustomers ||
       directory.accessChanged ||
       !selectedCustomer ||
       selectedCustomerRegistered ||
@@ -300,7 +303,7 @@ export function ClassRegistrationRoster({
         </div>
       )}
 
-      {canReadCustomers ? (
+      {canRegisterCustomers && canReadCustomers ? (
         <div className="mt-4 rounded-xl border border-blush/24 bg-background/30 p-3">
           <div className="mb-3">
             <h4 className="font-serif text-xl text-foreground">
@@ -342,11 +345,11 @@ export function ClassRegistrationRoster({
             {t("manager.registrations.add")}
           </Button>
         </div>
-      ) : (
+      ) : canRegisterCustomers ? (
         <p className="mt-4 rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-foreground/68">
           {t("manager.registrations.customerDirectoryUnavailable")}
         </p>
-      )}
+      ) : null}
 
       {loadStatus === "loading" && (
         <p className="mt-4 rounded-xl border border-blush/24 bg-background/46 p-4 text-sm text-foreground/68">

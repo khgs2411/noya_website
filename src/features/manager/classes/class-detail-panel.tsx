@@ -171,6 +171,7 @@ export function ClassDetailPanel({
           classId={managedClass.id}
           canManageRegistrations={canManageRegistrations}
           canReadCustomers={canReadCustomers}
+          canRegisterCustomers={managedClass.registration_open}
           refreshKey={registrationRefreshKey}
           onChanged={handleRegistrationsChanged}
         />
