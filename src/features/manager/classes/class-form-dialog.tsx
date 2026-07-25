@@ -535,7 +535,7 @@ function ClassFormDialogContent({
             </div>
           )}
 
-          <footer className="sticky bottom-0 -mx-5 mt-6 flex gap-2 border-t border-blush/24 bg-background/95 p-5 sm:static sm:mx-0 sm:bg-transparent sm:p-0">
+          <footer className="sticky bottom-0 -mx-5 mt-6 flex gap-2 border-t border-blush/24 bg-background/95 p-5 sm:static sm:mx-0 sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-5">
             <Button
               type="button"
               variant="outline"
