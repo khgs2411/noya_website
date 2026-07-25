@@ -10,6 +10,19 @@ import { useChangeRequests } from "@/features/manager/change-requests/use-change
 import { captureActiveElement, restoreFocus } from "@/lib/focus";
 
 type FormSurface = "create" | "revise" | null;
+type ChangeRequestStatusGroup = "in_progress" | "open" | "completed";
+
+const changeRequestStatusGroups: ChangeRequestStatusGroup[] = [
+  "in_progress",
+  "open",
+  "completed",
+];
+
+function getChangeRequestStatusGroup(status: string): ChangeRequestStatusGroup {
+  if (status === "in_progress") return "in_progress";
+  if (status === "open") return "open";
+  return "completed";
+}
 
 export function ChangeRequestManagementTab({
   canManageChangeRequests,
@@ -48,6 +61,16 @@ function AuthorizedChangeRequestManagementTab() {
   const selectedRequest = useMemo(
     () => state.requests.find((request) => request.id === selectedId) ?? null,
     [selectedId, state.requests],
+  );
+  const requestsByStatus = useMemo(
+    () =>
+      changeRequestStatusGroups.map((status) => ({
+        status,
+        requests: state.requests.filter(
+          (request) => getChangeRequestStatusGroup(request.status) === status,
+        ),
+      })),
+    [state.requests],
   );
   const busy = state.mutation !== null;
 
@@ -163,48 +186,67 @@ function AuthorizedChangeRequestManagementTab() {
           </p>
         </div>
       ) : (
-        <div className="mt-5 grid gap-3">
-          {state.requests.map((request) => {
-            const type =
-              request.type === "issue"
-                ? t("manager.changeRequests.type.issue")
-                : request.type === "feature_request"
-                  ? t("manager.changeRequests.type.featureRequest")
-                  : String(request.type);
-            const status =
-              request.status === "open" ||
-              request.status === "in_progress" ||
-              request.status === "done" ||
-              request.status === "closed"
-                ? t(`manager.changeRequests.status.${request.status}`)
-                : String(request.status);
-            return (
-              <button
-                key={request.id}
-                type="button"
-                className="w-full rounded-xl border border-blush/24 bg-background/46 p-4 text-start transition-colors hover:border-blush-strong/55"
-                onClick={() => openDetail(request.id)}
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <h3 className="break-words font-serif text-xl">
-                    {request.title ?? t("manager.changeRequests.untitled")}
+        <div className="mt-5 grid gap-6">
+          {requestsByStatus.map(
+            ({ status: statusGroup, requests }) =>
+              requests.length > 0 && (
+                <section
+                  key={statusGroup}
+                  aria-labelledby={`change-request-status-${statusGroup}`}
+                >
+                  <h3
+                    id={`change-request-status-${statusGroup}`}
+                    className="font-serif text-2xl"
+                  >
+                    {t(`manager.changeRequests.groups.${statusGroup}`)}
                   </h3>
-                  <span className="rounded-full border border-blush/24 px-2 py-1 text-xs text-foreground/68">
-                    {status}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-foreground/68">
-                  {type} ·{" "}
-                  {new Intl.DateTimeFormat(i18n.language, {
-                    dateStyle: "medium",
-                  }).format(new Date(request.created_at))}
-                </p>
-                <p className="mt-2 line-clamp-2 whitespace-pre-wrap break-words text-sm text-foreground/72">
-                  {request.description}
-                </p>
-              </button>
-            );
-          })}
+                  <div className="mt-3 grid gap-3">
+                    {requests.map((request) => {
+                      const type =
+                        request.type === "issue"
+                          ? t("manager.changeRequests.type.issue")
+                          : request.type === "feature_request"
+                            ? t("manager.changeRequests.type.featureRequest")
+                            : String(request.type);
+                      const status =
+                        request.status === "open" ||
+                        request.status === "in_progress" ||
+                        request.status === "done" ||
+                        request.status === "closed"
+                          ? t(`manager.changeRequests.status.${request.status}`)
+                          : String(request.status);
+                      return (
+                        <button
+                          key={request.id}
+                          type="button"
+                          className="w-full rounded-xl border border-blush/24 bg-background/46 p-4 text-start transition-colors hover:border-blush-strong/55"
+                          onClick={() => openDetail(request.id)}
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <h4 className="break-words font-serif text-xl">
+                              {request.title ??
+                                t("manager.changeRequests.untitled")}
+                            </h4>
+                            <span className="rounded-full border border-blush/24 px-2 py-1 text-xs text-foreground/68">
+                              {status}
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm text-foreground/68">
+                            {type} ·{" "}
+                            {new Intl.DateTimeFormat(i18n.language, {
+                              dateStyle: "medium",
+                            }).format(new Date(request.created_at))}
+                          </p>
+                          <p className="mt-2 line-clamp-2 whitespace-pre-wrap break-words text-sm text-foreground/72">
+                            {request.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ),
+          )}
         </div>
       )}
       {selectedRequest && formSurface !== "revise" && (
