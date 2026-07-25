@@ -169,6 +169,7 @@ export function ClassDetailPanel({
         <ClassRegistrationRoster
           client={client}
           classId={managedClass.id}
+          registrationOpen={managedClass.registration_open}
           canManageRegistrations={canManageRegistrations}
           canReadCustomers={canReadCustomers}
           refreshKey={registrationRefreshKey}

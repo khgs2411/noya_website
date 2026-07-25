@@ -30,6 +30,7 @@ type Mutation = "register" | "deregister" | null;
 type ClassRegistrationRosterProps = {
   client: ClassKitClient | null;
   classId: string;
+  registrationOpen: boolean;
   canManageRegistrations: boolean;
   canReadCustomers: boolean;
   refreshKey?: number;
@@ -115,6 +116,7 @@ function getMutationErrorMessage(
 export function ClassRegistrationRoster({
   client,
   classId,
+  registrationOpen,
   canManageRegistrations,
   canReadCustomers,
   refreshKey = 0,
@@ -133,7 +135,7 @@ export function ClassRegistrationRoster({
   const clearSelection = useCallback(() => setSelectedCustomerId(""), []);
   const directory = useCustomerDirectory({
     client,
-    canReadCustomers,
+    canReadCustomers: canReadCustomers && registrationOpen,
     onForbidden: clearSelection,
     initialFilter: "active",
   });
@@ -203,6 +205,7 @@ export function ClassRegistrationRoster({
     if (
       !client ||
       !canManageRegistrations ||
+      !registrationOpen ||
       !canReadCustomers ||
       directory.accessChanged ||
       !selectedCustomer ||
@@ -300,7 +303,7 @@ export function ClassRegistrationRoster({
         </div>
       )}
 
-      {canReadCustomers ? (
+      {registrationOpen && canReadCustomers ? (
         <div className="mt-4 rounded-xl border border-blush/24 bg-background/30 p-3">
           <div className="mb-3">
             <h4 className="font-serif text-xl text-foreground">
@@ -342,6 +345,10 @@ export function ClassRegistrationRoster({
             {t("manager.registrations.add")}
           </Button>
         </div>
+      ) : !registrationOpen ? (
+        <p className="mt-4 rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-foreground/68">
+          {t("classes.registrationClosed")}
+        </p>
       ) : (
         <p className="mt-4 rounded-xl border border-blush/24 bg-background/46 p-3 text-sm leading-6 text-foreground/68">
           {t("manager.registrations.customerDirectoryUnavailable")}
