@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ChangeRequestDetailPanel } from "@/features/manager/change-requests/change-request-detail-panel";
 import { ChangeRequestFormDialog } from "@/features/manager/change-requests/change-request-form-dialog";
+import { getChangeRequestStatusPresentation } from "@/features/manager/change-requests/change-request-status";
 import { useChangeRequests } from "@/features/manager/change-requests/use-change-requests";
 import { captureActiveElement, restoreFocus } from "@/lib/focus";
 
@@ -217,11 +218,13 @@ function AuthorizedChangeRequestManagementTab() {
                         request.status === "closed"
                           ? t(`manager.changeRequests.status.${request.status}`)
                           : String(request.status);
+                      const statusPresentation =
+                        getChangeRequestStatusPresentation(request.status);
                       return (
                         <button
                           key={request.id}
                           type="button"
-                          className="w-full rounded-xl border border-blush/24 bg-background/46 p-4 text-start transition-colors hover:border-blush-strong/55"
+                          className={`w-full rounded-xl border p-4 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${statusPresentation.cardClassName}`}
                           onClick={() => openDetail(request.id)}
                         >
                           <div className="flex flex-wrap items-start justify-between gap-2">
@@ -229,7 +232,9 @@ function AuthorizedChangeRequestManagementTab() {
                               {request.title ??
                                 t("manager.changeRequests.untitled")}
                             </h4>
-                            <span className="rounded-full border border-blush/24 px-2 py-1 text-xs text-foreground/68">
+                            <span
+                              className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${statusPresentation.badgeClassName}`}
+                            >
                               {status}
                             </span>
                           </div>

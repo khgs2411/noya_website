@@ -33,6 +33,11 @@
   --ring: oklch(0.67 0.07 29);
   --blush: oklch(0.72 0.07 28);
   --blush-strong: oklch(0.55 0.078 28);
+  --status-open: oklch(0.52 0.16 255);
+  --status-in-progress: oklch(0.58 0.16 60);
+  --status-done: oklch(0.49 0.14 155);
+  --status-closed: oklch(0.54 0.18 25);
+  --status-unknown: oklch(0.57 0.15 90);
   --radius: 0.75rem;
 }
 
@@ -55,6 +60,11 @@
   --ring: oklch(0.72 0.07 31);
   --blush: oklch(0.56 0.075 28);
   --blush-strong: oklch(0.76 0.058 29);
+  --status-open: oklch(0.74 0.13 255);
+  --status-in-progress: oklch(0.78 0.14 60);
+  --status-done: oklch(0.73 0.12 155);
+  --status-closed: oklch(0.72 0.15 25);
+  --status-unknown: oklch(0.8 0.14 90);
 }
 
 @theme inline {
@@ -75,6 +85,11 @@
   --color-ring: var(--ring);
   --color-blush: var(--blush);
   --color-blush-strong: var(--blush-strong);
+  --color-status-open: var(--status-open);
+  --color-status-in-progress: var(--status-in-progress);
+  --color-status-done: var(--status-done);
+  --color-status-closed: var(--status-closed);
+  --color-status-unknown: var(--status-unknown);
   --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
   --font-script: "Allura", cursive;
   --font-display: "Story Script", "Allura", cursive;
