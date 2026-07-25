@@ -32,10 +32,12 @@ export function CustomerDetailPanel({
   roleState,
   mutationState,
   canMutateCustomers,
+  canMerge,
   onAssign,
   onClose,
   onEdit,
   onLifecycle,
+  onMerge,
   onRevoke,
   onRetryMembership,
   onRetryLinked,
@@ -49,10 +51,12 @@ export function CustomerDetailPanel({
   roleState: ContextState;
   mutationState: "idle" | "assigning" | "revoking" | "creating" | "updating" | "deactivating" | "reactivating";
   canMutateCustomers: boolean;
+  canMerge: boolean;
   onAssign: (roleId: string) => void;
   onClose: () => void;
   onEdit: () => void;
   onLifecycle: (action: "deactivate" | "reactivate") => void;
+  onMerge: () => void;
   onRevoke: (roleId: string) => void;
   onRetryMembership: () => void;
   onRetryLinked: () => void;
@@ -160,6 +164,7 @@ export function CustomerDetailPanel({
               <Button size="sm" variant="outline" disabled={mutationState !== "idle" || !canMutateCustomers} onClick={() => onLifecycle(customer.status === "active" ? "deactivate" : "reactivate")}>
                 {t(customer.status === "active" ? "manager.customerActions.deactivate" : "manager.customerActions.reactivate")}
               </Button>
+              {canMerge && <Button size="sm" variant="outline" className="border-blush-strong/45" onClick={onMerge}>{t("manager.customerMerge.action")}</Button>}
             </div>
           </section>
 
