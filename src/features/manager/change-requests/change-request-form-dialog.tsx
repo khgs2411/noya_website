@@ -4,13 +4,20 @@ import type {
   ProductChangeRequestType,
   UpdateProductChangeRequestInput,
 } from "@class-kit/react";
-import { X } from "lucide-react";
+import { ImagePlus, X } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 
 type FormMode = "create" | "revise";
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
 type FormFields = {
   type: ProductChangeRequestType;
   title: string;
@@ -25,6 +32,7 @@ type ChangeRequestFormDialogProps = {
   onClose: () => void;
   onCreate: (
     input: CreateProductChangeRequestInput,
+    image: File | null,
   ) => Promise<{ ok: boolean }>;
   onRevise: (
     input: UpdateProductChangeRequestInput,
@@ -56,8 +64,10 @@ export function ChangeRequestFormDialog({
 }: ChangeRequestFormDialogProps) {
   const { t } = useTranslation();
   const [fields, setFields] = useState(() => fieldsFor(mode, request));
+  const [image, setImage] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const initialFocus = useRef<HTMLSelectElement | null>(null);
+  const imageInput = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => initialFocus.current?.focus(), 0);
@@ -96,8 +106,31 @@ export function ChangeRequestFormDialog({
             requestId: request.id,
             context: request.context,
           })
-        : await onCreate(input);
+        : await onCreate(input, image);
     if (result.ok) onClose();
+  }
+
+  function selectImage(file: File | undefined) {
+    if (!file) return;
+    if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
+      setImage(null);
+      setValidationError(t("manager.changeRequests.validation.imageType"));
+      if (imageInput.current) imageInput.current.value = "";
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setImage(null);
+      setValidationError(t("manager.changeRequests.validation.imageSize"));
+      if (imageInput.current) imageInput.current.value = "";
+      return;
+    }
+    setImage(file);
+    setValidationError(null);
+  }
+
+  function removeImage() {
+    setImage(null);
+    if (imageInput.current) imageInput.current.value = "";
   }
 
   const title =
@@ -187,6 +220,54 @@ export function ChangeRequestFormDialog({
               }
             />
           </label>
+          {mode === "create" && (
+            <div className="rounded-xl border border-blush/24 bg-background/46 p-3">
+              <p className="text-sm text-foreground/68">
+                {t("manager.changeRequests.form.image")}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-foreground/52">
+                {t("manager.changeRequests.form.imageHelp")}
+              </p>
+              <input
+                ref={imageInput}
+                className="sr-only"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                disabled={busy}
+                onChange={(event) => selectImage(event.target.files?.[0])}
+              />
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full"
+                  disabled={busy}
+                  onClick={() => imageInput.current?.click()}
+                >
+                  <ImagePlus className="size-4" aria-hidden="true" />
+                  {image
+                    ? t("manager.changeRequests.form.replaceImage")
+                    : t("manager.changeRequests.form.chooseImage")}
+                </Button>
+                {image && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="rounded-full"
+                    disabled={busy}
+                    onClick={removeImage}
+                  >
+                    {t("manager.changeRequests.form.removeImage")}
+                  </Button>
+                )}
+              </div>
+              {image && (
+                <p className="mt-2 break-all text-xs text-foreground/62">
+                  {image.name}
+                </p>
+              )}
+            </div>
+          )}
           {(validationError || errorMessage) && (
             <p className="text-sm leading-6 text-blush-strong">
               {validationError ?? errorMessage}

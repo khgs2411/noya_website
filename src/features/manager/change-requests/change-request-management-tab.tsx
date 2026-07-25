@@ -70,9 +70,15 @@ function AuthorizedChangeRequestManagementTab() {
     setFormSurface(null);
     if (formSurface !== "revise") restoreFocus(formFocusReturn.current);
   }
-  async function create(input: Parameters<typeof actions.create>[0]) {
+  async function create(
+    input: Parameters<typeof actions.create>[0],
+    image: File | null,
+  ) {
     const result = await actions.create(input);
-    if (result.ok) setSelectedId(result.request.id);
+    if (result.ok) {
+      setSelectedId(result.request.id);
+      if (image) await actions.upload(result.request.id, image);
+    }
     return result;
   }
 
