@@ -40,18 +40,31 @@ export function useCustomerMerge({
     setPreview(null);
     setError(null);
     setExpired(false);
+    setRemainingSeconds(0);
   }, []);
 
   useEffect(() => () => { generationRef.current += 1; }, []);
   useEffect(() => {
     if (!preview) return;
-    const timer = window.setInterval(() => {
+    const updateExpiry = () => {
       const remaining = Math.max(0, Math.ceil((new Date(preview.expiresAt).getTime() - Date.now()) / 1_000));
       setRemainingSeconds(remaining);
       setExpired(remaining === 0);
-    }, 1_000);
-    return () => window.clearInterval(timer);
+    };
+    const initialTimer = window.setTimeout(updateExpiry, 0);
+    const timer = window.setInterval(updateExpiry, 1_000);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(timer);
+    };
   }, [preview]);
+
+  const acceptPreview = useCallback((nextPreview: CustomerMergePreview) => {
+    const remaining = Math.max(0, Math.ceil((new Date(nextPreview.expiresAt).getTime() - Date.now()) / 1_000));
+    setRemainingSeconds(remaining);
+    setExpired(remaining === 0);
+    setPreview(nextPreview);
+  }, []);
 
   const selectSurvivor = useCallback((customerId: string) => {
     if (phase === "merging" || phase === "completion_unknown") return;
@@ -74,7 +87,7 @@ export function useCustomerMerge({
         survivorCustomerId,
       });
       if (generation !== generationRef.current) return;
-      setPreview(result.mergePreview);
+      acceptPreview(result.mergePreview);
       setPhase("reviewing");
     } catch (requestError) {
       if (generation !== generationRef.current) return;
@@ -103,7 +116,7 @@ export function useCustomerMerge({
         setPhase("preview_error");
       }
     }
-  }, [client, onAlreadyMerged, onMutationForbidden, phase, source.customerId, survivorCustomerId]);
+  }, [acceptPreview, client, onAlreadyMerged, onMutationForbidden, phase, source.customerId, survivorCustomerId]);
 
   const confirm = useCallback(() => {
     if (preview && !expired && phase === "reviewing") setPhase("confirming");
@@ -193,6 +206,7 @@ export function useCustomerMerge({
     frozenInputRef.current = null;
     setPreview(null);
     setError(null);
+    setRemainingSeconds(0);
     setPhase("selecting");
   }, []);
 

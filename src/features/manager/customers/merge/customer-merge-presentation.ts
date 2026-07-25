@@ -49,22 +49,38 @@ function isJsonValue(value: unknown): value is CustomerMergeJsonValue {
 }
 
 function scalarResolution(
+  field: "displayName" | "contactEmail" | "phoneNumber",
   draft: MergeResolutionDraft | undefined,
   allowedSelections: CustomerMergeAllowedSelection[],
 ): { value?: { selection: "source" | "survivor" | "replacement"; value?: string | null }; valid: boolean } {
   if (!draft?.selection || !allowedSelections.includes(draft.selection)) return { valid: false };
   if (draft.selection !== "replacement") return { value: { selection: draft.selection }, valid: true };
-  return { value: { selection: "replacement", value: draft.replacement?.trim() || null }, valid: true };
+  const replacement = draft.replacement?.trim() || null;
+  return { value: { selection: "replacement", value: replacement }, valid: isValidMergeScalarReplacement(field, replacement) };
+}
+
+export function isValidMergeScalarReplacement(
+  field: "displayName" | "contactEmail" | "phoneNumber",
+  value: string | null,
+) {
+  if (value === null || field === "displayName") return true;
+  if (field === "contactEmail") return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  return /^[+()\-\s\d]{3,}$/.test(value);
 }
 
 export function buildMergeFieldResolutions(
   preview: CustomerMergePreview,
   drafts: MergeResolutionDrafts,
-): { value?: CustomerMergeFieldResolutionsInput; invalidMetadataKeys: string[] } {
-  const displayName = scalarResolution(drafts.displayName, preview.fieldComparisons.displayName.allowedSelections);
-  const contactEmail = scalarResolution(drafts.contactEmail, preview.fieldComparisons.contactEmail.allowedSelections);
-  const phoneNumber = scalarResolution(drafts.phoneNumber, preview.fieldComparisons.phoneNumber.allowedSelections);
+): { value?: CustomerMergeFieldResolutionsInput; invalidScalarFields?: string[]; invalidMetadataKeys: string[] } {
+  const displayName = scalarResolution("displayName", drafts.displayName, preview.fieldComparisons.displayName.allowedSelections);
+  const contactEmail = scalarResolution("contactEmail", drafts.contactEmail, preview.fieldComparisons.contactEmail.allowedSelections);
+  const phoneNumber = scalarResolution("phoneNumber", drafts.phoneNumber, preview.fieldComparisons.phoneNumber.allowedSelections);
   const invalidMetadataKeys: string[] = [];
+  const invalidScalarFields = ([
+    ["displayName", displayName],
+    ["contactEmail", contactEmail],
+    ["phoneNumber", phoneNumber],
+  ] as const).filter(([, resolution]) => !resolution.valid).map(([field]) => field);
   const conflicts: CustomerMergeFieldResolutionsInput["metadata"]["conflicts"] = {};
 
   for (const conflict of preview.fieldComparisons.metadata.conflicts) {
@@ -85,8 +101,8 @@ export function buildMergeFieldResolutions(
     }
   }
 
-  if (!displayName.valid || !contactEmail.valid || !phoneNumber.valid || invalidMetadataKeys.length) {
-    return { invalidMetadataKeys };
+  if (invalidScalarFields.length || invalidMetadataKeys.length) {
+    return { invalidScalarFields, invalidMetadataKeys };
   }
 
   return {
@@ -96,6 +112,7 @@ export function buildMergeFieldResolutions(
       phoneNumber: phoneNumber.value! as CustomerMergeFieldResolutionsInput["phoneNumber"],
       metadata: { conflicts },
     },
+    invalidScalarFields,
     invalidMetadataKeys,
   };
 }
