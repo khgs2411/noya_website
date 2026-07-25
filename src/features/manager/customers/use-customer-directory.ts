@@ -26,7 +26,6 @@ export type CustomerDirectoryState = {
   loadStatus: LoadStatus;
   next: () => void;
   previous: () => void;
-  remove: (customerId: string) => void;
   records: Customer[];
   reconcile: (customer: Customer) => void;
   refresh: () => void;
@@ -230,13 +229,6 @@ export function useCustomerDirectory({
     }));
   }, [filter]);
 
-  const remove = useCallback((customerId: string) => {
-    setPages((current) => current.map((page) => ({
-      ...page,
-      records: page.records.filter((customer) => customer.customerId !== customerId),
-    })));
-  }, []);
-
   const directory: CustomerDirectoryState = {
     accessChanged: canReadCustomers ? accessChanged : false,
     canGoNext: canReadCustomers && Boolean(currentPage?.nextCursor || pageIndex < pages.length - 1),
@@ -247,7 +239,6 @@ export function useCustomerDirectory({
     loadStatus: canReadCustomers ? loadStatus : "idle",
     next,
     previous,
-    remove,
     records: canReadCustomers ? currentPage?.records ?? [] : [],
     reconcile,
     refresh,
