@@ -185,7 +185,7 @@ export function ManagerPage({
             </div>
           </section>
         ) : (
-          <section className="mt-7 flex flex-col gap-4">
+          <section className="mt-7 flex flex-col gap-4 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-6">
             <ManagerTabs
               activeTab={effectiveActiveTab}
               onChange={setActiveTab}
@@ -194,68 +194,70 @@ export function ManagerPage({
               canManageChangeRequests={canManageChangeRequests}
               canAccessCancellationPolicy={canAccessCancellationPolicy}
             />
-            <Suspense fallback={tabFallback}>
-              {effectiveActiveTab === "classes" && (
-                <ClassManagementTab
-                  canManageClasses={canManageClasses}
-                  canManageRegistrations={canManageRegistrations}
-                  canManageAttendance={canManageAttendance}
-                  canReadCustomers={canReadCustomers}
-                  canReadUsers={canReadUsers}
-                  canAutocompleteLocations={canAutocompleteLocations}
-                />
-              )}
-              {effectiveActiveTab === "pending" && (
-                <PendingRegistrationManagementTab
-                  canManageRegistrations={canManageRegistrations}
-                />
-              )}
-              {effectiveActiveTab === "templates" && (
-                <TemplateManagementTab
-                  canManageTemplates={canManageClasses}
-                  canAutocompleteLocations={canAutocompleteLocations}
-                />
-              )}
-              {effectiveActiveTab === "schedules" && (
-                <ScheduleManagementTab canManageSchedules={canManageClasses} />
-              )}
-              {effectiveActiveTab === "documents" && (
-                <DocumentManagementTab
-                  canManageDocuments={canManageDocuments}
-                />
-              )}
-              {effectiveActiveTab === "memberships" && (
-                <MembershipManagementTab
-                  canManageMemberships={canManageMemberships}
-                  canReadCustomers={canReadCustomers}
-                  canReadMemberships={canReadMemberships}
-                />
-              )}
-              {effectiveActiveTab === "customers" && canReadCustomers && (
-                <CustomerManagementTab
-                  canReadCustomers={canReadCustomers}
-                  canReadMemberships={canReadMemberships}
-                  canManageUsers={canManageUsers}
-                  canReadUsers={canReadUsers}
-                />
-              )}
-              {effectiveActiveTab === "permissions" && canManageRoles && (
-                <PermissionManagementTab canManageRoles={canManageRoles} />
-              )}
-              {effectiveActiveTab === "change-requests" &&
-                canManageChangeRequests && (
-                  <ChangeRequestManagementTab
-                    canManageChangeRequests={canManageChangeRequests}
+            <div className="min-w-0">
+              <Suspense fallback={tabFallback}>
+                {effectiveActiveTab === "classes" && (
+                  <ClassManagementTab
+                    canManageClasses={canManageClasses}
+                    canManageRegistrations={canManageRegistrations}
+                    canManageAttendance={canManageAttendance}
+                    canReadCustomers={canReadCustomers}
+                    canReadUsers={canReadUsers}
+                    canAutocompleteLocations={canAutocompleteLocations}
                   />
                 )}
-              {effectiveActiveTab === "settings" &&
-                canAccessCancellationPolicy && (
-                  <CancellationPolicyManagementTab
-                    canReadCancellationPolicy={canReadCancellationPolicy}
-                    canUpdateCancellationPolicy={canUpdateCancellationPolicy}
+                {effectiveActiveTab === "pending" && (
+                  <PendingRegistrationManagementTab
+                    canManageRegistrations={canManageRegistrations}
                   />
                 )}
-            </Suspense>
+                {effectiveActiveTab === "templates" && (
+                  <TemplateManagementTab
+                    canManageTemplates={canManageClasses}
+                    canAutocompleteLocations={canAutocompleteLocations}
+                  />
+                )}
+                {effectiveActiveTab === "schedules" && (
+                  <ScheduleManagementTab canManageSchedules={canManageClasses} />
+                )}
+                {effectiveActiveTab === "documents" && (
+                  <DocumentManagementTab
+                    canManageDocuments={canManageDocuments}
+                  />
+                )}
+                {effectiveActiveTab === "memberships" && (
+                  <MembershipManagementTab
+                    canManageMemberships={canManageMemberships}
+                    canReadCustomers={canReadCustomers}
+                    canReadMemberships={canReadMemberships}
+                  />
+                )}
+                {effectiveActiveTab === "customers" && canReadCustomers && (
+                  <CustomerManagementTab
+                    canReadCustomers={canReadCustomers}
+                    canReadMemberships={canReadMemberships}
+                    canManageUsers={canManageUsers}
+                    canReadUsers={canReadUsers}
+                  />
+                )}
+                {effectiveActiveTab === "permissions" && canManageRoles && (
+                  <PermissionManagementTab canManageRoles={canManageRoles} />
+                )}
+                {effectiveActiveTab === "change-requests" &&
+                  canManageChangeRequests && (
+                    <ChangeRequestManagementTab
+                      canManageChangeRequests={canManageChangeRequests}
+                    />
+                  )}
+                {effectiveActiveTab === "settings" &&
+                  canAccessCancellationPolicy && (
+                    <CancellationPolicyManagementTab
+                      canReadCancellationPolicy={canReadCancellationPolicy}
+                      canUpdateCancellationPolicy={canUpdateCancellationPolicy}
+                    />
+                  )}
+              </Suspense>
+            </div>
           </section>
         )}
       </div>
