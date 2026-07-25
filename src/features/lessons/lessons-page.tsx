@@ -631,9 +631,18 @@ export function LessonsPage({
 
         if (termsResult.error?.code === "not_found") {
           setTermsStatus("unavailable");
-        } else if (termsResult.error) {
+        } else if (termsResult.error || profileResult.error) {
           setTermsStatus("error");
           setTermsError(t("classes.terms.loadError"));
+        } else {
+          const profile = profileResult.data as ProductProfile;
+          setTermsAccepted(
+            hasAcceptedTerms(
+              profile.user.metadata,
+              termsResult.data.document.version,
+            ),
+          );
+          setTermsStatus("ready");
         }
 
         if (healthDeclarationResult.error?.code === "not_found") {
@@ -650,16 +659,6 @@ export function LessonsPage({
         }
 
         const profile = profileResult.data as ProductProfile;
-        setTermsAccepted(
-          !termsResult.error &&
-            hasAcceptedTerms(
-              profile.user.metadata,
-              termsResult.data.document.version,
-            ),
-        );
-        if (!termsResult.error) {
-          setTermsStatus("ready");
-        }
         setHealthDeclarationAccepted(
           hasAcceptedHealthDeclaration(
             profile.user.metadata,
