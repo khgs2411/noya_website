@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { getChangeRequestStatusPresentation } from "@/features/manager/change-requests/change-request-status";
 
 type ChangeRequestDetailPanelProps = {
   request: ProductChangeRequest;
@@ -122,6 +123,7 @@ export function ChangeRequestDetailPanel({
       ? `manager.changeRequests.status.${request.status}`
       : null;
   const statusValue = statusKey ? t(statusKey) : String(request.status);
+  const statusPresentation = getChangeRequestStatusPresentation(request.status);
 
   async function deleteRequest() {
     const result = await onDelete();
@@ -181,7 +183,13 @@ export function ChangeRequestDetailPanel({
             <dt className="font-semibold uppercase tracking-[0.16em] text-foreground/48">
               {t("manager.changeRequests.detail.status")}
             </dt>
-            <dd className="break-words text-foreground/72">{statusValue}</dd>
+            <dd>
+              <span
+                className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.12em] ${statusPresentation.badgeClassName}`}
+              >
+                {statusValue}
+              </span>
+            </dd>
           </div>
           <div className="grid gap-1 rounded-xl border border-blush/24 bg-background/46 p-3 sm:grid-cols-[8rem_1fr]">
             <dt className="font-semibold uppercase tracking-[0.16em] text-foreground/48">
