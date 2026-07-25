@@ -352,6 +352,7 @@ export default function App() {
             <SiteHeader
               theme={theme}
               menuOpen={menuOpen}
+              compact={isManagerPath(route.pathname)}
               onToggleTheme={toggleTheme}
               onOpenAccount={openAccount}
               onOpenMenu={openMenu}

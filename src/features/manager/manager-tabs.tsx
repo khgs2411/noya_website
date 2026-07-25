@@ -111,10 +111,10 @@ export function ManagerTabs({
 
   return (
     <nav
-      className="max-w-full rounded-[1.2rem] border border-blush/24 bg-card/78 p-1 lg:sticky lg:top-6 lg:w-52 lg:shrink-0 lg:p-2"
+      className="w-full min-w-0 max-w-full overflow-hidden rounded-[1.2rem] border border-blush/24 bg-card/78 p-1 lg:h-fit lg:w-48 lg:shrink-0 lg:p-2"
       aria-label={t("manager.menu")}
     >
-      <div className="flex max-w-full gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+      <div className="flex w-full min-w-0 max-w-full gap-1 overflow-x-auto overscroll-x-contain lg:flex-col lg:overflow-visible">
         {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const active = tab.id === activeTab;

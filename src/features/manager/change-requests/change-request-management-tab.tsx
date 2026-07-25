@@ -150,16 +150,16 @@ function AuthorizedChangeRequestManagementTab() {
   }
 
   return (
-    <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft sm:p-5">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-4 shadow-soft sm:p-5 lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+      <header className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="font-serif text-xs uppercase tracking-[0.25em] text-foreground/48">
             {t("manager.changeRequests.eyebrow")}
           </p>
-          <h2 className="mt-2 font-serif text-3xl">
+          <h2 className="mt-2 font-serif text-3xl lg:mt-1 lg:text-2xl">
             {t("manager.changeRequests.title")}
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground/68">
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground/68 lg:mt-1 lg:leading-5">
             {t("manager.changeRequests.body")}
           </p>
         </div>
@@ -189,7 +189,7 @@ function AuthorizedChangeRequestManagementTab() {
           </p>
         </div>
       ) : (
-        <div className="mt-5 grid gap-6">
+        <div className="mt-5 grid gap-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pe-2 lg:pb-1">
           {requestsByStatus.map(
             ({ status: statusGroup, requests }) =>
               requests.length > 0 && (
@@ -199,11 +199,11 @@ function AuthorizedChangeRequestManagementTab() {
                 >
                   <h3
                     id={`change-request-status-${statusGroup}`}
-                    className="font-serif text-2xl"
+                    className="font-serif text-2xl lg:text-xl"
                   >
                     {t(`manager.changeRequests.groups.${statusGroup}`)}
                   </h3>
-                  <div className="mt-3 grid gap-3">
+                  <div className="mt-3 grid gap-3 lg:mt-2 lg:gap-2">
                     {requests.map((request) => {
                       const type =
                         request.type === "issue"
@@ -224,11 +224,11 @@ function AuthorizedChangeRequestManagementTab() {
                         <button
                           key={request.id}
                           type="button"
-                          className={`w-full rounded-xl border p-4 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${statusPresentation.cardClassName}`}
+                          className={`w-full rounded-xl border p-4 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 lg:p-3 ${statusPresentation.cardClassName}`}
                           onClick={() => openDetail(request.id)}
                         >
                           <div className="flex flex-wrap items-start justify-between gap-2">
-                            <h4 className="break-words font-serif text-xl">
+                            <h4 className="break-words font-serif text-xl lg:text-lg">
                               {request.title ??
                                 t("manager.changeRequests.untitled")}
                             </h4>
@@ -238,13 +238,13 @@ function AuthorizedChangeRequestManagementTab() {
                               {status}
                             </span>
                           </div>
-                          <p className="mt-2 text-sm text-foreground/68">
+                          <p className="mt-2 text-sm text-foreground/68 lg:mt-1">
                             {type} ·{" "}
                             {new Intl.DateTimeFormat(i18n.language, {
                               dateStyle: "medium",
                             }).format(new Date(request.created_at))}
                           </p>
-                          <p className="mt-2 line-clamp-2 whitespace-pre-wrap break-words text-sm text-foreground/72">
+                          <p className="mt-2 line-clamp-2 whitespace-pre-wrap break-words text-sm text-foreground/72 lg:mt-1">
                             {request.description}
                           </p>
                         </button>

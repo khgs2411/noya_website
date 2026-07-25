@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ManagerTabs, type ManagerTab } from "@/features/manager/manager-tabs";
+import { cn } from "@/lib/utils";
 
 const ClassManagementTab = lazy(() =>
   import("@/features/manager/classes/class-management-tab").then((module) => ({
@@ -163,8 +164,8 @@ export function ManagerPage({
   );
 
   return (
-    <main className="min-h-screen bg-background px-4 pb-12 pt-5 text-foreground sm:px-6 lg:px-8">
-      <div className="mx-auto w-full max-w-full lg:max-w-[95vw]">
+    <main className="min-h-screen overflow-x-clip bg-background px-4 pb-12 pt-5 text-foreground sm:px-6 lg:h-[calc(100dvh-3.5rem)] lg:min-h-0 lg:overflow-hidden lg:px-6 lg:pb-5 lg:pt-1">
+      <div className="mx-auto w-full max-w-full lg:flex lg:h-full lg:max-w-[95vw] lg:min-w-0 lg:flex-col">
         <button
           type="button"
           className="inline-flex items-center gap-2 text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
@@ -185,7 +186,7 @@ export function ManagerPage({
             </div>
           </section>
         ) : (
-          <section className="mt-7 flex flex-col gap-4 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-6">
+          <section className="mt-7 flex min-w-0 flex-col gap-4 lg:mt-3 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-stretch lg:gap-4">
             <ManagerTabs
               activeTab={effectiveActiveTab}
               onChange={setActiveTab}
@@ -194,7 +195,14 @@ export function ManagerPage({
               canManageChangeRequests={canManageChangeRequests}
               canAccessCancellationPolicy={canAccessCancellationPolicy}
             />
-            <div className="min-w-0">
+            <div
+              className={cn(
+                "min-w-0",
+                effectiveActiveTab === "change-requests"
+                  ? "lg:h-full lg:min-h-0 lg:overflow-hidden"
+                  : "lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pe-2",
+              )}
+            >
               <Suspense fallback={tabFallback}>
                 {effectiveActiveTab === "classes" && (
                   <ClassManagementTab

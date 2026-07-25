@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 type SiteHeaderProps = {
   theme: string;
   menuOpen: boolean;
+  compact?: boolean;
   onToggleTheme: () => void;
   onOpenAccount: () => void;
   onOpenMenu: () => void;
@@ -18,6 +19,7 @@ type SiteHeaderProps = {
 export function SiteHeader({
   theme,
   menuOpen,
+  compact = false,
   onToggleTheme,
   onOpenAccount,
   onOpenMenu,
@@ -29,6 +31,7 @@ export function SiteHeader({
     <header
       className={cn(
         "relative z-40 mx-auto flex max-w-6xl items-start px-5 py-3 sm:px-8",
+        compact && "lg:py-2",
         className,
       )}
     >
@@ -37,38 +40,55 @@ export function SiteHeader({
           type="button"
           variant="ghost"
           size="icon"
-          className={`size-9 sm:size-10 [&_svg]:!size-4 sm:[&_svg]:!size-5 ${siteDesign.iconButton}`}
-        aria-label={t("theme.toggle")}
-        onClick={onToggleTheme}
-      >
+          className={cn(
+            "size-9 sm:size-10 [&_svg]:!size-4 sm:[&_svg]:!size-5",
+            compact && "lg:size-9 lg:[&_svg]:!size-4",
+            siteDesign.iconButton,
+          )}
+          aria-label={t("theme.toggle")}
+          onClick={onToggleTheme}
+        >
           {theme === "dark" ? (
             <Moon aria-hidden="true" />
           ) : (
             <Sun aria-hidden="true" />
           )}
         </Button>
-        <LanguageMenu buttonClassName="size-9 shadow-sm sm:size-10 [&_svg]:!size-4 sm:[&_svg]:!size-5" />
+        <LanguageMenu
+          buttonClassName={cn(
+            "size-9 shadow-sm sm:size-10 [&_svg]:!size-4 sm:[&_svg]:!size-5",
+            compact && "lg:size-9 lg:[&_svg]:!size-4",
+          )}
+        />
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className={`size-9 sm:size-10 [&_svg]:!size-4 sm:[&_svg]:!size-5 ${siteDesign.iconButton}`}
-        aria-label={t("account.open")}
-        onClick={onOpenAccount}
-      >
+          className={cn(
+            "size-9 sm:size-10 [&_svg]:!size-4 sm:[&_svg]:!size-5",
+            compact && "lg:size-9 lg:[&_svg]:!size-4",
+            siteDesign.iconButton,
+          )}
+          aria-label={t("account.open")}
+          onClick={onOpenAccount}
+        >
           <UserCircle aria-hidden="true" />
         </Button>
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className={`size-11 sm:size-12 [&_svg]:!size-5 sm:[&_svg]:!size-6 ${siteDesign.primaryMenuButton}`}
+          className={cn(
+            "size-11 sm:size-12 [&_svg]:!size-5 sm:[&_svg]:!size-6",
+            compact && "lg:size-10 lg:[&_svg]:!size-5",
+            siteDesign.primaryMenuButton,
+          )}
           aria-label={t("menu.toggle")}
-        aria-expanded={menuOpen}
-        onClick={onOpenMenu}
-      >
+          aria-expanded={menuOpen}
+          onClick={onOpenMenu}
+        >
           <Menu aria-hidden="true" />
-      </Button>
+        </Button>
       </div>
     </header>
   );
