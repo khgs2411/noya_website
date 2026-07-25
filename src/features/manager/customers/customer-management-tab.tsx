@@ -1,5 +1,6 @@
 import {
   ClassKitManagerApiError,
+  isCustomerMergeApiError,
   type AssignableProductRole,
   type CreateCustomerInput,
   type Customer,
@@ -18,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { CustomerCard } from "@/features/manager/customers/customer-card";
 import { CustomerFormDialog } from "@/features/manager/customers/customer-form-dialog";
 import { CustomerLifecycleDialog } from "@/features/manager/customers/customer-lifecycle-dialog";
+import { CustomerMergeDialog } from "@/features/manager/customers/merge/customer-merge-dialog";
+import { isEligibleMergeSource } from "@/features/manager/customers/merge/customer-merge-presentation";
 import {
   CustomerDetailPanel,
   type ContextState,
@@ -75,6 +78,7 @@ export function CustomerManagementTab({
   const [lifecycleSurface, setLifecycleSurface] = useState<CustomerLifecycleSurface>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [mutationAccessDenied, setMutationAccessDenied] = useState(false);
+  const [mergeSource, setMergeSource] = useState<Customer | null>(null);
   const selectionTokenRef = useRef(0);
   const membershipRequestRef = useRef(0);
   const linkedRequestRef = useRef(0);
@@ -103,6 +107,7 @@ export function CustomerManagementTab({
     setLinkedState("idle");
     setRoles([]);
     setRoleState("idle");
+    setMergeSource(null);
   }, []);
 
   const directory = useCustomerDirectory({
@@ -110,6 +115,77 @@ export function CustomerManagementTab({
     canReadCustomers,
     onForbidden: closeDetail,
   });
+
+  useEffect(() => {
+    if (canReadCustomers) return;
+    const clearId = window.setTimeout(closeDetail, 0);
+    return () => window.clearTimeout(clearId);
+  }, [canReadCustomers, closeDetail]);
+
+  const reconcileMergedSource = useCallback(async ({
+    sourceCustomerId,
+    survivor,
+    survivorCustomerId,
+  }: {
+    sourceCustomerId: string;
+    survivor?: Customer;
+    survivorCustomerId?: string;
+  }) => {
+    selectionTokenRef.current += 1;
+    membershipRequestRef.current += 1;
+    linkedRequestRef.current += 1;
+    setMergeSource(null);
+    setFormSurface(null);
+    setLifecycleSurface(null);
+    setMutationError(null);
+    directory.remove(sourceCustomerId);
+    setMembership(null);
+    setMembershipState("idle");
+    setLinkedUser(null);
+    setLinkedState("idle");
+    setRoles([]);
+    setRoleState("idle");
+    const selectSurvivor = (customer: Customer) => {
+      setSelectedCustomerId(customer.customerId);
+      setSelectedCustomer(customer);
+      setDetailState("ready");
+      setNotice(t("manager.customerMerge.success"));
+      directory.reconcile(customer);
+      directory.refresh();
+    };
+    if (survivor) {
+      selectSurvivor(survivor);
+      return;
+    }
+    if (!client || !survivorCustomerId) {
+      setSelectedCustomerId(null);
+      setSelectedCustomer(null);
+      setDetailState("idle");
+      setNotice(t("manager.customers.selectedMissing"));
+      directory.refresh();
+      return;
+    }
+    const token = ++selectionTokenRef.current;
+    setSelectedCustomerId(survivorCustomerId);
+    setSelectedCustomer(null);
+    setDetailState("loading");
+    try {
+      const result = await client.management.customers.get(survivorCustomerId);
+      if (token !== selectionTokenRef.current) return;
+      selectSurvivor(result.customer);
+    } catch (error) {
+      if (token !== selectionTokenRef.current) return;
+      if (error instanceof ClassKitManagerApiError && error.code === "forbidden") {
+        directory.clearForForbidden();
+        closeDetail();
+        return;
+      }
+      setSelectedCustomer(null);
+      setDetailState("error");
+      setNotice(t("manager.customers.selectedMissing"));
+      directory.refresh();
+    }
+  }, [client, closeDetail, directory, t]);
 
   const classifySectionFailure = useCallback((
     error: unknown,
@@ -271,9 +347,16 @@ export function CustomerManagementTab({
         setNotice(t("manager.customers.selectedMissing"));
         return;
       }
+      if (isCustomerMergeApiError(error) && error.code === "customer_merged") {
+        void reconcileMergedSource({
+          sourceCustomerId: customerId,
+          survivorCustomerId: error.details.survivorCustomerId,
+        });
+        return;
+      }
       setDetailState("error");
     }
-  }, [canReadCustomers, client, closeDetail, directory, t]);
+  }, [canReadCustomers, client, closeDetail, directory, reconcileMergedSource, t]);
 
   useEffect(() => {
     membershipRequestRef.current += 1;
@@ -446,13 +529,30 @@ export function CustomerManagementTab({
   }, [client, reconcileCustomer, runCustomerMutation, selectedCustomer, t]);
 
   const openForm = useCallback((surface: Exclude<CustomerFormSurface, null>) => {
+    if (mergeSource) return;
     setMutationError(null);
     setFormSurface(surface);
-  }, []);
+  }, [mergeSource]);
 
   const openLifecycle = useCallback((surface: CustomerLifecycleSurface) => {
+    if (mergeSource) return;
     setMutationError(null);
     setLifecycleSurface(surface);
+  }, [mergeSource]);
+
+  const openMerge = useCallback(() => {
+    if (!selectedCustomer || !isEligibleMergeSource(selectedCustomer) || mutationState !== "idle" || mutationAccessDenied || formSurface || lifecycleSurface) return;
+    setMutationError(null);
+    setMergeSource(selectedCustomer);
+  }, [formSurface, lifecycleSurface, mutationAccessDenied, mutationState, selectedCustomer]);
+
+  const closeMerge = useCallback(() => {
+    setMergeSource(null);
+  }, []);
+
+  const handleMutationForbidden = useCallback(() => {
+    setMergeSource(null);
+    setMutationAccessDenied(true);
   }, []);
 
   if (!canReadCustomers) return <Denied />;
@@ -519,7 +619,7 @@ export function CustomerManagementTab({
         </Button>
       </div>
 
-      {selectedCustomer && detailState === "ready" && formSurface === null && lifecycleSurface === null && (
+      {selectedCustomer && detailState === "ready" && formSurface === null && lifecycleSurface === null && mergeSource === null && (
         <CustomerDetailPanel
           customer={selectedCustomer}
           membership={membership}
@@ -530,10 +630,12 @@ export function CustomerManagementTab({
           roleState={roleState}
           mutationState={mutationState}
           canMutateCustomers={!mutationAccessDenied}
+          canMerge={isEligibleMergeSource(selectedCustomer) && mutationState === "idle" && !mutationAccessDenied}
           onAssign={(roleId) => void mutateRole(roleId, "assign")}
           onClose={closeDetail}
           onEdit={() => openForm("edit")}
           onLifecycle={openLifecycle}
+          onMerge={openMerge}
           onRevoke={(roleId) => void mutateRole(roleId, "revoke")}
           onRetryMembership={() => {
             if (selectedCustomer) void loadMembership(selectedCustomer.customerId, selectionTokenRef.current);
@@ -568,6 +670,29 @@ export function CustomerManagementTab({
         onClose={() => setLifecycleSurface(null)}
         onConfirm={() => changeLifecycle(lifecycleSurface ?? "deactivate")}
       />
+      {mergeSource && (
+        <CustomerMergeDialog
+          open
+          source={mergeSource}
+          client={client}
+          canReadCustomers={canReadCustomers}
+          mutationDenied={mutationAccessDenied}
+          onClose={closeMerge}
+          onCustomerReadForbidden={() => {
+            directory.clearForForbidden();
+            closeDetail();
+          }}
+          onMutationForbidden={handleMutationForbidden}
+          onComplete={(survivor) => void reconcileMergedSource({
+            sourceCustomerId: mergeSource.customerId,
+            survivor,
+          })}
+          onAlreadyMerged={(survivorCustomerId) => void reconcileMergedSource({
+            sourceCustomerId: mergeSource.customerId,
+            survivorCustomerId,
+          })}
+        />
+      )}
     </section>
   );
 }
