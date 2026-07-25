@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { CalendarClock, Clock3, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { ClassRegistrationStatus } from "@/features/classes/class-registration-status";
 import type { ClassViewItem } from "@/features/classes/class-types";
 import { LocationDisplay } from "@/features/locations/location-display";
 import { cn } from "@/lib/utils";
@@ -97,6 +98,11 @@ export function ClassCard({
         {item.capacityLabel && (
           <p className="mt-3 text-sm text-foreground/68">{item.capacityLabel}</p>
         )}
+
+        <ClassRegistrationStatus
+          status={item.userRegistrationState?.status}
+          className="mt-3"
+        />
 
         {item.pendingRegistrationCount !== undefined &&
           item.pendingRegistrationCount > 0 && (

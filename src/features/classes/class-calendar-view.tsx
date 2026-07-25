@@ -2,6 +2,7 @@ import { type ReactNode, useMemo, useState } from "react";
 import { Clock3, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { ClassRegistrationStatus } from "@/features/classes/class-registration-status";
 import type { ClassViewItem } from "@/features/classes/class-types";
 import { LocationDisplay } from "@/features/locations/location-display";
 import {
@@ -101,6 +102,11 @@ function CalendarClassButton({
         <span className="mt-1 block text-[0.68rem] font-semibold text-foreground/52 xl:text-xs">
           {countLabel}
         </span>
+        <ClassRegistrationStatus
+          status={item.userRegistrationState?.status}
+          compact
+          className="mt-1"
+        />
         {item.pendingRegistrationCount !== undefined &&
           item.pendingRegistrationCount > 0 && (
             <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-blush-strong/35 px-2 py-0.5 text-[0.66rem] font-semibold text-blush-strong">
