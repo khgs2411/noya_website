@@ -712,7 +712,7 @@ export function LessonsPage({
       return;
     }
 
-    if (!item.registrationOpen || !item.canRegister) {
+    if (!item.canRegister) {
       setOperationError(t("classes.registrationUnavailable"));
       return;
     }
@@ -964,15 +964,7 @@ export function LessonsPage({
       );
     }
 
-    if (!item.registrationOpen) {
-      return (
-        <span className={fallbackClass}>
-          {t("classes.registrationClosed")}
-        </span>
-      );
-    }
-
-    if (!session) {
+    if (!session && item.registrationOpen) {
       return (
         <Button
           type="button"
