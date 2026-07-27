@@ -13,19 +13,10 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import type { ManagerTab } from "@/features/manager/manager-routes";
 import { cn } from "@/lib/utils";
 
-export type ManagerTab =
-  | "classes"
-  | "pending"
-  | "templates"
-  | "schedules"
-  | "documents"
-  | "memberships"
-  | "customers"
-  | "permissions"
-  | "change-requests"
-  | "settings";
+export type { ManagerTab } from "@/features/manager/manager-routes";
 
 const primaryTabs: Array<{
   id: ManagerTab;

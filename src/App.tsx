@@ -18,7 +18,6 @@ import {
   isManagerPath,
   isProfilePath,
   isTermsPath,
-  managerPath,
   profilePath,
 } from "@/content/site-content";
 import { BrowserStorageNotice } from "@/components/site/browser-storage-notice";
@@ -28,6 +27,12 @@ import { PendingSignupTermsAcceptance } from "@/features/documents/pending-signu
 import { HealthDeclarationGate } from "@/features/documents/health-declaration-gate";
 import { productDocumentTypes } from "@/features/documents/product-document-types";
 import type { ManagerAccessSnapshot } from "@/features/manager/manager-page";
+import {
+  getManagerExitPathname,
+  getManagerRoute,
+  getManagerTabPathname,
+  type ManagerTab,
+} from "@/features/manager/manager-routes";
 import { useTheme } from "@/hooks/use-theme";
 import { captureActiveElement, restoreFocus } from "@/lib/focus";
 
@@ -198,6 +203,23 @@ export default function App() {
 
   const canEnterManager = capabilities.dashboard.can_enter;
   const managerUserId = session?.user.id ?? null;
+  const managerRoute = getManagerRoute(route.pathname);
+
+  useEffect(() => {
+    if (managerRoute.kind !== "manager-root") return;
+
+    const timeoutId = window.setTimeout(() => {
+      window.history.replaceState(
+        {},
+        "",
+        getManagerTabPathname(route.pathname, "classes"),
+      );
+      setRoute(getCurrentRoute());
+      setMenuOpen(false);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [managerRoute.kind, route.pathname]);
 
   useEffect(() => {
     let timeoutId: number | null = null;
@@ -272,7 +294,11 @@ export default function App() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      window.history.replaceState({}, "", "./");
+      window.history.replaceState(
+        {},
+        "",
+        getManagerExitPathname(route.pathname),
+      );
       setRoute(getCurrentRoute());
       setMenuOpen(false);
     }, 0);
@@ -280,9 +306,9 @@ export default function App() {
     return () => window.clearTimeout(timeoutId);
   }, [canEnterManager, loading, managerAccessSnapshot, route.pathname]);
 
-  function navigateTo(path: string) {
+  function navigateTo(path: string, options: { replace?: boolean } = {}) {
     const nextUrl = new URL(path, window.location.href);
-    window.history.pushState(
+    window.history[options.replace ? "replaceState" : "pushState"](
       {},
       "",
       `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`,
@@ -303,8 +329,20 @@ export default function App() {
     }, 0);
   }
 
+  function replaceTo(path: string) {
+    navigateTo(path, { replace: true });
+  }
+
+  function navigateToManagerTab(tab: ManagerTab) {
+    navigateTo(getManagerTabPathname(route.pathname, tab));
+  }
+
+  function replaceManagerTab(tab: ManagerTab) {
+    replaceTo(getManagerTabPathname(route.pathname, tab));
+  }
+
   function openManager() {
-    navigateTo(managerPath);
+    navigateTo(getManagerTabPathname(route.pathname, "classes"));
   }
 
   function openAccount() {
@@ -408,17 +446,37 @@ export default function App() {
         return renderPage(
           <ManagerPage
             accessSnapshot={managerAccessSnapshot}
+            pathname={route.pathname}
             onNavigate={navigateTo}
+            onSelectTab={navigateToManagerTab}
+            onReplaceTab={replaceManagerTab}
           />,
           true,
         );
       }
 
-      return renderPage(<ManagerPage loading onNavigate={navigateTo} />, true);
+      return renderPage(
+        <ManagerPage
+          loading
+          pathname={route.pathname}
+          onNavigate={navigateTo}
+          onSelectTab={navigateToManagerTab}
+          onReplaceTab={replaceManagerTab}
+        />,
+        true,
+      );
     }
 
     if (canEnterManager) {
-      return renderPage(<ManagerPage onNavigate={navigateTo} />, true);
+      return renderPage(
+        <ManagerPage
+          pathname={route.pathname}
+          onNavigate={navigateTo}
+          onSelectTab={navigateToManagerTab}
+          onReplaceTab={replaceManagerTab}
+        />,
+        true,
+      );
     }
   }
 
