@@ -16,6 +16,7 @@ import {
   isHealthDeclarationPath,
   isLessonsPath,
   isManagerPath,
+  isPricingPath,
   isProfilePath,
   isTermsPath,
   profilePath,
@@ -62,6 +63,11 @@ const MobileMenu = lazy(() =>
 const LessonsPage = lazy(() =>
   import("@/features/lessons/lessons-page").then((module) => ({
     default: module.LessonsPage,
+  })),
+);
+const PricingPage = lazy(() =>
+  import("@/features/pricing/pricing-page").then((module) => ({
+    default: module.PricingPage,
   })),
 );
 const ManagerPage = lazy(() =>
@@ -485,6 +491,10 @@ export default function App() {
       <LessonsPage search={route.search} onNavigate={navigateTo} />,
       true,
     );
+  }
+
+  if (isPricingPath(route.pathname)) {
+    return renderPage(<PricingPage onNavigate={navigateTo} />, true);
   }
 
   if (isTermsPath(route.pathname)) {

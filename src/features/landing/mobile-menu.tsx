@@ -8,7 +8,11 @@ import { siteDesign } from "@/components/site/design-guide";
 import { SidebarLink } from "@/components/site/sidebar-link";
 import { InstagramIcon, TikTokIcon } from "@/components/site/social-icons";
 import { Button } from "@/components/ui/button";
-import { lessonsPath, termsPath } from "@/content/site-content";
+import {
+  lessonsPath,
+  pricingPath,
+  termsPath,
+} from "@/content/site-content";
 
 export function MobileMenu({
   theme,
@@ -144,6 +148,9 @@ export function MobileMenu({
           </SidebarLink>
           <SidebarLink href={lessonsPath} onClick={onClose} onNavigate={onNavigate}>
             {t("nav.classes")}
+          </SidebarLink>
+          <SidebarLink href={pricingPath} onClick={onClose} onNavigate={onNavigate}>
+            {t("nav.pricing")}
           </SidebarLink>
           <SidebarLink href="./#contact" onClick={onClose} onNavigate={onNavigate}>
             {t("nav.contact")}
