@@ -38,6 +38,7 @@ export function ContactSection() {
             text="TikTok"
           />
           <ContactLine icon={<MapPin />} text={t("contact.studios")} />
+          <ContactLine icon={<MapPin />} text={t("contact.reformerPilatesStudio")} />
         </div>
       </div>
       <div className="mt-5 rounded-t-md bg-blush px-4 py-3 text-center text-xs text-primary-foreground">
