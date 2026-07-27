@@ -19,6 +19,11 @@ export const images = {
   rehearsal: `${assetBase}images/3f126190-c261-48b2-9c94-d6c20c94365b.jpg`,
   group: `${assetBase}images/750f785f-80db-4158-825b-c5f7ff958837.jpg`,
   ballet: `${assetBase}images/IMG_2105.jpg`,
+  gallery20260726One: `${assetBase}images/gallery-2026-07-26-01.jpeg`,
+  galleryImg9527: `${assetBase}images/gallery-img-9527.jpeg`,
+  gallery20260726Two: `${assetBase}images/gallery-2026-07-26-02.jpeg`,
+  galleryImg2833: `${assetBase}images/gallery-img-2833.jpeg`,
+  gallery20260726Three: `${assetBase}images/gallery-2026-07-26-03.jpeg`,
 };
 
 export const featuredClasses = [
@@ -50,6 +55,11 @@ export const galleryImages = [
   images.group,
   images.rehearsal,
   images.ballet,
+  images.gallery20260726One,
+  images.galleryImg9527,
+  images.gallery20260726Two,
+  images.galleryImg2833,
+  images.gallery20260726Three,
 ];
 
 export function isLessonsPath(pathname: string) {

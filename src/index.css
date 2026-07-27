@@ -124,6 +124,35 @@ button {
   font: inherit;
 }
 
+.gallery-carousel-track {
+  animation: gallery-carousel 48s linear infinite;
+}
+
+.gallery-carousel:hover .gallery-carousel-track,
+.gallery-carousel:focus-within .gallery-carousel-track {
+  animation-play-state: paused;
+}
+
+@keyframes gallery-carousel {
+  to {
+    transform: translateX(calc(-50% - 0.375rem));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-carousel {
+    overflow-x: auto;
+  }
+
+  .gallery-carousel-track {
+    animation: none;
+  }
+
+  .gallery-carousel-copy {
+    display: none;
+  }
+}
+
 .hero-shell {
   min-height: auto;
 }
