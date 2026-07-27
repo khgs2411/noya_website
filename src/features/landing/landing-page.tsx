@@ -4,7 +4,6 @@ import { FeaturedClassesSection } from "./featured-classes-section";
 import { GallerySection } from "./gallery-section";
 import { HeroSection } from "./hero-section";
 import { ImageLightbox } from "./image-lightbox";
-import { ReadonlyScheduleSection } from "./readonly-schedule-section";
 import { ServicesSection } from "./services-section";
 
 export function LandingPage({
@@ -46,7 +45,6 @@ export function LandingPage({
       <ServicesSection onNavigate={onNavigate} />
       <FeaturedClassesSection onNavigate={onNavigate} />
       <GallerySection onSelectImage={onSelectImage} />
-      <ReadonlyScheduleSection />
       <ContactSection />
 
       {activeImage && (

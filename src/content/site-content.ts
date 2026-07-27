@@ -49,39 +49,6 @@ export const galleryImages = [
   images.ballet,
 ];
 
-export const lessonRows = [
-  {
-    entry: "lessons.rows.intro.entry",
-    count: "1",
-    price: "60₪",
-    validity: "lessons.rows.once",
-  },
-  {
-    entry: "lessons.rows.single.entry",
-    count: "1",
-    price: "70₪",
-    validity: "lessons.rows.once",
-  },
-  {
-    entry: "lessons.rows.card.entry",
-    count: "8",
-    price: "480₪",
-    validity: "lessons.rows.threeMonths",
-  },
-  {
-    entry: "lessons.rows.card.entry",
-    count: "12",
-    price: "660₪",
-    validity: "lessons.rows.threeMonths",
-  },
-  {
-    entry: "lessons.rows.card.entry",
-    count: "16",
-    price: "800₪",
-    validity: "lessons.rows.threeMonths",
-  },
-];
-
 export function isLessonsPath(pathname: string) {
   return pathname.replace(/\/+$/, "").endsWith("/lessons");
 }
