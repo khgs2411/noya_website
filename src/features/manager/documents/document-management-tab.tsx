@@ -763,17 +763,40 @@ export function DocumentManagementTab({
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">
                           <label className="grid gap-2 text-sm font-semibold text-foreground/76">
                             {t("manager.documents.titleField")}
-                            <input value={form.title} className="h-11 rounded-xl border border-blush/24 bg-card/60 px-3 text-sm text-foreground outline-none focus:border-blush-strong" onChange={(event) => setForm((current) => ({ ...current, title: event.currentTarget.value }))} />
+                            <input
+                              value={form.title}
+                              className="h-11 rounded-xl border border-blush/24 bg-card/60 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                              onChange={(event) => {
+                                const title = event.currentTarget.value;
+                                setForm((current) => ({ ...current, title }));
+                              }}
+                            />
                           </label>
                           <label className="grid gap-2 text-sm font-semibold text-foreground/76">
                             {t("manager.documents.effectiveAt")}
-                            <input type="datetime-local" value={form.effectiveAt} className="h-11 rounded-xl border border-blush/24 bg-card/60 px-3 text-sm text-foreground outline-none focus:border-blush-strong" onInput={(event) => setForm((current) => ({ ...current, effectiveAt: event.currentTarget.value }))} />
+                            <input
+                              type="datetime-local"
+                              value={form.effectiveAt}
+                              className="h-11 rounded-xl border border-blush/24 bg-card/60 px-3 text-sm text-foreground outline-none focus:border-blush-strong"
+                              onInput={(event) => {
+                                const effectiveAt = event.currentTarget.value;
+                                setForm((current) => ({ ...current, effectiveAt }));
+                              }}
+                            />
                           </label>
                         </div>
 
                         <label className="grid gap-2 text-sm font-semibold text-foreground/76">
                           {t("manager.documents.content")}
-                          <textarea value={form.contentMarkdown} rows={18} className="min-h-[28rem] resize-y rounded-xl border border-blush/24 bg-card/60 px-4 py-4 font-mono text-sm leading-6 text-foreground outline-none focus:border-blush-strong" onChange={(event) => setForm((current) => ({ ...current, contentMarkdown: event.currentTarget.value }))} />
+                          <textarea
+                            value={form.contentMarkdown}
+                            rows={18}
+                            className="min-h-[28rem] resize-y rounded-xl border border-blush/24 bg-card/60 px-4 py-4 font-mono text-sm leading-6 text-foreground outline-none focus:border-blush-strong"
+                            onChange={(event) => {
+                              const contentMarkdown = event.currentTarget.value;
+                              setForm((current) => ({ ...current, contentMarkdown }));
+                            }}
+                          />
                         </label>
 
                         <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-foreground/62">
