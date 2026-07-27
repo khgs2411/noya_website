@@ -95,6 +95,9 @@ export function ManagerPage({
 }) {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ManagerTab>("classes");
+  const [selectedChangeRequestId, setSelectedChangeRequestId] = useState<
+    string | null
+  >(null);
   const { capabilities } = useProductContext();
   const managerAccess = accessSnapshot ?? capabilities;
   const canManageClasses = Boolean(managerAccess.dashboard.can_manage_classes);
@@ -151,6 +154,17 @@ export function ManagerPage({
     );
     return () => window.clearTimeout(repairId);
   }, [activeTab, effectiveActiveTab]);
+
+  useEffect(() => {
+    if (canManageChangeRequests) return;
+
+    const resetId = window.setTimeout(
+      () => setSelectedChangeRequestId(null),
+      0,
+    );
+    return () => window.clearTimeout(resetId);
+  }, [canManageChangeRequests]);
+
   const tabFallback = (
     <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-5 shadow-soft">
       <div className="flex items-center gap-3 text-sm text-foreground/68">
@@ -255,6 +269,8 @@ export function ManagerPage({
                   canManageChangeRequests && (
                     <ChangeRequestManagementTab
                       canManageChangeRequests={canManageChangeRequests}
+                      selectedId={selectedChangeRequestId}
+                      onSelectedIdChange={setSelectedChangeRequestId}
                     />
                   )}
                 {effectiveActiveTab === "settings" &&
