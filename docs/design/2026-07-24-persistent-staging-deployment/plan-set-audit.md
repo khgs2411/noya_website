@@ -1,5 +1,13 @@
 # Persistent Staging Deployment Plan-Set Audit
 
+> **Superseded readiness evidence — 2026-07-27**
+>
+> The user subsequently approved consolidating production and staging
+> frontend hosting in one Cloudflare Pages project. This audit evaluates the
+> older four-chunk plan and must not be used to authorize implementation. The
+> revised roadmap in `plan.md` requires rewritten chunks and a new independent
+> audit.
+
 ## Audit Mode: Full
 
 Rationale: The plan set spans repository changes, two deployment providers,

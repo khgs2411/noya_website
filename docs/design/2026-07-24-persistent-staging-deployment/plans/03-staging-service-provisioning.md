@@ -1,5 +1,11 @@
 # Chunk 03: Staging Service Provisioning
 
+> **Suspended — superseded by the 2026-07-27 architecture amendment.**
+>
+> Do not execute this chunk. The separate staging account/project topology is
+> no longer approved. See the addenda at the top of `../spec.md` and
+> `../plan.md`; replacement chunks must be written and approved first.
+
 **Plan Set:** `../plan.md`
 **Approved Source:** `../spec.md`
 **Status:** Ready for Review

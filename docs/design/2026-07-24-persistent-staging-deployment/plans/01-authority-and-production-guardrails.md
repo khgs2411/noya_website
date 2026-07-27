@@ -1,5 +1,11 @@
 # Chunk 01: Authority And Production Guardrails
 
+> **Suspended — superseded by the 2026-07-27 architecture amendment.**
+>
+> Do not execute this chunk. Production and staging are now intended to move
+> to one Cloudflare Pages project. See the addenda at the top of `../spec.md`
+> and `../plan.md`; replacement chunks must be written and approved first.
+
 **Plan Set:** `../plan.md`
 **Approved Source:** `../spec.md`
 **Status:** Ready for Review

@@ -4,16 +4,50 @@
 
 - Spec: `docs/design/2026-07-24-persistent-staging-deployment/spec.md`
 - State: Approved
-- Approval: Repository-grounding rework approved for one-pass implementation
-  planning after independent design re-audit on 2026-07-27; not approved for
-  implementation
+- Approval: Original repository-grounding rework approved on 2026-07-27.
+  Cloudflare production-and-staging consolidation explicitly approved by the
+  user on 2026-07-27. Revised implementation planning remains pending.
+
+## Architecture Amendment — 2026-07-27
+
+The user replaced the original split-hosting decision with one Cloudflare
+Pages control plane for both frontend environments. This is an approved design
+decision and an implementation-plan invalidation event.
+
+Resulting decisions:
+
+- One Cloudflare Pages project owns production and staging.
+- `master` is the production branch.
+- `staging` is the only automatically deployed preview branch.
+- Production uses its final custom domain; staging uses the stable branch
+  alias and may use a proxied `staging.<production-domain>` custom domain.
+- GitHub remains the source repository. ClassKit/Supabase remains the backend.
+- The solution must remain on Cloudflare's Free plan and use static hosting
+  only; no Pages Functions, Workers, R2, paid analytics, or usage-billed
+  service is authorized.
+- Cloudflare Git integration is preferred, but the existing private Git+SSH
+  ClassKit SDK dependency must pass a disposable authenticated-build proof
+  before DNS or production changes.
+- If the Git integration proof fails, GitHub Actions plus Wrangler Direct
+  Upload is the fallback only after the user separately accepts the
+  account-scoped Pages Edit token risk.
+- Both Cloudflare environments build at `/`; the existing
+  `/noya_website/` behavior remains temporarily available only for the
+  parallel GitHub Pages rollback surface.
+- Cloudflare production must be accepted before DNS cutover. GitHub Pages is
+  disabled only after a successful rollback window and explicit user
+  acceptance.
+- The original four-chunk implementation plan and its audits are historical
+  evidence, not execution authority. They must be replaced and re-audited.
 
 ## Documented Decisions
 
+- The 2026-07-27 architecture amendment above supersedes the original
+  production-on-GitHub-Pages topology wherever the two conflict.
 - This is a Plan Only assignment; implementation belongs to a future approved
   implementation card.
-- Production remains on the existing GitHub Pages workflow triggered only by
-  `master`, including its current patch-version behavior.
+- GitHub Pages remains only as the migration rollback surface until the
+  Cloudflare production cutover is explicitly accepted.
 - Staging must have a distinct stable HTTPS URL, isolated deployment artifact,
   isolated ClassKit product data and permissions, reproducible promotion flow,
   and complete route/auth/signup/PWA verification.

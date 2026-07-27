@@ -1,5 +1,13 @@
 # Persistent Staging Deployment Design Audit
 
+> **Superseded readiness evidence — 2026-07-27**
+>
+> The user subsequently approved consolidating production and staging
+> frontend hosting in one Cloudflare Pages project. This audit evaluates the
+> older production-on-GitHub-Pages design and must not be used to authorize
+> implementation. Re-audit the addendum at the top of `spec.md` before
+> execution.
+
 ## Audit Mode: Full
 
 Rationale: The design crosses repository workflows, GitHub environments,

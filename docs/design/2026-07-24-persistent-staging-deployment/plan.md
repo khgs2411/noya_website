@@ -5,7 +5,123 @@
 **Pseudocode:** Absent
 **Context:** `README.md` and `DESIGN_GUIDE.md`
 **ADRs:** None
-**Status:** Ready for Review
+**Status:** Proposed Roadmap
+
+## Architecture Amendment — 2026-07-27
+
+The user approved a later architecture decision after this plan set was
+written: production and staging frontend hosting will both move to one
+Cloudflare Pages project. The detailed four-chunk plan below is retained as
+historical planning evidence but is not executable because it preserves
+production on GitHub Pages and provisions a separate staging Pages project and
+account.
+
+No existing chunk may be dispatched or partially executed. The plan set must
+be rewritten, independently audited, and explicitly approved again before
+implementation.
+
+### Revised Goal
+
+Operate production and staging from one zero-cost Cloudflare Pages project:
+
+- `master` owns the production deployment and production custom domain;
+- `staging` is the sole automatically deployed preview branch and owns a
+  stable staging alias or branch-specific custom domain;
+- production and preview configuration remain separate;
+- ClassKit production and staging products remain isolated;
+- both Cloudflare artifacts are root-hosted;
+- GitHub Pages remains a reversible migration fallback until the Cloudflare
+  cutover is explicitly accepted; and
+- no paid or metered Cloudflare runtime product is introduced.
+
+### Planning Source Delta
+
+The approved addendum at the top of `spec.md` is authoritative over every
+conflicting statement below. `agenda.md` records the user decision.
+
+The following original decisions remain valid:
+
+- protected `staging` branch and reviewed promotion flow;
+- isolated `noya_website_staging` ClassKit product, assignments, permissions,
+  fixtures, exact origins, and exact OAuth redirects;
+- no direct Supabase or raw ClassKit Edge Function access;
+- complete public/manager route, deep-link, signup, auth, profile, PWA, and
+  offline acceptance;
+- redacted evidence and explicit external-mutation authority; and
+- stop-and-rollback behavior rather than production repair improvisation.
+
+The following original decisions are superseded:
+
+- production remaining permanently on GitHub Pages;
+- a separate Cloudflare account and separate staging Pages project;
+- staging-only Cloudflare Direct Upload as the settled build path;
+- production using `/noya_website/` after the Cloudflare cutover;
+- production non-mutation as the terminal goal instead of a controlled,
+  reversible production migration; and
+- disabling any production-hosting change under the implementation card.
+
+### Required Build Proof
+
+Before detailed planning chooses repository files or external mutations, prove
+whether Cloudflare Git integration can install the pinned private Git+SSH
+`@class-kit/react` dependency with a dedicated read-only credential and no
+secret disclosure.
+
+Decision rule:
+
+1. Successful proof → use Cloudflare Git integration for `master` production
+   and `staging` preview deployments.
+2. Failed or undocumented proof → retain GitHub Actions as the build system
+   and propose Wrangler Direct Upload for both branches.
+3. Direct Upload remains blocked until the user accepts the account-scoped
+   Pages Edit token risk for the existing multi-purpose Cloudflare account.
+4. Do not publish, relocate, or redesign the SDK as part of this migration.
+
+### Proposed Replacement Roadmap
+
+| Chunk | Deliverable | Depends On | Enables | Verification Focus | Status |
+| --- | --- | --- | --- | --- | --- |
+| New 01 | Zero-cost limits, final domain inventory, and authenticated Cloudflare build proof | None | A safe deployment-path decision | Current Free-plan limits, private SDK install, secret redaction, branch/environment separation | Proposed |
+| New 02 | One Pages project with `master` production and only `staging` preview, plus isolated Cloudflare/ClassKit environment configuration | New 01 | Parallel environment deployment | Branch controls, domains/aliases, variables, redirects, no paid runtime bindings | Proposed |
+| New 03 | Repository and deployment migration changes for root-hosted Cloudflare builds while preserving the GitHub Pages rollback artifact | New 02 | Production/staging acceptance before DNS | Workflow semantics, `/` Cloudflare artifacts, `/noya_website/` rollback artifact, routes and PWA | Proposed |
+| New 04 | Parallel deployment, full staging/production acceptance, DNS cutover, and rollback-window evidence | New 03 | User cutover decision | DNS/TLS, artifact identity, auth/data isolation, noindex staging, production behavior | Proposed |
+| New 05 | Explicitly approved GitHub Pages retirement and final operations documentation | New 04 and user cutover acceptance | Cloudflare-only frontend hosting | Workflow disablement, rollback record, zero-cost confirmation, operational handoff | Proposed |
+
+No new chunk file is approved by this addendum. The existing files under
+`plans/` are suspended until this roadmap is reviewed and rewritten.
+
+### Revised Verification Strategy
+
+- Recheck Cloudflare Free-plan limits immediately before provisioning.
+- Confirm the Pages project uses no Functions, Workers, R2, paid analytics, or
+  metered bindings.
+- Prove the private SDK build path without exposing credentials.
+- Configure preview branch controls to include exactly `staging`.
+- Verify production and preview environment values independently.
+- Build both Cloudflare artifacts with `VITE_PUBLIC_BASE=/`.
+- Preserve and fingerprint the legacy `/noya_website/` GitHub Pages artifact
+  during the rollback window.
+- Exercise the complete original route, signup, auth, ClassKit, manager, PWA,
+  and offline matrix on both Cloudflare environments.
+- Verify `staging` updates only its branch alias and returns
+  `X-Robots-Tag: noindex`.
+- Cut DNS only after pre-cutover acceptance, then repeat the complete
+  production matrix.
+- Disable GitHub Pages only after explicit user acceptance.
+
+### Current Blockers
+
+- Final production domain and desired staging custom domain must be recorded
+  before DNS and ClassKit redirect mutations.
+- The private Git+SSH dependency build proof has not run.
+- The original plan-set and design audits do not cover this topology.
+- The proposed replacement roadmap and rewritten chunks are not approved for
+  execution.
+
+## Historical Original Plan
+
+The sections below preserve the former four-chunk plan. They are not
+executable and remain useful only as source material for the replacement plan.
 
 ## Goal
 

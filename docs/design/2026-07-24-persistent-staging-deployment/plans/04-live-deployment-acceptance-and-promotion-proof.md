@@ -1,5 +1,11 @@
 # Chunk 04: Live Deployment, Acceptance, And Promotion Proof
 
+> **Suspended — superseded by the 2026-07-27 architecture amendment.**
+>
+> Do not execute this chunk. The revised plan must cover parallel Cloudflare
+> production/staging acceptance, DNS cutover, rollback, and later GitHub Pages
+> retirement. See `../spec.md` and `../plan.md`.
+
 **Plan Set:** `../plan.md`
 **Approved Source:** `../spec.md`
 **Status:** Ready for Review

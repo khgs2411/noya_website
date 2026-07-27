@@ -3,6 +3,227 @@
 Status: Approved — eligible for implementation planning.
 Design directory: `docs/design/2026-07-24-persistent-staging-deployment/`
 
+## Architecture Addendum — 2026-07-27: Consolidate Frontend Hosting On Cloudflare Pages
+
+This addendum records a later user-approved architecture decision. It
+supersedes every conflicting production-hosting, Cloudflare-project,
+deployment-provider, base-path, credential, and cutover statement in the
+original design below. The original design remains in this file as decision
+history. Its non-conflicting ClassKit isolation, protected-branch, security,
+failure, recovery, and acceptance requirements remain in force.
+
+The implementation plan and its existing chunks are not executable after this
+amendment until they are rewritten and re-audited against this topology.
+
+### Revised Decision
+
+Move the Noya Website frontend deployment layer entirely to Cloudflare Pages:
+
+- GitHub remains the source repository.
+- ClassKit and its shared Supabase authentication platform remain the backend;
+  this is not a backend migration.
+- One Cloudflare Pages project owns both frontend environments.
+- `master` is the Cloudflare Pages production branch.
+- `staging` is the sole automatically deployed preview branch.
+- The production custom domain points to the production deployment.
+- Staging uses the stable Cloudflare branch alias
+  `staging.<project>.pages.dev` until the final project name is known.
+- When the production zone is managed and proxied through Cloudflare DNS, a
+  stable `staging.<production-domain>` custom domain may point to that branch
+  alias.
+- Feature branches do not deploy automatically unless a later approved
+  preview requirement adds them.
+
+Cloudflare preview deployments are the environment boundary. A staging
+deployment must not modify the production deployment, production custom
+domain, or production artifact. The staging branch alias must continue
+pointing to the latest accepted `staging` deployment while immutable
+commit-specific preview URLs remain available for evidence and rollback
+diagnosis.
+
+The separate Cloudflare account and separate staging Pages project proposed by
+the original design are no longer required. The existing user-owned Cloudflare
+account is the intended control plane. A second Pages project may be
+reconsidered only if implementation evidence shows that one project's
+production/preview configuration cannot safely express the approved ClassKit
+or build boundary.
+
+### Zero-Cost Requirement
+
+The hosting solution must remain usable without a paid Cloudflare plan or
+usage-based service.
+
+As checked against Cloudflare's official documentation on 2026-07-27, the
+Pages Free plan provides:
+
+- 500 builds per month with one concurrent build;
+- 20,000 files per site;
+- a 25 MiB maximum per individual file;
+- up to 100 custom domains per Pages project;
+- up to 100 Pages projects per account; and
+- free, unlimited static-asset requests.
+
+The implementation must stay within those limits and must not introduce Pages
+Functions, Workers, R2, paid analytics, paid Access features, or another
+usage-billed Cloudflare service without a separate user decision. Static
+hosting, DNS, TLS, branch previews, and the existing remote ClassKit client are
+the intended runtime shape.
+
+Primary Cloudflare references:
+
+- `https://developers.cloudflare.com/pages/platform/limits/`
+- `https://developers.cloudflare.com/pages/functions/pricing/`
+- `https://developers.cloudflare.com/pages/configuration/preview-deployments/`
+- `https://developers.cloudflare.com/pages/configuration/branch-build-controls/`
+- `https://developers.cloudflare.com/pages/how-to/custom-branch-aliases/`
+
+Free-plan limits are external facts and must be rechecked immediately before
+provisioning. A material reduction or a newly required paid feature blocks the
+migration for user review.
+
+### Build And Deployment Integration Gate
+
+Cloudflare Git integration is the preferred deployment path because it keeps
+production and preview deployments in one Cloudflare project without an
+account-scoped Pages Edit token in GitHub.
+
+The repository currently installs `@class-kit/react` from the private Git+SSH
+dependency:
+
+`git+ssh://git@github.com/khgs2411/class-kit-sdk.git#a158bc588f5ec3421788475ccab2c5c2cb47ce9f`
+
+Cloudflare documents private package-registry tokens, but the approved
+repository currently depends on Git+SSH rather than a registry package.
+Therefore, no DNS or production-hosting mutation may occur until a disposable
+Cloudflare build proves all of the following:
+
+- a dedicated read-only ClassKit SDK credential can be supplied separately to
+  production and preview builds;
+- `bun install --frozen-lockfile`, lint, and build complete without exposing
+  the credential in source, logs, artifacts, or deployment metadata;
+- `master` and `staging` receive their intended Cloudflare environment values;
+  and
+- no unapproved branch is automatically built.
+
+Decision rule:
+
+1. Use Cloudflare Git integration if that proof succeeds with the existing
+   private dependency and a least-privileged read-only credential.
+2. If the proof fails or requires undocumented credential behavior, keep
+   GitHub Actions as the build system and use Wrangler Direct Upload for both
+   Cloudflare production and staging deployments.
+3. The Direct Upload fallback requires a separate user confirmation after
+   documenting that Cloudflare Pages Edit tokens are account-scoped and the
+   existing account contains other user-managed resources.
+4. Do not redesign, publish, or relocate the ClassKit SDK merely to make the
+   Cloudflare build service convenient.
+
+Cloudflare's documented private-package guidance is:
+`https://developers.cloudflare.com/pages/how-to/npm-private-registry/`.
+
+### Production And Staging Configuration
+
+The final Cloudflare project must enforce:
+
+- production branch: `master`;
+- automatic production deployments: enabled only for `master`;
+- preview branch mode: custom;
+- preview branch includes: exactly `staging`;
+- preview branch excludes or skips every other branch;
+- production and preview environment variables/secrets configured separately;
+- production custom domain attached only to the production deployment;
+- staging URL attached to the `staging` branch alias;
+- preview responses retain Cloudflare's default `X-Robots-Tag: noindex`; and
+- no Cloudflare Function or Worker route intercepts the static site.
+
+ClassKit remains isolated by product:
+
+- the production Cloudflare origin belongs only to the production ClassKit
+  product;
+- the staging Cloudflare origin belongs only to
+  `noya_website_staging`;
+- staging assignments, permissions, fixtures, and business data remain
+  staging-only;
+- Google OAuth and shared Supabase Auth Redirect URLs contain the exact final
+  production and staging return URLs;
+- no wildcard `*.pages.dev` authorization is allowed; and
+- the website continues to use only `@class-kit/react`.
+
+### Base Path And PWA Contract
+
+Both Cloudflare environments are root-hosted and must build with
+`VITE_PUBLIC_BASE=/`.
+
+During migration, the existing GitHub Pages deployment may remain available as
+a rollback surface and still requires `/noya_website/`. The bounded base
+contract must therefore support both hosting providers during the overlap:
+
+- Cloudflare production and staging explicitly set `/`;
+- the legacy GitHub Pages workflow continues using `/noya_website/`;
+- `%BASE_URL%`, `getSitePath`, `navigateTo`, signup-link generation, manifest
+  URLs, and service-worker registration remain base-aware; and
+- Cloudflare artifacts omit `dist/404.html`, while the legacy GitHub Pages
+  artifact may retain its existing copy during the rollback window.
+
+After GitHub Pages is formally retired, simplifying the legacy
+`/noya_website/` fallback is optional follow-up work, not part of the hosting
+cutover.
+
+### Migration And Recovery Sequence
+
+The migration must be reversible and must not combine DNS cutover with the
+first unverified build:
+
+1. Prove the selected Cloudflare build path using a non-production deployment.
+2. Configure one Pages project with `master` as production and only `staging`
+   as an automatic preview branch.
+3. Deploy and verify both Cloudflare artifacts before changing production DNS.
+4. Configure and verify the exact ClassKit origins and OAuth redirects.
+5. Record the current GitHub Pages URL, workflow run, source SHA, version, and
+   artifact fingerprint as the rollback baseline.
+6. Attach the production domain to the Cloudflare production deployment and
+   change DNS only after the Cloudflare production acceptance matrix passes.
+7. Verify DNS, TLS, root and deep routes, assets, signup links, authentication,
+   manager capability behavior, manifest, service worker, offline shell,
+   noindex staging behavior, and production/staging data isolation.
+8. Keep the GitHub Pages workflow and last known-good artifact recoverable
+   through an explicit rollback window.
+9. Disable the GitHub Pages deployment workflow only after the Cloudflare
+   production deployment is stable and the user explicitly accepts the
+   cutover.
+
+A failed Cloudflare build or preview deployment leaves the currently served
+production deployment and DNS untouched. A failed post-DNS acceptance check
+uses the recorded DNS and GitHub Pages baseline for rollback; it does not
+attempt an improvised production repair.
+
+### Revised Acceptance Delta
+
+In addition to the original non-conflicting route, auth, ClassKit, signup, and
+PWA checks:
+
+- Cloudflare production and staging must be simultaneously reachable from one
+  Pages project at distinct stable URLs.
+- A `staging` push must update only the staging branch alias.
+- A `master` push must update only the production deployment and custom
+  domain.
+- Unapproved feature branches must not consume Pages builds.
+- Production and preview environment values must not cross.
+- Both Cloudflare artifacts must use root-based assets and navigation.
+- The staging branch alias and custom domain, when configured, must serve the
+  same accepted artifact.
+- Staging must return `X-Robots-Tag: noindex`.
+- The implementation report must demonstrate that the final configuration
+  stays within the Cloudflare Free plan and uses no metered runtime service.
+- GitHub Pages must not be disabled until the user accepts the Cloudflare
+  production cutover.
+
+## Historical Original Design
+
+The sections below preserve the previously approved production-on-GitHub-Pages
+design. They remain useful only where they do not conflict with the
+2026-07-27 architecture addendum above.
+
 ## Goal And Success Criteria
 
 Provide a stable staging deployment for client review and ClassKit integration
