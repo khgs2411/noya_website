@@ -4,6 +4,7 @@ import { useProductContext, type ClassSummary } from "@class-kit/react";
 import { useTranslation } from "react-i18next";
 
 import { PillLink } from "@/components/site/pill-link";
+import { ScrollReveal } from "@/components/site/scroll-reveal";
 import { featuredClasses, lessonsPath } from "@/content/site-content";
 import {
   addDays,
@@ -138,67 +139,73 @@ export function FeaturedClassesSection({
 
   return (
     <section id="classes" className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
-      <div className="mb-5 flex items-end justify-between gap-4">
-        <h2 className="font-serif text-4xl sm:text-5xl">
-          {t("classes.title")}
-        </h2>
-        <PillLink
-          href={lessonsPath}
-          variant="outline"
-          className="hidden min-w-48 sm:flex"
-          onNavigate={onNavigate}
-        >
-          {t("classes.viewAll")}
-        </PillLink>
-      </div>
+      <ScrollReveal>
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <h2 className="font-serif text-4xl sm:text-5xl">
+            {t("classes.title")}
+          </h2>
+          <PillLink
+            href={lessonsPath}
+            variant="outline"
+            className="hidden min-w-48 sm:flex"
+            onNavigate={onNavigate}
+          >
+            {t("classes.viewAll")}
+          </PillLink>
+        </div>
+      </ScrollReveal>
       <div className="grid gap-5 md:grid-cols-3">
         {(featuredClassCards.length > 0 && !loadFailed
           ? featuredClassCards
           : featuredClasses
-        ).map((item) => (
-          <a
+        ).map((item, index) => (
+          <ScrollReveal
             key={"id" in item ? item.id : item.date}
-            href={"id" in item ? toClassHref(item) : lessonsPath}
-            onClick={(event) =>
-              handleClassLinkClick(
-                event,
-                "id" in item ? toClassHref(item) : lessonsPath,
-              )
-            }
-            className="overflow-hidden rounded-[1.1rem] bg-card shadow-soft transition hover:-translate-y-1 hover:shadow-xl"
+            delay={index * 110}
           >
-            <div className="relative h-36">
-              <img
-                src={item.image}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                className="size-full object-cover"
-              />
-              <div className="absolute start-4 top-4 rounded-sm bg-blush px-5 py-2 text-center text-primary-foreground">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em]">
+            <a
+              href={"id" in item ? toClassHref(item) : lessonsPath}
+              onClick={(event) =>
+                handleClassLinkClick(
+                  event,
+                  "id" in item ? toClassHref(item) : lessonsPath,
+                )
+              }
+              className="block overflow-hidden rounded-[1.1rem] bg-card shadow-soft transition hover:-translate-y-1 hover:shadow-xl"
+            >
+              <div className="relative h-36">
+                <img
+                  src={item.image}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="size-full object-cover"
+                />
+                <div className="absolute start-4 top-4 rounded-sm bg-blush px-5 py-2 text-center text-primary-foreground">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em]">
+                    {"id" in item
+                      ? weekdayFormatter.format(new Date(item.startsAt))
+                      : t("classes.month")}
+                  </p>
+                  <p className="text-4xl leading-none">
+                    {"id" in item
+                      ? dayFormatter.format(new Date(item.startsAt))
+                      : item.date}
+                  </p>
+                </div>
+              </div>
+              <div className="px-5 py-4 text-center">
+                <h3 className="text-lg font-medium">
+                  {"id" in item ? item.name : t(item.title)}
+                </h3>
+                <p className="mt-1 text-sm text-foreground/62">
                   {"id" in item
-                    ? weekdayFormatter.format(new Date(item.startsAt))
-                    : t("classes.month")}
-                </p>
-                <p className="text-4xl leading-none">
-                  {"id" in item
-                    ? dayFormatter.format(new Date(item.startsAt))
-                    : item.date}
+                    ? `${dateFormatter.format(new Date(item.startsAt))} · ${timeFormatter.format(new Date(item.startsAt))}`
+                    : t(item.time)}
                 </p>
               </div>
-            </div>
-            <div className="px-5 py-4 text-center">
-              <h3 className="text-lg font-medium">
-                {"id" in item ? item.name : t(item.title)}
-              </h3>
-              <p className="mt-1 text-sm text-foreground/62">
-                {"id" in item
-                  ? `${dateFormatter.format(new Date(item.startsAt))} · ${timeFormatter.format(new Date(item.startsAt))}`
-                  : t(item.time)}
-              </p>
-            </div>
-          </a>
+            </a>
+          </ScrollReveal>
         ))}
       </div>
     </section>

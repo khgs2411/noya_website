@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import { ScrollReveal } from "@/components/site/scroll-reveal";
 import { galleryImages } from "@/content/site-content";
 
 function GalleryImages({
@@ -48,15 +49,19 @@ export function GallerySection({
   return (
     <section className="bg-muted/50 py-7">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <h2 className="font-serif text-4xl sm:text-5xl">
-          {t("gallery.title")}
-        </h2>
-        <div className="gallery-carousel mt-5 overflow-hidden py-2" dir="ltr">
-          <div className="gallery-carousel-track flex w-max gap-3">
-            <GalleryImages onSelectImage={onSelectImage} />
-            <GalleryImages onSelectImage={onSelectImage} repeated />
+        <ScrollReveal>
+          <h2 className="font-serif text-4xl sm:text-5xl">
+            {t("gallery.title")}
+          </h2>
+        </ScrollReveal>
+        <ScrollReveal delay={100}>
+          <div className="gallery-carousel mt-5 overflow-hidden py-2" dir="ltr">
+            <div className="gallery-carousel-track flex w-max gap-3">
+              <GalleryImages onSelectImage={onSelectImage} />
+              <GalleryImages onSelectImage={onSelectImage} repeated />
+            </div>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

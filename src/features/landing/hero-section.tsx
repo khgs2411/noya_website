@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { PillLink } from "@/components/site/pill-link";
+import { ScrollReveal } from "@/components/site/scroll-reveal";
 import { SiteHeader } from "@/components/site/site-header";
 import { images, lessonsPath } from "@/content/site-content";
 
@@ -46,7 +47,7 @@ export function HeroSection({
       />
 
       <div className="relative z-10 mx-auto grid max-w-6xl gap-8 px-5 pb-8 pt-8 sm:px-8 md:grid-cols-[0.9fr_1.1fr] md:pb-0 md:pt-8">
-        <div className="max-w-xl">
+        <ScrollReveal className="max-w-xl" direction="start" delay={100}>
           <p className="font-display mb-5 text-2xl leading-none text-foreground/70 sm:text-3xl">
             {t("hero.eyebrow")}
           </p>
@@ -71,7 +72,7 @@ export function HeroSection({
               {t("hero.private")}
             </PillLink>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

@@ -2,6 +2,7 @@ import { Star, Users } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ScrollReveal } from "@/components/site/scroll-reveal";
 import { SectionTitle } from "@/components/site/section-title";
 import { images, lessonsPath } from "@/content/site-content";
 
@@ -14,24 +15,30 @@ export function ServicesSection({
 
   return (
     <section id="work" className="mx-auto max-w-6xl px-5 py-4 sm:px-8">
-      <SectionTitle>{t("services.title")}</SectionTitle>
+      <ScrollReveal>
+        <SectionTitle>{t("services.title")}</SectionTitle>
+      </ScrollReveal>
       <div className="mt-5 grid gap-8 md:grid-cols-2">
-        <ServiceCard
-          href={lessonsPath}
-          icon={<Users />}
-          image={images.leap}
-          title={t("services.classes")}
-          body={t("services.classesBody")}
-          onNavigate={onNavigate}
-        />
-        <ServiceCard
-          href={lessonsPath}
-          icon={<Star />}
-          image={images.private}
-          title={t("services.private")}
-          body={t("services.privateBody")}
-          onNavigate={onNavigate}
-        />
+        <ScrollReveal direction="start" delay={80}>
+          <ServiceCard
+            href={lessonsPath}
+            icon={<Users />}
+            image={images.leap}
+            title={t("services.classes")}
+            body={t("services.classesBody")}
+            onNavigate={onNavigate}
+          />
+        </ScrollReveal>
+        <ScrollReveal direction="end" delay={160}>
+          <ServiceCard
+            href={lessonsPath}
+            icon={<Star />}
+            image={images.private}
+            title={t("services.private")}
+            body={t("services.privateBody")}
+            onNavigate={onNavigate}
+          />
+        </ScrollReveal>
       </div>
     </section>
   );
