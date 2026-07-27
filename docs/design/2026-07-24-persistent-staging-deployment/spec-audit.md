@@ -1,26 +1,31 @@
-# Persistent Staging Deployment Spec Re-Audit
+# Persistent Staging Deployment Design Audit
 
 ## Audit Mode: Full
 
-Rationale: The revised design still crosses GitHub Actions, GitHub Pages,
+Rationale: The design crosses repository workflows, GitHub environments,
 Cloudflare Pages, ClassKit product administration, shared Supabase
-authentication, branch lifecycle, routing, and PWA behavior. This re-audit
-focuses on the previously blocking contracts and their revised acceptance
-evidence.
+authentication, branch lifecycle, routing, and PWA behavior. It is intended to
+be carried into agent-executable implementation planning after a separate
+approval gate.
 
 ## Plan Overview
 
-Objective: Add an independently hosted, stable staging environment without
-allowing staging deployment, authentication, product data, or review activity
-to mutate Noya Website production.
+Objective: Provide a stable staging environment for client review and ClassKit
+integration testing without allowing staging deployment, authentication,
+product data, or branch activity to mutate the production GitHub Pages
+boundary.
 
-Scope: A long-lived `staging` branch, merge-commit-only promotion and
-synchronization, Cloudflare Pages Direct Upload, restricted GitHub environment
-and credentials, isolated ClassKit product, shared-auth redirect
-administration, deployment-specific Vite base, SPA/PWA behavior,
-documentation, and acceptance evidence. Production hosting replacement, direct
-Supabase use from the website, raw ClassKit Edge Function calls, preview
-deployments, and broad CI/CD redesign are excluded.
+Scope: A long-lived `staging` branch, merge-commit promotion and
+synchronization, Cloudflare Pages Direct Upload, a restricted GitHub
+environment and credentials, an isolated ClassKit product on the shared remote
+platform, exact shared Supabase Auth redirect administration, a
+deployment-specific Vite base, route/PWA verification, documentation, and
+acceptance evidence.
+
+Explicitly excluded: Production hosting replacement, changes to
+`.github/workflows/deploy-pages.yml`, direct Supabase or raw ClassKit Edge
+Function access from this website, ClassKit product behavior changes, preview
+deployments, a new router, and broad CI/CD redesign.
 
 Target Audience: Human developers and AI agents.
 
@@ -28,107 +33,155 @@ Readiness Level: Ready for Development.
 
 Key Technical Decisions:
 
-- `noya-website-staging.pages.dev` provides an artifact and browser origin
-  independent from production GitHub Pages.
-- The `staging` branch deploys automatically through a restricted GitHub
-  environment and pinned `cloudflare/wrangler-action`/Wrangler toolchain.
-- Staging uses an isolated ClassKit product on the shared remote platform, with
-  a separate product redirect and exact shared Supabase Auth Redirect URL.
-- Promotion and the subsequent `master` to `staging` synchronization use merge
-  commits only, with second-cycle ancestry and diff verification.
-- `VITE_PUBLIC_BASE=/` applies only to staging; production preserves
-  `base: "./"` and the existing GitHub Pages `404.html` fallback.
+- Staging uses the distinct origin
+  `https://noya-website-staging.pages.dev/` and a separate Cloudflare Pages
+  artifact.
+- `staging` pushes auto-deploy through a branch-restricted GitHub environment;
+  production remains `master`-only and keeps its existing version bump.
+- Staging uses a separate ClassKit product and product-owned redirect while the
+  shared Supabase Auth allow-list remains ClassKit platform administration.
+- `VITE_PUBLIC_BASE=/` is staging-only. Production retains `base: "./"` and
+  its generated GitHub Pages `404.html`.
+- The current card remains design-only. Implementation planning and all live
+  external changes require a later approved card carrying these artifacts.
+
+## Evidence Boundary
+
+The repository was inspected at
+`6f322ff60f8936f1ef5e12d3ec1efe4c27b5a0c0`. The modified `spec.md` and
+`agenda.md` are the review subject. No build, test suite, deployment,
+provisioning command, GitHub mutation, ClassKit mutation, or Supabase mutation
+was performed.
+
+External claims were checked against current primary documentation:
+
+- [Cloudflare Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)
+  documents project-name suffixing when the requested hostname is unavailable,
+  production-branch selection, and Direct Upload deployment behavior.
+- [Wrangler Pages commands](https://developers.cloudflare.com/workers/wrangler/commands/pages/)
+  documents `pages project create [PROJECT-NAME]`,
+  `--production-branch`, and `pages deploy --branch`.
+- [Cloudflare Pages serving behavior](https://developers.cloudflare.com/pages/configuration/serving-pages/)
+  confirms that a deployment without a top-level `404.html` receives the
+  default SPA fallback.
+- [Cloudflare Direct Upload with CI](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/)
+  confirms the Pages edit credential, `contents: read`,
+  `deployments: write`, `gitHubToken`, and Wrangler action shape.
+- [Cloudflare Wrangler Action](https://github.com/cloudflare/wrangler-action)
+  confirms `wranglerVersion`, `deployment-url`,
+  `pages-deployment-alias-url`, and `pages-deployment-id`.
+- [GitHub environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
+  confirms selected-branch deployment policies and environment-scoped secret
+  release.
+- [Supabase redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls)
+  confirms that SDK `redirectTo` values must be present in the Auth redirect
+  allow-list and recommends exact production URLs rather than wildcards.
 
 ## File Path Verification
 
-Verified against repository commit `4c9f110`; no referenced source path changed
-since the first audit:
-
 | Referenced Path | Status | Notes |
 | --- | --- | --- |
-| `.github/workflows/deploy-pages.yml` | Exists | Current production workflow; `master` push, patch bump, and GitHub Pages deployment confirmed. |
-| `.github/workflows/deploy-staging.yml` | Not Found | Expected new implementation file. |
-| `vite.config.ts` | Exists | Currently fixes `base: "./"`. |
-| `src/lib/class-kit-client.ts` | Exists | Delegates Vite environment interpretation to the pinned SDK and fixes the auth storage key. |
-| `src/App.tsx` | Exists | Contains lightweight routing and the manager-access cache key. |
-| `src/content/site-content.ts` | Exists | Defines all six client-side paths and consumes `BASE_URL`. |
-| `src/features/classes/signup-links.ts` | Exists | Constructs signup URLs from `BASE_URL`. |
-| `src/register-service-worker.ts` | Exists | Registers from `BASE_URL`. |
-| `public/manifest.webmanifest` | Exists | Uses relative start, scope, and icon paths. |
-| `public/service-worker.js` | Exists | Derives the app shell from registration scope. |
+| `.github/workflows/deploy-pages.yml` | Exists | `master` push plus `workflow_dispatch`; patch bump only on push; write-capable GitHub Pages deployment confirmed. |
+| `.github/workflows/deploy-staging.yml` | Not Found | Correctly identified as a future implementation file. |
+| `vite.config.ts` | Exists | Currently fixes `base: "./"`; bounded staging override is a valid seam. |
+| `src/lib/class-kit-client.ts` | Exists | Calls `createClassKitClient(import.meta.env, { authStorageKey })` and does not directly select a product/backend. |
+| `src/App.tsx` | Exists | Owns lightweight pathname routing and `noya.manager.lastAccess`. |
+| `src/content/site-content.ts` | Exists | Defines `/lessons`, `/pricing`, `/auth`, `/profile`, `/terms`, and `/health-declaration` predicates and consumes `BASE_URL`. |
+| `src/features/manager/manager-routes.ts` | Exists | Defines all ten canonical manager tab paths and trailing-slash normalization. |
+| `src/features/account/auth-page.tsx` | Exists | Enforces the staging-policy contradiction described below. |
+| `src/features/classes/signup-links.ts` | Exists | Builds signup URLs from `BASE_URL`. |
+| `src/register-service-worker.ts` | Exists | Registers the worker from `BASE_URL`. |
+| `public/manifest.webmanifest` | Exists | Uses relative root/scope/icon values. |
+| `public/service-worker.js` | Exists | Derives the cached shell from registration scope. |
 | `index.html` | Exists | Uses relative manifest and icon references. |
-| `package.json` | Exists | Has `lint` and `build`, no automated test script, and pins the private SDK commit. |
+| `package.json` | Exists | Has `lint` and `build`, no automated test script, and pins the SDK commit. |
 | `bun.lock` | Exists | Resolves `@class-kit/react` to `a158bc588f5ec3421788475ccab2c5c2cb47ce9f`. |
-| `README.md` | Exists | Planned documentation target. |
+| `README.md` | Exists | Future staging-operations documentation target. |
 | `dist/index.html` | Not Found | Expected generated output, correctly absent from source. |
-| `dist/404.html` | Not Found | Expected generated production-only fallback, correctly absent from source. |
-| `docs/design/2026-07-24-persistent-staging-deployment/spec.md` | Exists | Revised design audited. |
-| `docs/design/2026-07-24-persistent-staging-deployment/agenda.md` | Exists | Revised decision record audited. |
+| `dist/404.html` | Not Found | Expected production-generated output, correctly absent from source. |
+| `docs/design/2026-07-24-persistent-staging-deployment/spec.md` | Exists | Final design under audit. |
+| `docs/design/2026-07-24-persistent-staging-deployment/agenda.md` | Exists | Final decision record under audit. |
 
-## Prior Finding Closure
+The pinned SDK source was also verified directly at commit
+`a158bc588f5ec3421788475ccab2c5c2cb47ce9f` in the ClassKit SDK repository:
 
-| Prior Critical Finding | Status | Evidence |
-| --- | --- | --- |
-| Shared Supabase Auth Redirect URL gate was omitted | Closed | The spec assigns ownership to a ClassKit platform administrator, requires the exact trailing-slash URL, forbids wildcards and Site URL changes, and requires authorized-administrator evidence before OAuth testing. |
-| Staging ClassKit product contract was underspecified | Closed | Product key, name, supported `production` environment, status, auth mode, provider flags, identities, exact `class_signup_links.manage` permission, and minimum data are stated. The agenda distinguishes this ClassKit enum from the staging deployment labels. |
-| Repeated promotion history was non-deterministic | Closed | Both direction changes use reviewed merge commits; squash, rebase, reset, force-push, and cherry-pick realignment are excluded; the second cycle verifies ancestry and diff cleanliness. |
-
-All prior critical findings and route/deployment recommendations are closed.
-The live matrix covers all six routes and their trailing-slash forms. The
-workflow contract specifies exact Wrangler `4.81.0`, action outputs, command,
-job-summary evidence, immutable action pinning, and a deployment-API fallback
-when the optional alias output is absent.
+- only exact `VITE_CLASS_KIT_TARGET === "local"` selects local transport;
+- omission, `remote`, and other values select the SDK-owned remote URL/key;
+- the Vite constructor does not consume `VITE_SUPABASE_TARGET`,
+  `VITE_REMOTE_SUPABASE_URL`,
+  `VITE_REMOTE_SUPABASE_PUBLISHABLE_KEY`, or
+  `VITE_AUTH_REDIRECT_URL`;
+- Google OAuth obtains `redirectTo` from resolved product context; and
+- remote calls send a query/hash-free, same-origin
+  `x-class-kit-site-url`.
 
 ## Strengths
 
-### 1. OAuth now has both required configuration gates
+### 1. Current route coverage is complete
 
-The revised design distinguishes the origin-scoped ClassKit product redirect
-from the shared Supabase Auth Redirect URL, assigns the latter to a ClassKit
-platform administrator, and verifies exact-value/no-wildcard evidence before
-the Google round trip. This matches the pinned SDK, which passes the
-product-owned redirect as Supabase OAuth `redirectTo`.
+The matrix now names all eight top-level routes: `/`, `/lessons`, `/pricing`,
+`/auth`, `/profile`, `/manager`, `/terms`, and `/health-declaration`. It also
+names the ten canonical manager tabs implemented by
+`manager-routes.ts`: `classes`, `pending`, `templates`, `schedules`,
+`documents`, `memberships`, `customers`, `permissions`,
+`change-requests`, and `settings`. Trailing-slash, manager repair,
+query-bearing, manifest, worker, offline, and SPA-fallback behavior are
+observable.
 
-### 2. The product fixture makes live acceptance repeatable
+### 2. The staging SDK input contract matches the pin
 
-The staging-only non-manager and manager identities, profile data, visible
-class, schedule, and signup link cover product discovery, password and Google
-auth, profile access, manager denial/access, and signup-link resolution without
-copying production data.
+The design correctly rejects the production workflow's legacy Supabase and
+redirect inputs as staging inputs while leaving the production workflow
+unchanged. Exact `VITE_CLASS_KIT_TARGET=remote` is stricter than the SDK
+requires but is a coherent staging invariant, and the then-pinned-SDK
+revalidation stop condition prevents configuration drift.
 
-### 3. The branch lifecycle now covers the second release
+### 3. Cloudflare provisioning fails before dependent mutations
 
-Merge-commit-only promotion preserves the staging tip in `master`; the reviewed
-reverse synchronization then carries the production version-bump commit back
-to staging. Explicit ancestry and clean-diff checks make repeated promotion
-observable rather than leaving realignment to operator preference. The
-one-time branch initialization is also bounded: it occurs only after the
-master-only production environment rule and staging ruleset are effective,
-records equality between the reviewed intended SHA and created branch SHA, and
-does not create an exception for later updates.
+The project-create command and exact canonical-hostname check match current
+Cloudflare behavior. A suffixed hostname is treated as a design change.
+Critically, the design stops before first upload and before ClassKit/Supabase
+configuration if the exact URL or production branch differs. Omitting
+top-level `404.html` is also consistent with Cloudflare's documented SPA
+fallback.
 
-### 4. Route and PWA evidence now covers the repository's actual route set
+### 4. Production non-mutation is objective
 
-The revised matrix includes `/lessons`, `/auth`, `/profile`, `/manager`,
-`/terms`, and `/health-declaration`, plus all trailing-slash forms. This matches
-the six route predicates in `src/content/site-content.ts` and exercises the
-relative manifest/icon behavior that differs at slash-terminated URLs.
+The future staging workflow has read-only source permission, no version bump,
+no source push, no production workflow dispatch, no GitHub Pages permission,
+and no `github-pages` environment reference. The production workflow is
+explicitly immutable relative to the future implementation card's base
+commit. Pre/post observations cover `master`, package version, production
+deployment identity, URL availability, and artifact fingerprint.
 
-### 5. Cloudflare deployment evidence is concrete
+### 5. ClassKit and Supabase ownership are correctly separated
 
-The design specifies `cloudflare/wrangler-action`, exact Wrangler `4.81.0`,
-`gitHubToken`, the full Pages command, and the deployment ID, immutable URL,
-alias URL, source SHA, and artifact-fingerprint evidence. The named inputs and
-outputs exist in the current action contract:
-[cloudflare/wrangler-action](https://github.com/cloudflare/wrangler-action).
+The website continues to use only `@class-kit/react`. The staging ClassKit
+product owns product identity, origin, auth policy, product redirect,
+assignments, capabilities, and business data. A ClassKit platform
+administrator separately owns the shared Supabase Auth Redirect URL. Exact
+URLs, no wildcards, no shared Site URL change, and authorized-administrator
+evidence keep those controls distinct.
+
+### 6. External and plan-only authority are bounded
+
+The current assignment authorizes design only. The spec and agenda repeatedly
+defer implementation planning and all GitHub, Cloudflare, ClassKit, Supabase,
+and branch mutations to a future approved implementation card. Within that
+future work, maintainer and ClassKit platform-administrator gates are stated,
+and unavailable external prerequisites stop progress rather than inviting
+workarounds.
 
 ## Critical Issues
 
-None. The previously unsupported ClassKit environment now uses `production`
-consistently for the stable remote origin and origin-scoped Google redirect.
-This is accepted by the pinned SDK, current backend validator, and database
-constraints. The agenda explicitly preserves `staging` only as the website,
-branch, GitHub environment, and Cloudflare deployment label.
+None.
+
+The prior auth-policy blocker is closed. The route matrix now requires
+`/auth?mode=signup` to preserve the query-bearing staging URL, render sign-in
+after the specified `invite_only` policy loads, and never expose open signup.
+The agenda records the same decision. This matches `src/App.tsx`, which
+preserves and parses the query, and `src/features/account/auth-page.tsx`, which
+sets `visibleMode` to sign-in unless `auth_mode === "open"`.
 
 ## Questions for Plan Author
 
@@ -136,21 +189,32 @@ None.
 
 ## Recommendations
 
-No design changes are required. During implementation, retain the specified
-stop conditions: pin the reviewed action commit, reserve the exact hostname
-before ClassKit configuration, verify the then-pinned SDK contract, and do not
-create or push `staging` before the production environment's master-only rule
-is proven.
+### External operations
+
+- In the future implementation plan, name the Cloudflare account
+  administrator and GitHub repository/environment administrator responsible
+  for the preconditions. The present design correctly forbids autonomous live
+  changes under this card, but named ownership will make handoff clearer.
+- Treat Cloudflare's recorded `production_branch` as deployment routing, not
+  as an authorization boundary. GitHub's workflow trigger, environment branch
+  policy, protected branch, and dedicated token remain the enforcement
+  controls.
+
+### Acceptance clarity
+
+- State that `/manager` settling on `/manager/classes` is checked with the
+  authorized staging manager. The non-manager denial check correctly settles
+  outside manager routing and should remain a separate case.
 
 ## Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation |
 | --- | --- | --- | --- |
-| ClassKit or shared Auth administration is unavailable | Medium | High | Treat authorized provisioning evidence as a prerequisite to live auth acceptance. |
-| Pages production deployment omits an alias output | Medium | Low | Use the specified deployment API lookup by required deployment ID. |
-| Exact Cloudflare hostname is unavailable | Low | High | Preserve the existing stop condition before ClassKit configuration changes. |
-| Shared Supabase redirect is changed too broadly | Low | High | Keep the exact one-entry/no-wildcard administrator evidence now specified. |
-| Repeated branch promotion drifts | Low | High | Enforce merge commits and the second-cycle ancestry/diff gate. |
+| Exact Cloudflare hostname is unavailable | Low | High | Preserve the pre-upload, pre-ClassKit stop gate and require design review for a new URL. |
+| Cloudflare Pages credential affects every project in its account | Medium | High | Use the specified dedicated single-project account and Pages-only permission. |
+| ClassKit or shared Supabase administration is unavailable | Medium | High | Require authorized evidence before OAuth acceptance; do not bypass from the website. |
+| Manual production dispatch targets a non-`master` ref | Low | High | Verify the `github-pages` environment's selected-branch rule before creating or pushing `staging`. |
+| Promotion history drifts after the first release | Low | High | Preserve merge-commit-only promotion/sync and the second-cycle ancestry/diff gate. |
 
 Highest Risk: Exact Cloudflare hostname reservation and authorized ClassKit
 platform provisioning are external preconditions. Both have explicit stop
@@ -158,45 +222,38 @@ conditions and evidence gates, so neither requires design-time guessing.
 
 ## Pre-Development Checklist
 
-- [x] ClassKit `production` environment is used consistently for the stable
-      remote origin and Google redirect.
-- [x] The staging deployment labels are distinguished from the ClassKit enum.
-- [x] Shared Supabase Auth Redirect URL ownership and exact evidence are
-      explicit.
-- [x] Staging product identity, auth policy, identities, and minimum business
-      fixture are otherwise explicit.
-- [x] Manager fixture names exact permission `class_signup_links.manage`.
-- [x] One-time `staging` initialization is authorized only after both
-      protection layers are effective, uses the exact reviewed implementation
-      commit, and verifies the intended and created SHAs.
-- [x] Every post-initialization `staging` update requires a reviewed pull
-      request.
-- [x] Repeated promotion and synchronization history are deterministic.
-- [x] All six routes and trailing-slash forms are covered.
-- [x] Wrangler version, command, action pinning rule, and deployment outputs
-      are explicit.
-- [x] Optional alias output has a deployment-API fallback keyed by required
-      deployment ID.
-- [x] All referenced source paths are verified or marked as planned/generated.
-- [x] AI autonomy, stop conditions, and verification gates are complete.
+- [x] `/auth?mode=signup` preserves the query-bearing URL, settles on sign-in
+      under `invite_only`, and must not expose open signup.
+- [x] All eight top-level routes are covered.
+- [x] All ten canonical manager tab paths are covered.
+- [x] The pinned SDK input and OAuth redirect contract is verified.
+- [x] Cloudflare project creation, production branch, exact-hostname, and SPA
+      fallback gates are explicit.
+- [x] Production workflow immutability and non-mutation evidence are explicit.
+- [x] ClassKit product redirect and shared Supabase Auth redirect ownership are
+      separate and exact.
+- [x] Live external mutations are excluded from this Plan Only assignment.
+- [x] All referenced source paths are verified or correctly marked
+      planned/generated.
+- [x] AI autonomy, forbidden actions, stop conditions, and rollback paths are
+      otherwise explicit.
 
 ## Next Steps
 
 1. Approve these design artifacts for implementation planning.
-2. Carry the accepted design through a new approved-plan implementation card;
-   do not implement under this Plan Only assignment.
-3. Begin future implementation with hostname reservation and production
-   `github-pages` environment verification before creating or pushing
-   `staging`.
+2. Create a separate implementation-planning card carrying the accepted
+   design artifact contract; do not implement under this Plan Only assignment.
+3. Begin future planning with the production `github-pages` environment gate,
+   exact Cloudflare hostname reservation, and named external administrators.
 
 ## Evaluation Matrix
 
 | Dimension | Weight | Raw Score | Weighted Score | Notes |
 | --- | --- | --- | --- | --- |
-| Completeness | x3 | 5/5 | 15/15 | Hosting, auth, product policy, fixtures, routes, provenance, promotion, rollback, and acceptance evidence are complete. |
-| Feasibility | x3 | 5/5 | 15/15 | The chosen ClassKit environment, permission, SDK inputs, Cloudflare action outputs, and hosting behavior match verified contracts. |
-| Clarity | x2 | 5/5 | 10/10 | Deployment labels, ClassKit enum, credential ownership, stop conditions, and evidence are unambiguous. |
-| Logical Flow | x2 | 5/5 | 10/10 | Preconditions, deployment, live validation, synchronization, and second-cycle verification are correctly ordered. |
+| Completeness | x3 | 5/5 | 15/15 | Hosting, auth policy, routes, product fixtures, provenance, promotion, rollback, and acceptance evidence are complete. |
+| Feasibility | x3 | 5/5 | 15/15 | Hosting, SDK, workflow, redirect, route, and invite-only behavior match verified contracts. |
+| Clarity | x2 | 5/5 | 10/10 | Deployment labels, auth behavior, credential ownership, stop conditions, and evidence are unambiguous. |
+| Logical Flow | x2 | 5/5 | 10/10 | External prerequisites, branch creation, deployment, acceptance, promotion, and recovery are correctly ordered. |
 | Scope & Risk | x2 | 4/5 | 8/10 | External hostname and platform-administration dependencies remain, with explicit stop conditions and evidence gates. |
 | Developer Experience | x1 | 5/5 | 5/5 | File seams, external prerequisites, checkpoints, rollback, and done evidence are concrete. |
 | AI Readiness | x1 | 5/5 | 5/5 | Autonomy boundaries, forbidden actions, stop conditions, path accuracy, and objective checks are explicit. |
@@ -207,30 +264,31 @@ Critical Dimension Check: Pass; neither weighted x3 dimension scores 1.
 
 ## Handoff
 
-PLAN APPROVED FOR IMPLEMENTATION
+DESIGN READY FOR IMPLEMENTATION PLANNING
 
 Key constraints:
 
 - Preserve `.github/workflows/deploy-pages.yml`, production hosting, and
   `master`-only production deployment/versioning behavior.
-- Do not create or push `staging` until the production `github-pages`
-  environment allows only `master` and the staging ruleset is effective. Its
-  one-time creation must target the exact reviewed implementation commit and
-  record matching intended and created SHAs; all later changes require
-  reviewed pull requests.
-- Reserve the exact Cloudflare hostname before ClassKit or shared Auth
+- Do not create or push `staging` until the production GitHub Pages
+  environment restriction and staging branch protections are verified.
+- Reserve the exact Cloudflare hostname before upload or ClassKit/Supabase
   configuration.
-- Keep ClassKit product data, assignments, permissions, origins, and redirects
-  isolated while using the supported `production` ClassKit environment enum.
-- Pin workflow actions to reviewed immutable commits and preserve the exact
-  evidence, rollback, and second-cycle promotion gates.
+- Keep staging product data, assignments, permissions, origins, and redirects
+  isolated; the shared Supabase Auth redirect remains ClassKit platform
+  administration.
+- Preserve `invite_only`: `/auth?mode=signup` keeps its URL but settles on
+  sign-in and must not expose open signup.
+- Carry this design through a separate approved implementation-planning card;
+  this Plan Only assignment authorizes no implementation or live mutation.
 
-Suggested starting point: Verify the production GitHub environment restriction
-and reserve `noya-website-staging.pages.dev`, then create the isolated ClassKit
-product and external redirect controls before authoring the staging workflow.
+Suggested starting point: In the future implementation plan, sequence the
+production environment restriction, exact Cloudflare hostname reservation,
+and authorized ClassKit/Supabase prerequisites before branch creation or
+workflow deployment.
 
-First milestone: External production-isolation, hostname, ClassKit product, and
-Auth redirect prerequisites are recorded and verified without creating or
-pushing the `staging` branch.
+First milestone: External production-isolation, hostname, ClassKit product,
+and Auth redirect prerequisites are recorded and verified without creating or
+pushing `staging`.
 
 Verdict: Ready for Development

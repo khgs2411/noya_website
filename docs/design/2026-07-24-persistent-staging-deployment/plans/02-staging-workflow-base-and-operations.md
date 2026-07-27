@@ -1,8 +1,7 @@
 # Chunk 02: Staging Workflow, Public Base, And Operations
 
 **Plan Set:** `../plan.md`
-**Canonical Source:** `../spec.md`, `../agenda.md`, and `../plan.md`; no
-Symphony mission file is required
+**Approved Source:** `../spec.md`
 **Status:** Ready for Review
 **Depends on:** Chunk 01
 **Enables:** Chunk 03
@@ -81,7 +80,8 @@ unchanged.
         contract; and
       - remote verification using a local manifest, manual redirect handling,
         exact status/content-type/body hashes, same-origin assets, and route
-        shell equality.
+        shell equality for all eight top-level routes and all ten canonical
+        manager-tab routes, including applicable trailing-slash forms.
 - [ ] Create `.github/workflows/deploy-staging.yml`:
       - trigger only `push.branches: [staging]`;
       - set `contents: read` and `deployments: write`;
@@ -128,10 +128,9 @@ unchanged.
   — expect canonical JSON and aggregate SHA-256 covering every dist file.
 - `if rg -n 'environment:[[:space:]]*github-pages|secrets\\.CLASS_KIT_SDK_DEPLOY_KEY|npm version|git commit|git push|pages:[[:space:]]*write|id-token:[[:space:]]*write|actions/deploy-pages|workflow_dispatch' .github/workflows/deploy-staging.yml; then exit 1; fi`
   — expect exit 0 with no forbidden staging behavior.
-- `git diff --exit-code 4c9f110 -- .github/workflows/deploy-pages.yml`
-  — expect exit 0; production workflow unchanged from the original
-  repository-inspection snapshot. This does not require `4c9f110` to be the
-  implementation branch tip.
+- `git diff --exit-code <implementation-base-sha> -- .github/workflows/deploy-pages.yml`
+  — expect exit 0; production workflow unchanged from the exact baseline
+  commit named by the approved implementation card.
 - `VITE_PUBLIC_BASE=/unexpected bun run build` with stdout/stderr captured to a
   temporary log
   — expect non-zero.

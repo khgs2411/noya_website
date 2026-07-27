@@ -1,7 +1,6 @@
 # Persistent Staging Deployment Implementation Plan Set
 
-**Canonical Execution Source:** `spec.md`, `agenda.md`, this roadmap, and the
-four chunk plans; no Symphony mission file is required
+**Approved Source:** `spec.md`
 **Agenda:** `agenda.md`
 **Pseudocode:** Absent
 **Context:** `README.md` and `DESIGN_GUIDE.md`
@@ -18,14 +17,14 @@ card.
 
 ## Source Artifacts And Repository Evidence
 
-- `spec.md` and `agenda.md` are the complete committed requirements and design
-  source. Together with this roadmap and its four chunks, they contain every
+- `spec.md` is the approved design source and `agenda.md` is its resolved
+  decision record. Together with this roadmap and its four chunks, they contain every
   hosting, branch, credential, ClassKit, Supabase Auth, routing, PWA,
   promotion, authority, and evidence decision needed for execution.
-- The implementation baseline is the resolved `version/1.1.5` commit that
-  contains this complete approved artifact set. Commit `4c9f110` is only the
-  original repository-inspection and production-workflow comparison snapshot;
-  it is not the required implementation branch tip.
+- The future approved implementation card must name an exact `master`-derived
+  commit containing this complete approved artifact set. That recorded commit,
+  not the planning inspection snapshot, is the implementation baseline and the
+  byte-comparison source for the production workflow.
 - `spec-audit.md` ends with `Verdict: Ready for Development`.
 - `.github/workflows/deploy-pages.yml` is the untouched production workflow.
 - `vite.config.ts` owns the current `base: "./"` production behavior.
@@ -36,8 +35,9 @@ card.
   relative/scope-derived PWA paths.
 - `src/lib/class-kit-client.ts` delegates the remote transport and product
   context to the pinned SDK.
-- `src/App.tsx` and `src/content/site-content.ts` define the six client-side
-  route predicates.
+- `src/App.tsx`, `src/content/site-content.ts`, and
+  `src/features/manager/manager-routes.ts` define eight top-level routes and
+  ten canonical manager-tab routes.
 - `package.json` provides `lint` and `build`; there is no automated test
   script.
 - Cloudflare, GitHub environment, ClassKit administration, and shared Supabase
@@ -91,7 +91,7 @@ Missing artifacts:
 | [01](plans/01-authority-and-production-guardrails.md) | Explicit external-mutation authority plus master-only production and protected-staging rules | None | Safe workflow implementation and later external provisioning | Dedicated GitHub policy APIs, ruleset detail, authority record | Ready for Review |
 | [02](plans/02-staging-workflow-base-and-operations.md) | Bounded Vite base, semantically validated pinned staging workflow, evidence tooling, and operator documentation | Chunk 01 | Safe staging service provisioning | Structural YAML assertions, lint, staging build, deterministic artifact inspection | Ready for Review |
 | [03](plans/03-staging-service-provisioning.md) | Least-privileged GitHub, Cloudflare, ClassKit access, and Supabase Auth staging services | Chunks 01–02 | Live staging deployment | Exact APIs/field sets, production-assignment absence, and redacted read-after-write evidence | Ready for Review |
-| [04](plans/04-live-deployment-acceptance-and-promotion-proof.md) | First live deployment, product-context fixture, browser/auth evidence, production non-mutation proof, and promotion simulation | Chunks 01–03 | Client review and future production promotion | Deployment provenance, supported fixture reads, six routes, PWA/auth/capabilities, quiet-window snapshots | Ready for Review |
+| [04](plans/04-live-deployment-acceptance-and-promotion-proof.md) | First live deployment, product-context fixture, browser/auth evidence, production non-mutation proof, and promotion simulation | Chunks 01–03 | Client review and future production promotion | Deployment provenance, supported fixture reads, eight top-level routes, ten manager tabs, PWA/auth/capabilities, quiet-window snapshots | Ready for Review |
 
 Boundary rationale:
 
@@ -127,6 +127,7 @@ administrator to perform the change and supply redacted evidence.
 | GitHub `github-pages` environment | Restrict deployment policy to `master` | Confirm-first / repository admin | Card entry naming environment and master-only change | Environment plus branch-policy collection | Exact one-policy assertion | New explicit approval; never broaden automatically |
 | GitHub staging ruleset | Create active `refs/heads/staging` protections | Confirm-first / repository admin | Card entry naming ruleset and rules | Detailed existing rulesets and bypass actors | Detailed ruleset assertion | New explicit approval |
 | Repository staging environment, secrets, variables | Create/update exact staging-only names | Confirm-first / repository admin | Card entry naming environment and exact name sets | Dedicated environment/policy/secret/variable endpoints | Exact set assertions with values redacted | New explicit approval |
+| GitHub `khgs2411/class-kit-sdk` deploy keys | Register the staging website's dedicated public key as read-only | Confirm-first / ClassKit SDK repository admin | Card entry naming repository, key title `noya-website-staging-sdk-read`, and read-only registration | Exact deploy-key inventory plus expected public-key fingerprint | New key ID/title, `read_only == true`, and matching fingerprint; private key never logged | Key deletion requires new explicit approval naming the exact key ID |
 | Cloudflare account/project/token | Create single-purpose account, Pages project, Pages Edit token | Confirm-first / Cloudflare account owner | Card entry explicitly accepting account/project/token commitment | Account resources and projects | Exact project fields and permission summary | New explicit approval; no automatic deletion |
 | ClassKit product and access | Create exact staging product, assignments, roles, and permission | Confirm-first / ClassKit platform admin | Card entry naming product key and access scope | ClassKit admin product/user/role reads | Exact fields and production-assignment absence | New explicit approval |
 | ClassKit business fixture | Create template and schedule/class after staging is live | Confirm-first / ClassKit fixture administrator | Card entry naming staging product and fixture scope | Live product context plus `templates.manage` and `schedules.manage` | Supported management reads | New explicit approval |
@@ -154,6 +155,8 @@ target-specific authority.
 - Environment secrets:
   `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN`,
   `STAGING_CLASS_KIT_SDK_DEPLOY_KEY`.
+- ClassKit SDK deploy-key target and title:
+  `khgs2411/class-kit-sdk`, `noya-website-staging-sdk-read`, read-only.
 - Environment variables:
   `VITE_PUBLIC_BASE=/`, `VITE_CLASS_KIT_TARGET=remote`,
   `STAGING_URL=https://noya-website-staging.pages.dev/`.
@@ -182,7 +185,7 @@ target-specific authority.
 | Isolated staging ClassKit behavior/data | Chunks 03–04 | Separate assignments, production-assignment absence, and live product-context fixture; shared platform Auth identity acknowledged |
 | Origin and two-level OAuth redirect configuration | Chunks 03–04 | ClassKit redirect plus exact Supabase Auth Redirect URL |
 | Automatic staging updates, no version bump | Chunks 02, 04 | Push-only protected branch; no source write |
-| Root/deep routes, signup links, PWA, password/Google auth, profile, manager | Chunk 04 | Six routes plus trailing slashes and two fixture identities |
+| Root/deep routes, signup links, PWA, password/Google auth, profile, manager | Chunk 04 | Eight top-level routes, ten manager tabs, trailing slashes, invite-only signup-query behavior, and two fixture identities |
 | Production behavior unchanged | Chunks 01–02, 04 | Production workflow byte comparison and quiet-window snapshot equality |
 | Reproducible staging-to-production promotion | Chunks 01, 04 | Merge-only review contract and second-cycle local history proof |
 | Documentation and troubleshooting | Chunk 02 | `README.md` |

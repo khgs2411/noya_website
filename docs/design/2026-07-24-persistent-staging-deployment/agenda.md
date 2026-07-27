@@ -3,8 +3,10 @@
 ## Status
 
 - Spec: `docs/design/2026-07-24-persistent-staging-deployment/spec.md`
-- State: Ready for Review
-- Approval: Ready for plan-set review; not approved for execution
+- State: Approved
+- Approval: Approved for one-pass implementation planning by the Symphony Plan
+  Only assignment after independent design audit on 2026-07-27; not approved
+  for implementation
 
 ## Documented Decisions
 
@@ -22,8 +24,21 @@
   ClassKit-owned.
 - Material choices below were resolved against the repository, pinned SDK, and
   primary hosting documentation, then challenged by the recorded design and
-  audit gates. This agenda and `spec.md` preserve those decisions without
+  review gates. This agenda and `spec.md` preserve those decisions without
   requiring mission-ledger context.
+- Revalidation at repository `6f322ff` adds `/pricing` and all ten canonical
+  manager tab paths to the route/PWA acceptance matrix.
+- The current production workflow injects `VITE_SUPABASE_TARGET`, remote
+  URL/key, and `VITE_AUTH_REDIRECT_URL`; pinned SDK commit `a158bc5` does not
+  consume them on the website's current client path. Production remains
+  unchanged, while staging does not copy those legacy inputs.
+- Pinned SDK commit `a158bc5` does explicitly consume
+  `VITE_CLASS_KIT_TARGET`: only exact value `local` selects local transport.
+  Staging therefore sets exact value `remote` as an explicit invariant even
+  though omission also defaults to remote.
+- The staging product remains `invite_only`. `/auth?mode=signup` preserves the
+  query-bearing URL but, after product policy loads, renders sign-in and does
+  not expose open signup.
 
 ## Questions
 
@@ -53,8 +68,11 @@
 - Answer: Use a dedicated Cloudflare Pages Direct Upload project named
   `noya-website-staging`.
 - Resulting decision: The canonical staging URL is
-  `https://noya-website-staging.pages.dev/`. Exact hostname availability is an
-  implementation precondition; an alternate hostname requires design review.
+  `https://noya-website-staging.pages.dev/`. Provision the Direct Upload
+  project explicitly with production branch `staging`, then verify Cloudflare
+  returned that exact production URL. Cloudflare may add random suffix
+  characters when a hostname is unavailable; any suffixed or alternate
+  hostname requires design review before upload or ClassKit configuration.
 - Spec changes: Hosting Topology; ClassKit Staging Product And Authentication.
 
 ### Question 2: What branch and promotion flow owns staging?
@@ -195,13 +213,14 @@
 - Spec changes: Source Branch And Promotion Flow; GitHub Workflow And
   Environment Boundary.
 
-### Question 7: How are base paths and SPA fallback handled without changing production?
+### Question 7: How are base paths, routes, and PWA behavior handled without changing production?
 
 - Status: Answered
 - Why it matters: Production is a GitHub project site while staging is a
   root-hosted Pages project; their asset and fallback mechanisms differ.
 - Scenario: A client refreshes `/manager`, installs the PWA, and opens a
-  generated signup link. All requests must remain on staging.
+  generated signup link. All requests must remain on staging, including the
+  newly added `/pricing` route and canonical manager tab routes.
 - Options:
   - A. Keep `base: "./"` everywhere and copy `404.html` — risks path-sensitive
     staging URLs and disables Cloudflare's default SPA fallback.
@@ -213,7 +232,12 @@
 - Answer: Add `VITE_PUBLIC_BASE=/` for staging only and preserve the existing
   production default and `404.html` step.
 - Resulting decision: The new workflow does not create `dist/404.html`;
-  Cloudflare serves the SPA shell for unknown routes.
+  Cloudflare serves the SPA shell for application routes. Acceptance covers
+  all eight top-level routes, all ten canonical manager tab routes,
+  trailing-slash forms, the invite-only sign-in behavior at
+  `/auth?mode=signup`, a generated `/lessons?signup=...` link, manifest URL
+  resolution, root service-worker scope, and one offline deep-route shell
+  navigation.
 - Spec changes: Vite, Routing, Signup Links, And PWA.
 
 ### Question 8: What is the failure, rollback, and production-isolation contract?
@@ -251,6 +275,8 @@
   - shared Supabase Auth redirect ownership and exact allow-list evidence;
   - complete staging product policy, test identities, capabilities, and
     minimum business fixtures;
+  - the `/pricing` route, every canonical manager tab route, query-bearing auth
+    and signup routes, manifest resolution, worker scope, and offline shell;
   - repeated promotion ancestry, synchronization, and second-cycle diff;
   - production non-mutation and acceptance evidence; and
   - out-of-scope hosting, SDK, backend, routing, and CI changes.
@@ -260,7 +286,8 @@
   - Question 8 to make recovery and non-mutation observable.
 - Remaining non-blocking risks:
   - Exact Cloudflare project-name availability cannot be proven until project
-    creation; implementation must stop if the canonical hostname differs.
+    creation; Cloudflare may suffix an unavailable hostname, and implementation
+    must stop before upload or ClassKit changes if the canonical URL differs.
   - A Cloudflare Pages Edit token cannot be narrowed to one Pages project; the
     dedicated single-project account is required to bound its authority.
   - Live ClassKit product provisioning and Google provider setup require

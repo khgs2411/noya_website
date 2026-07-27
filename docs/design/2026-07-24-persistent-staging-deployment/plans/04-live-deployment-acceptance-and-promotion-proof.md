@@ -1,8 +1,7 @@
 # Chunk 04: Live Deployment, Acceptance, And Promotion Proof
 
 **Plan Set:** `../plan.md`
-**Canonical Source:** `../spec.md`, `../agenda.md`, and `../plan.md`; no
-Symphony mission file is required
+**Approved Source:** `../spec.md`
 **Status:** Ready for Review
 **Depends on:** Chunks 01, 02, and 03
 **Enables:** Client review and a later approved production-promotion decision
@@ -106,14 +105,25 @@ history checks.
       `signupLinks.resolve(recordedSlug)` and require that exact staging class
       or range. Record object IDs only as stable hashes and exact counts; never
       infer link existence from a list operation.
-- [ ] Run direct-load and refresh checks on root plus `/lessons`, `/auth`,
-      `/profile`, `/manager`, `/terms`, and `/health-declaration`, including
-      the trailing-slash form of all six named routes. Confirm shell, assets,
-      chunks, and manifest stay on the staging origin.
-- [ ] Verify service-worker script URL and scope are staging-root, the manifest
-      `start_url`/`scope` work, and an install/standalone launch returns to
-      staging. Confirm production storage/service-worker state is not visible
-      on the distinct origin.
+- [ ] Run direct-load and refresh checks on all eight top-level routes: `/`,
+      `/lessons`, `/pricing`, `/auth`, `/profile`, `/manager`, `/terms`, and
+      `/health-declaration`, including trailing-slash forms where distinct.
+      With the authorized manager, require `/manager` to settle on
+      `/manager/classes`.
+- [ ] Run direct-load and refresh checks on all ten canonical manager-tab
+      routes and their trailing-slash forms. With an authorized manager,
+      capability-allowed tabs render; capability-restricted tabs repair to
+      `/manager/classes` according to current application behavior.
+- [ ] Verify `/auth?mode=signup` remains a query-bearing staging URL but renders
+      sign-in after the `invite_only` policy loads and never exposes open
+      signup. Verify the generated `/lessons?signup=...` URL remains on staging
+      and resolves the recorded fixture.
+- [ ] Verify the manifest resolves from staging root, each relative icon URL
+      loads, the service-worker script and scope are staging-root, and an
+      install/standalone launch returns to staging. After one online load and
+      worker activation, verify an offline navigation to a representative deep
+      route returns the cached root application shell. Confirm production
+      storage/service-worker state is not visible on the distinct origin.
 - [ ] With the non-manager fixture identity, verify password sign-in/sign-out,
       Google round trip to the exact staging root, profile access, visible
       class discovery, signup-link resolution within staging, and manager
@@ -170,8 +180,8 @@ history checks.
   success status, immutable URL, and alias containing the canonical URL.
 - `node scripts/staging-artifact-evidence.mjs verify dist https://noya-website-staging.pages.dev/`
   — expect exact equality for every artifact and index-shell equality for root,
-  all six routes, and all trailing-slash variants, without cross-origin
-  redirects.
+  all eight top-level routes, all ten canonical manager-tab routes, and all
+  applicable trailing-slash variants, without cross-origin redirects.
 - Browser inspection on the existing live staging URL
   — expect route/refresh, signup, install/scope, password, Google, profile,
   manager-denied, and manager-allowed behaviors described above.
@@ -226,8 +236,9 @@ status is trustworthy. No command starts a server.
 ## Consistency Check
 
 - No source files are owned by this chunk.
-- The live route list matches all six predicates in
-  `src/content/site-content.ts`.
+- The live route list matches all eight top-level routes in `src/App.tsx` and
+  `src/content/site-content.ts` plus all ten canonical manager-tab routes in
+  `src/features/manager/manager-routes.ts`.
 - The ClassKit fixture and OAuth checks match Chunk 01.
 - Production comparison uses exact recorded values, not a general “looks
   unchanged” assertion.

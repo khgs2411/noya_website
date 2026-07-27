@@ -1,8 +1,7 @@
 # Chunk 01: Authority And Production Guardrails
 
 **Plan Set:** `../plan.md`
-**Canonical Source:** `../spec.md`, `../agenda.md`, and `../plan.md`; no
-Symphony mission file is required
+**Approved Source:** `../spec.md`
 **Status:** Ready for Review
 **Depends on:** None
 **Enables:** Chunk 02
@@ -47,12 +46,12 @@ credential, branch, or deployment is created.
 
 ## Implementation Tasks
 
-- [ ] Confirm implementation starts from the resolved `version/1.1.5` commit
+- [ ] Confirm implementation starts from the exact `master`-derived commit
       named by the approved implementation card. Record that commit SHA and
       require its tree to contain this spec, agenda, roadmap, all four chunks,
       and both ready audits byte-for-byte. Stop if the branch is different or
-      any artifact is absent or mismatched. Do not require `4c9f110` as the
-      branch tip; it is only the original inspection snapshot.
+      any artifact is absent or mismatched. The planning inspection snapshot
+      is evidence only and is not the required implementation tip.
 - [ ] Create the external-state authority record from the root matrix. For
       every confirm-first target, require a written authorization entry on the
       approved implementation card naming the exact target and mutation. For
