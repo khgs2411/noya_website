@@ -1,6 +1,6 @@
 import { useProductContext } from "@class-kit/react";
 import { AlertCircle, FileText, Loader2, Plus, RefreshCw } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -29,14 +29,23 @@ function getChangeRequestStatusGroup(
 
 export function ChangeRequestManagementTab({
   canManageChangeRequests,
+  selectedId,
+  onSelectedIdChange,
 }: {
   canManageChangeRequests: boolean;
+  selectedId: string | null;
+  onSelectedIdChange: (id: string | null) => void;
 }) {
   if (!canManageChangeRequests) {
     return <ChangeRequestDenied />;
   }
 
-  return <AuthorizedChangeRequestManagementTab />;
+  return (
+    <AuthorizedChangeRequestManagementTab
+      selectedId={selectedId}
+      onSelectedIdChange={onSelectedIdChange}
+    />
+  );
 }
 
 function ChangeRequestDenied() {
@@ -53,11 +62,16 @@ function ChangeRequestDenied() {
   );
 }
 
-function AuthorizedChangeRequestManagementTab() {
+function AuthorizedChangeRequestManagementTab({
+  selectedId,
+  onSelectedIdChange,
+}: {
+  selectedId: string | null;
+  onSelectedIdChange: (id: string | null) => void;
+}) {
   const { t, i18n } = useTranslation();
   const { client } = useProductContext();
   const { state, actions } = useChangeRequests({ client });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formSurface, setFormSurface] = useState<FormSurface>(null);
   const detailFocusReturn = useRef<HTMLElement | null>(null);
   const formFocusReturn = useRef<HTMLElement | null>(null);
@@ -77,13 +91,23 @@ function AuthorizedChangeRequestManagementTab() {
   );
   const busy = state.mutation !== null;
 
+  useEffect(() => {
+    if (
+      selectedId &&
+      state.loadStatus === "loaded" &&
+      !state.requests.some((request) => request.id === selectedId)
+    ) {
+      onSelectedIdChange(null);
+    }
+  }, [onSelectedIdChange, selectedId, state.loadStatus, state.requests]);
+
   function openDetail(id: string) {
     actions.clearMutationError();
     detailFocusReturn.current = captureActiveElement();
-    setSelectedId(id);
+    onSelectedIdChange(id);
   }
   function closeDetail() {
-    setSelectedId(null);
+    onSelectedIdChange(null);
     restoreFocus(detailFocusReturn.current);
   }
   function openForm(surface: FormSurface) {
@@ -102,7 +126,7 @@ function AuthorizedChangeRequestManagementTab() {
   ) {
     const result = await actions.create(input);
     if (result.ok) {
-      setSelectedId(result.request.id);
+      onSelectedIdChange(result.request.id);
       if (image) await actions.upload(result.request.id, image);
     }
     return result;
