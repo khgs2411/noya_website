@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 export function ContactLine({ icon, text }: { icon: ReactNode; text: string }) {
   return (
     <p className="flex items-center gap-4">
-      <span className="text-blush-strong [&_svg]:size-5">{icon}</span>
-      <span className="whitespace-pre-line">{text}</span>
+      <span className="shrink-0 text-blush-strong [&_svg]:size-5">{icon}</span>
+      <span className="min-w-0 whitespace-pre-line">{text}</span>
     </p>
   );
 }

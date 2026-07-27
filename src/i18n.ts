@@ -1038,6 +1038,7 @@ const resources = {
         cta: 'Get in touch',
         location: 'Dubai, UAE',
         studios: '1 Dolev Street, Mazkeret Batya / 1 Moshe Lehrer Street, Ness Ziona',
+        reformerPilatesStudio: 'Reformer Pilates Studio: 10 HaYarden Street, Tal Shahar',
       },
       footer: "© 2025 Noya's flow. All rights reserved.",
       footerLinks: {
@@ -2072,6 +2073,7 @@ const resources = {
         cta: 'Связаться',
         location: 'Дубай, ОАЭ',
         studios: 'ул. Долев 1, Мазкерет-Батья / ул. Моше Лерер 1, Нес-Циона',
+        reformerPilatesStudio: 'Студия пилатеса на реформерах: ул. ха-Ярден, 10, Таль-Шахар',
       },
       footer: "© 2025 Noya's flow. Все права защищены.",
       footerLinks: {
@@ -3105,6 +3107,7 @@ const resources = {
         cta: 'יצירת קשר',
         location: 'דובאי, איחוד האמירויות',
         studios: 'דולב 1, מזכרת בתיה / משה לרר 1, נס ציונה',
+        reformerPilatesStudio: 'סטודיו לפילאטיס מכשירים: נהר הירדן 10, טל שחר',
       },
       footer: "© 2025 Noya's flow. כל הזכויות שמורות.",
       footerLinks: {
