@@ -297,7 +297,11 @@ export function DocumentManagementTab({
   }, [canManageDocuments, client, resetWorkspace, t]);
 
   useEffect(() => {
-    void loadDocument(selection);
+    const timeoutId = window.setTimeout(() => {
+      void loadDocument(selection);
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [loadDocument, selection]);
 
   function applySelection(nextSelection: DocumentSelection) {
@@ -406,6 +410,7 @@ export function DocumentManagementTab({
     const mutationSelection = selectionRef.current;
     const draftRevision = draft.revision;
     const expectedActiveVersionId = activeVersionId;
+    versionRequestRef.current += 1;
     setMutationStatus("publishing");
     setErrorMessage(null);
     setNotice(null);
@@ -444,6 +449,7 @@ export function DocumentManagementTab({
 
     const mutationSelection = selectionRef.current;
     const expectedActiveVersionId = activeVersionId;
+    versionRequestRef.current += 1;
     setMutationStatus("archiving");
     setErrorMessage(null);
     setNotice(null);
@@ -501,6 +507,7 @@ export function DocumentManagementTab({
     if (!client || draft || !sameSelection(source.selection, selectionRef.current)) return;
 
     const sourceSelection = source.selection;
+    versionRequestRef.current += 1;
     setMutationStatus("restoring");
     setErrorMessage(null);
     setNotice(null);
