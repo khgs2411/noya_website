@@ -1,9 +1,11 @@
+import { isManagerPath, managerPath } from "@/features/manager/manager-routes";
+
 const assetBase = import.meta.env.BASE_URL;
 
 export const lessonsPath = "lessons";
 export const authPath = "auth";
 export const profilePath = "profile";
-export const managerPath = "manager";
+export { isManagerPath, managerPath };
 export const termsPath = "terms";
 export const healthDeclarationPath = "health-declaration";
 
@@ -59,10 +61,6 @@ export function isAuthPath(pathname: string) {
 
 export function isProfilePath(pathname: string) {
   return pathname.replace(/\/+$/, "").endsWith("/profile");
-}
-
-export function isManagerPath(pathname: string) {
-  return pathname.replace(/\/+$/, "").endsWith("/manager");
 }
 
 export function isTermsPath(pathname: string) {

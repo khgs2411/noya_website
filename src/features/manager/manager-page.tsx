@@ -3,7 +3,11 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { ManagerTabs, type ManagerTab } from "@/features/manager/manager-tabs";
+import { ManagerTabs } from "@/features/manager/manager-tabs";
+import {
+  getManagerRoute,
+  type ManagerTab,
+} from "@/features/manager/manager-routes";
 import { cn } from "@/lib/utils";
 
 const ClassManagementTab = lazy(() =>
@@ -87,14 +91,19 @@ export type ManagerAccessSnapshot = {
 export function ManagerPage({
   loading = false,
   accessSnapshot = null,
+  pathname,
   onNavigate,
+  onSelectTab,
+  onReplaceTab,
 }: {
   loading?: boolean;
   accessSnapshot?: ManagerAccessSnapshot | null;
+  pathname: string;
   onNavigate: (path: string) => void;
+  onSelectTab: (tab: ManagerTab) => void;
+  onReplaceTab: (tab: ManagerTab) => void;
 }) {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<ManagerTab>("classes");
   const [selectedChangeRequestId, setSelectedChangeRequestId] = useState<
     string | null
   >(null);
@@ -137,23 +146,31 @@ export function ManagerPage({
   );
   const canAccessCancellationPolicy =
     canReadCancellationPolicy || canUpdateCancellationPolicy;
-  const effectiveActiveTab =
-    (activeTab === "customers" && !canReadCustomers) ||
-    (activeTab === "permissions" && !canManageRoles) ||
-    (activeTab === "change-requests" && !canManageChangeRequests) ||
-    (activeTab === "settings" && !canAccessCancellationPolicy)
-      ? "classes"
-      : activeTab;
+  const managerRoute = getManagerRoute(pathname);
+  const activeTab =
+    managerRoute.kind === "manager-tab" ? managerRoute.tab : null;
+  const canAccessActiveTab =
+    activeTab !== "customers" || canReadCustomers;
+  const canAccessPermissions =
+    activeTab !== "permissions" || canManageRoles;
+  const canAccessChangeRequests =
+    activeTab !== "change-requests" || canManageChangeRequests;
+  const canAccessSettings =
+    activeTab !== "settings" || canAccessCancellationPolicy;
+  const canRenderActiveTab =
+    activeTab !== null &&
+    canAccessActiveTab &&
+    canAccessPermissions &&
+    canAccessChangeRequests &&
+    canAccessSettings;
+  const hasAuthoritativeAccess = !loading && accessSnapshot === null;
 
   useEffect(() => {
-    if (activeTab === effectiveActiveTab) return;
+    if (!hasAuthoritativeAccess || canRenderActiveTab) return;
 
-    const repairId = window.setTimeout(
-      () => setActiveTab(effectiveActiveTab),
-      0,
-    );
+    const repairId = window.setTimeout(() => onReplaceTab("classes"), 0);
     return () => window.clearTimeout(repairId);
-  }, [activeTab, effectiveActiveTab]);
+  }, [canRenderActiveTab, hasAuthoritativeAccess, onReplaceTab]);
 
   useEffect(() => {
     if (canManageChangeRequests) return;
@@ -183,7 +200,7 @@ export function ManagerPage({
         <button
           type="button"
           className="inline-flex items-center gap-2 text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
-          onClick={() => onNavigate("./")}
+          onClick={() => onNavigate("../..")}
         >
           <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
           {t("actions.back")}
@@ -202,8 +219,8 @@ export function ManagerPage({
         ) : (
           <section className="mt-7 flex min-w-0 flex-col gap-4 lg:mt-3 lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[12rem_minmax(0,1fr)] lg:items-stretch lg:gap-4">
             <ManagerTabs
-              activeTab={effectiveActiveTab}
-              onChange={setActiveTab}
+              activeTab={activeTab ?? "classes"}
+              onChange={onSelectTab}
               canAccessCustomers={canReadCustomers}
               canManageRoles={canManageRoles}
               canManageChangeRequests={canManageChangeRequests}
@@ -212,13 +229,14 @@ export function ManagerPage({
             <div
               className={cn(
                 "min-w-0",
-                effectiveActiveTab === "change-requests"
+                activeTab === "change-requests"
                   ? "lg:h-full lg:min-h-0 lg:overflow-hidden"
                   : "lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pe-2",
               )}
             >
               <Suspense fallback={tabFallback}>
-                {effectiveActiveTab === "classes" && (
+                {!canRenderActiveTab && tabFallback}
+                {canRenderActiveTab && activeTab === "classes" && (
                   <ClassManagementTab
                     canManageClasses={canManageClasses}
                     canManageRegistrations={canManageRegistrations}
@@ -228,33 +246,33 @@ export function ManagerPage({
                     canAutocompleteLocations={canAutocompleteLocations}
                   />
                 )}
-                {effectiveActiveTab === "pending" && (
+                {canRenderActiveTab && activeTab === "pending" && (
                   <PendingRegistrationManagementTab
                     canManageRegistrations={canManageRegistrations}
                   />
                 )}
-                {effectiveActiveTab === "templates" && (
+                {canRenderActiveTab && activeTab === "templates" && (
                   <TemplateManagementTab
                     canManageTemplates={canManageClasses}
                     canAutocompleteLocations={canAutocompleteLocations}
                   />
                 )}
-                {effectiveActiveTab === "schedules" && (
+                {canRenderActiveTab && activeTab === "schedules" && (
                   <ScheduleManagementTab canManageSchedules={canManageClasses} />
                 )}
-                {effectiveActiveTab === "documents" && (
+                {canRenderActiveTab && activeTab === "documents" && (
                   <DocumentManagementTab
                     canManageDocuments={canManageDocuments}
                   />
                 )}
-                {effectiveActiveTab === "memberships" && (
+                {canRenderActiveTab && activeTab === "memberships" && (
                   <MembershipManagementTab
                     canManageMemberships={canManageMemberships}
                     canReadCustomers={canReadCustomers}
                     canReadMemberships={canReadMemberships}
                   />
                 )}
-                {effectiveActiveTab === "customers" && canReadCustomers && (
+                {canRenderActiveTab && activeTab === "customers" && (
                   <CustomerManagementTab
                     canReadCustomers={canReadCustomers}
                     canReadMemberships={canReadMemberships}
@@ -262,24 +280,22 @@ export function ManagerPage({
                     canReadUsers={canReadUsers}
                   />
                 )}
-                {effectiveActiveTab === "permissions" && canManageRoles && (
+                {canRenderActiveTab && activeTab === "permissions" && (
                   <PermissionManagementTab canManageRoles={canManageRoles} />
                 )}
-                {effectiveActiveTab === "change-requests" &&
-                  canManageChangeRequests && (
-                    <ChangeRequestManagementTab
-                      canManageChangeRequests={canManageChangeRequests}
-                      selectedId={selectedChangeRequestId}
-                      onSelectedIdChange={setSelectedChangeRequestId}
-                    />
-                  )}
-                {effectiveActiveTab === "settings" &&
-                  canAccessCancellationPolicy && (
-                    <CancellationPolicyManagementTab
-                      canReadCancellationPolicy={canReadCancellationPolicy}
-                      canUpdateCancellationPolicy={canUpdateCancellationPolicy}
-                    />
-                  )}
+                {canRenderActiveTab && activeTab === "change-requests" && (
+                  <ChangeRequestManagementTab
+                    canManageChangeRequests={canManageChangeRequests}
+                    selectedId={selectedChangeRequestId}
+                    onSelectedIdChange={setSelectedChangeRequestId}
+                  />
+                )}
+                {canRenderActiveTab && activeTab === "settings" && (
+                  <CancellationPolicyManagementTab
+                    canReadCancellationPolicy={canReadCancellationPolicy}
+                    canUpdateCancellationPolicy={canUpdateCancellationPolicy}
+                  />
+                )}
               </Suspense>
             </div>
           </section>
