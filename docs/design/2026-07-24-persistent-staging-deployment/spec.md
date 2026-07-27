@@ -1,7 +1,6 @@
 # Persistent Staging Deployment Design
 
-Status: Ready for Review — canonical design source; implementation requires
-approval of the complete audited plan set.
+Status: Approved — eligible for implementation planning.
 Design directory: `docs/design/2026-07-24-persistent-staging-deployment/`
 
 ## Goal And Success Criteria
@@ -35,21 +34,35 @@ The design succeeds when:
   triggers on `master`, bumps the patch version on push, commits that bump,
   builds, copies `dist/index.html` to `dist/404.html`, and deploys to the
   repository's `github-pages` environment.
+- The current production build step injects `VITE_SUPABASE_TARGET`,
+  `VITE_REMOTE_SUPABASE_URL`, `VITE_REMOTE_SUPABASE_PUBLISHABLE_KEY`, and
+  `VITE_AUTH_REDIRECT_URL`. The pinned SDK client path does not read those
+  legacy inputs. Preserving production means leaving that workflow unchanged,
+  not treating its inputs as the staging contract.
 - The production workflow has `contents: write`, `pages: write`, and
   `id-token: write` because it mutates `master` and uses GitHub Pages.
 - The production workflow also exposes `workflow_dispatch` and checks out
   `github.ref_name`. Once a `staging` branch exists, the production
   `github-pages` environment must restrict deployments to `master`; otherwise
   a manual dispatch at `staging` could publish that ref to production.
-- `vite.config.ts` uses `base: "./"`. `src/content/site-content.ts`,
+- `vite.config.ts` uses `base: "/noya_website/"` for the production GitHub
+  Pages project site. `index.html` resolves its manifest and Apple icon through
+  `%BASE_URL%`; `src/content/site-content.ts`,
   `src/features/classes/signup-links.ts`, and
   `src/register-service-worker.ts` consume `import.meta.env.BASE_URL`.
+- `src/content/site-content.ts#getSitePath` prefixes site-owned navigation
+  with `BASE_URL`, and `src/App.tsx#navigateTo` resolves route changes against
+  `new URL(import.meta.env.BASE_URL, window.location.origin)`. These are the
+  current production subpath-navigation seams and must remain base-aware.
 - `public/manifest.webmanifest` uses relative `start_url`, `scope`, and icon
   paths. `public/service-worker.js` derives its shell URL from the worker
   registration scope.
-- Client-side routes include `/lessons`, `/auth`, `/profile`, `/manager`, and
-  product-document routes. The application uses lightweight pathname routing
-  rather than a router package.
+- Client-side top-level routes are `/`, `/lessons`, `/pricing`, `/auth`,
+  `/profile`, `/manager`, `/terms`, and `/health-declaration`. Manager routing
+  also owns ten canonical tab paths under `/manager`: `classes`, `pending`,
+  `templates`, `schedules`, `documents`, `memberships`, `customers`,
+  `permissions`, `change-requests`, and `settings`. The application uses
+  lightweight pathname routing rather than a router package.
 - `src/lib/class-kit-client.ts` calls
   `createClassKitClient(import.meta.env, { authStorageKey })`; the website does
   not own remote product selection.
@@ -57,6 +70,11 @@ The design succeeds when:
   `a158bc588f5ec3421788475ccab2c5c2cb47ce9f` defaults production builds to the
   ClassKit remote Supabase transport. For remote product discovery it sends a
   same-origin, pathful `x-class-kit-site-url` header.
+- That pinned SDK explicitly reads `VITE_CLASS_KIT_TARGET`: only the exact
+  value `local` selects local transport; `remote`, an omitted value, and every
+  other value select the SDK-owned remote URL and publishable key. It does not
+  read `VITE_SUPABASE_TARGET`, either remote URL/key workflow input, or
+  `VITE_AUTH_REDIRECT_URL`.
 - ClassKit validates that header against the HTTP origin, then resolves remote
   products by the longest matching configured site URL. Pathful entries can
   route two same-host project sites to different products, but they do not
@@ -81,11 +99,19 @@ Use a dedicated Cloudflare Pages Direct Upload project:
 - Build owner: GitHub Actions in this repository
 - Deploy owner: the new `.github/workflows/deploy-staging.yml`
 
-The implementation must create or reserve the exact project name before
-registering ClassKit URLs. If Cloudflare cannot assign the exact canonical
-hostname, implementation stops before publishing or changing ClassKit
-configuration; a different stable URL is a design change, not an executor
-choice.
+Provision the project explicitly before adding GitHub environment values or
+registering ClassKit URLs:
+
+`wrangler pages project create noya-website-staging --production-branch=staging`
+
+Cloudflare documents that a globally unavailable project hostname may receive
+random suffix characters. The provisioning gate must therefore verify that
+Cloudflare records `staging` as the production branch and returns the exact
+canonical production URL
+`https://noya-website-staging.pages.dev/`, not merely the requested project
+name. If it does not, implementation stops before the first upload and before
+any ClassKit configuration changes; a suffixed hostname or different stable
+URL is a design change, not an executor choice.
 
 Cloudflare Pages is selected over:
 
@@ -190,7 +216,7 @@ The `staging` GitHub environment owns exactly:
 | `CLOUDFLARE_API_TOKEN` | Secret | Direct-upload credential with Cloudflare Pages Edit access scoped to the selected account. |
 | `STAGING_CLASS_KIT_SDK_DEPLOY_KEY` | Secret | Dedicated read-only SSH deploy key for installing `@class-kit/react`. |
 | `VITE_PUBLIC_BASE` | Variable | `/`, making assets, signup links, and service-worker registration root-relative on the staging origin. |
-| `VITE_CLASS_KIT_TARGET` | Variable | `remote`, stated explicitly for the staging build. |
+| `VITE_CLASS_KIT_TARGET` | Variable | Exact value `remote`; the pinned SDK recognizes this input and selects local transport only for exact value `local`. |
 | `STAGING_URL` | Variable | `https://noya-website-staging.pages.dev/`, used for workflow summaries and verification. |
 
 Provision a dedicated Cloudflare account containing only the
@@ -198,11 +224,14 @@ Provision a dedicated Cloudflare account containing only the
 to the account rather than an individual Pages project; keeping that account
 single-purpose is therefore part of the least-privilege boundary.
 
-Do not copy the production workflow's credentials or obsolete remote transport
-variables into staging. The pinned SDK owns the ClassKit remote URL and
-publishable key. The implementation must inspect the then-pinned SDK before
-removing or adding any environment input; a changed SDK contract is a stop
-condition.
+Do not copy the production workflow's credentials or its legacy
+`VITE_SUPABASE_TARGET`, remote URL/key, and `VITE_AUTH_REDIRECT_URL` inputs
+into staging. The pinned SDK owns the ClassKit remote URL and publishable key,
+and obtains the Google redirect from the resolved product context.
+`VITE_CLASS_KIT_TARGET=remote` is retained as an explicit staging invariant
+even though the pinned SDK also defaults an omitted value to remote. The
+implementation must inspect the then-pinned SDK before removing or adding any
+environment input; a changed SDK contract is a stop condition.
 
 The Cloudflare token must not receive DNS, Workers, zone, user, or unrelated
 account permissions. GitHub's generated token remains read-only for repository
@@ -287,11 +316,16 @@ without copying production business data.
 
 Make `vite.config.ts` read one deployment-only public base input:
 
-- when `VITE_PUBLIC_BASE` is present, use its validated value;
-- otherwise preserve the current `base: "./"` production behavior.
+- when `VITE_PUBLIC_BASE` is exact `/`, use `/` for staging;
+- when `VITE_PUBLIC_BASE` is absent or empty, preserve the current
+  `/noya_website/` production behavior; and
+- reject every other non-empty value with the named error
+  `VITE_PUBLIC_BASE must be "/" or unset`.
 
-The implementation must keep this input limited to `/` or the existing
-relative default. It is not a general multi-tenant base-path system.
+The implementation must keep this input limited to the root staging override
+or the fixed production default. It is not a general multi-tenant base-path
+system. It must not weaken or bypass the existing `%BASE_URL%`, `getSitePath`,
+`navigateTo`, signup-link, or service-worker consumers.
 
 For staging:
 
@@ -305,15 +339,28 @@ For staging:
 - `dist/404.html` is absent so Cloudflare's default SPA fallback remains
   enabled.
 
+The staging route and PWA acceptance matrix is:
+
+| Surface | Required checks |
+| --- | --- |
+| Top-level routes | Direct load and refresh of `/`, `/lessons`, `/pricing`, `/auth`, `/profile`, `/manager`, `/terms`, and `/health-declaration`, including trailing-slash forms where distinct. `/manager` must settle on `/manager/classes`. |
+| Manager routes | Direct load and refresh of all ten canonical `/manager/<tab>` paths, including trailing-slash forms. Capability-restricted tabs must either render for an authorized staging manager or repair to `/manager/classes` according to current application behavior. |
+| Query-bearing routes | `/auth?mode=signup` preserves the query-bearing staging URL, then renders sign-in after the `invite_only` product policy loads; it must not expose open signup. A generated `/lessons?signup=...` URL remains on the staging origin and resolves the staging fixture. |
+| Manifest | `/manifest.webmanifest` loads from staging; its relative `start_url`, `scope`, and icon URLs resolve to the staging root. |
+| Service worker | `/service-worker.js` registers with root scope, controls the staging routes after activation, and does not register against or control production because the origins differ. |
+| Offline shell | After one successful online load and worker activation, an offline navigation to a representative deep route returns the cached root application shell. |
+| SPA fallback | A direct request for each route returns the root SPA shell while top-level `dist/404.html` remains absent. |
+
 The existing production workflow continues creating `dist/404.html` for
-GitHub Pages and continues using the relative base default.
+GitHub Pages and continues using the `/noya_website/` base default.
 
 ## Failure And Recovery Behavior
 
 - Build or lint failure blocks upload and leaves the previous staging
   deployment live.
-- Missing or empty environment configuration fails before build or upload with
-  a named configuration error.
+- Missing or empty environment configuration, or a
+  `VITE_CLASS_KIT_TARGET` value other than exact `remote`, fails before build
+  or upload with a named configuration error.
 - A Cloudflare upload failure leaves production untouched and preserves the
   last successful staging deployment.
 - A ClassKit origin or redirect mismatch is a failed staging release. Diagnose
@@ -352,14 +399,19 @@ Static and workflow evidence:
   build/deploy commands;
 - verify the `github-pages` environment permits only `master` before the
   `staging` branch is created or pushed;
-- verify the production workflow is unchanged;
+- verify the production workflow is unchanged by the staging implementation
+  relative to the implementation card's base commit;
 - verify staging contains no version bump, source write, GitHub Pages deploy,
   or `dist/404.html` creation;
 - run `npm run lint`;
-- run `npm run build` once with the staging public-base and ClassKit-target
-  variables; and
-- inspect the emitted `dist/index.html`, manifest, service-worker registration,
-  and absence of `dist/404.html`.
+- run one production-default build with `VITE_PUBLIC_BASE` unset and verify
+  emitted HTML/assets use `/noya_website/`, including the manifest and Apple
+  icon expanded from `%BASE_URL%`;
+- run one staging build with `VITE_PUBLIC_BASE=/` and
+  `VITE_CLASS_KIT_TARGET=remote`, then verify emitted HTML/assets, generated
+  signup links, and service-worker registration use `/`; and
+- verify both builds preserve base-aware navigation through `getSitePath` and
+  `navigateTo`, while the staging artifact omits `dist/404.html`.
 
 Before the first staging upload, record:
 
@@ -372,12 +424,9 @@ After the staging upload, repeat those four observations and require equality.
 
 Live staging evidence after first deployment:
 
-- root and direct/refresh checks for `/lessons`, `/auth`, `/profile`, and
-  `/manager`, `/terms`, and `/health-declaration`;
-- direct/refresh checks for the trailing-slash form of all six routes;
-- successful asset, manifest, and service-worker loads within the staging
-  origin;
-- a generated signup link that remains within the staging origin;
+- complete the top-level, manager-route, query-bearing, manifest,
+  service-worker, offline-shell, and SPA-fallback matrix defined above;
+- verify successful asset and icon loads within the staging origin;
 - password sign-in/sign-out;
 - Google OAuth round trip back to the staging root;
 - profile access;
@@ -432,8 +481,8 @@ evidence, and live ClassKit evidence.
 | Item | Provenance |
 | --- | --- |
 | Plan-only scope, production preservation, stable distinct URL, isolated staging product, and acceptance matrix | Assignment ledger |
-| Current workflows, base paths, routes, PWA files, scripts, and SDK call site | Repository inspection at `4c9f110` |
-| Remote product discovery uses a same-origin pathful site URL, while auth and manager caches remain browser-origin scoped | Pinned `@class-kit/react` source at `a158bc5`, ClassKit API origin resolver, and website storage keys |
+| Current workflows, production workflow inputs, `/noya_website/` base, `%BASE_URL%` HTML links, base-aware navigation, routes, PWA files, scripts, and SDK call site | Repository inspection at resolved `master` baseline `c451452` |
+| `VITE_CLASS_KIT_TARGET` semantics, SDK-owned remote URL/key, product-context OAuth redirect, same-origin pathful discovery, and origin-scoped auth/manager caches | Pinned `@class-kit/react` source at `a158bc5`, ClassKit API origin resolver, and website storage keys |
 | OAuth `redirectTo` must appear exactly in Supabase Auth Redirect URLs | Current Supabase Auth redirect documentation and ClassKit auth contract |
 | Cloudflare Direct Upload, Pages Edit token, stable project URL, and no-`404.html` SPA fallback | Current Cloudflare Pages documentation |
 | Environment branch restriction and secret-release behavior | Current GitHub Actions environment documentation |

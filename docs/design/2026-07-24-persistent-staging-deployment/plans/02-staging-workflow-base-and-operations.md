@@ -1,8 +1,7 @@
 # Chunk 02: Staging Workflow, Public Base, And Operations
 
 **Plan Set:** `../plan.md`
-**Canonical Source:** `../spec.md`, `../agenda.md`, and `../plan.md`; no
-Symphony mission file is required
+**Approved Source:** `../spec.md`
 **Status:** Ready for Review
 **Depends on:** Chunk 01
 **Enables:** Chunk 03
@@ -19,7 +18,10 @@ unchanged.
   Implementation Constraints.
 - Chunk 01's exact external identifiers and redacted evidence.
 - `.github/workflows/deploy-pages.yml` is read-only.
-- `vite.config.ts` retains the default `base: "./"`.
+- `vite.config.ts` retains the default `base: "/noya_website/"`.
+- `index.html` retains `%BASE_URL%` manifest and Apple-icon URLs.
+- `src/content/site-content.ts#getSitePath` and `src/App.tsx#navigateTo`
+  retain base-aware production routing.
 - `README.md` receives staging operations documentation.
 - No production credential or obsolete production variable is copied.
 
@@ -53,8 +55,9 @@ unchanged.
 
 ## Behavioral And Contract Changes
 
-- `VITE_PUBLIC_BASE` accepts `/` for staging; absent input remains `"./"`.
-  Any other non-empty value fails configuration.
+- `VITE_PUBLIC_BASE` accepts `/` for staging; absent or empty input preserves
+  `/noya_website/`. Any other non-empty value fails with
+  `VITE_PUBLIC_BASE must be "/" or unset`.
 - Staging pushes lint, build, fingerprint, and deploy without source writes or
   a version bump.
 - Cloudflare receives no top-level `404.html`, preserving its SPA fallback.
@@ -64,9 +67,11 @@ unchanged.
 ## Implementation Tasks
 
 - [ ] Update `vite.config.ts` using Vite's config-time environment loading.
-      Resolve `VITE_PUBLIC_BASE`; accept only absent/empty → `"./"` or exact
-      `/` → `/`. Throw a named configuration error otherwise. Do not create a
-      general base-path framework or touch consumers already using `BASE_URL`.
+      Resolve `VITE_PUBLIC_BASE`; accept only absent/empty →
+      `"/noya_website/"` or exact `/` → `/`. Throw
+      `VITE_PUBLIC_BASE must be "/" or unset` otherwise. Do not create a
+      general base-path framework or alter `index.html`'s `%BASE_URL%` links,
+      `getSitePath`, `navigateTo`, signup-link, or service-worker consumers.
 - [ ] Resolve and record an immutable commit for the reviewed v3
       `cloudflare/wrangler-action` release and one exact Bun version compatible
       with the lockfile. Keep Wrangler exactly `4.81.0`.
@@ -81,7 +86,8 @@ unchanged.
         contract; and
       - remote verification using a local manifest, manual redirect handling,
         exact status/content-type/body hashes, same-origin assets, and route
-        shell equality.
+        shell equality for all eight top-level routes and all ten canonical
+        manager-tab routes, including applicable trailing-slash forms.
 - [ ] Create `.github/workflows/deploy-staging.yml`:
       - trigger only `push.branches: [staging]`;
       - set `contents: read` and `deployments: write`;
@@ -120,22 +126,31 @@ unchanged.
   structure and step ordering, not text presence.
 - `bun run lint`
   — expect ESLint exit 0.
+- `env -u VITE_PUBLIC_BASE VITE_CLASS_KIT_TARGET=remote bun run build`
+  — expect `tsc -b` and Vite exit 0 with the production default.
+- Inspect production-default `dist/index.html` and its referenced assets
+  — require `/noya_website/manifest.webmanifest`,
+  `/noya_website/icons/noya-icon-192.png`, and production JS/CSS asset URLs
+  under `/noya_website/`; verify `getSitePath` and `navigateTo` remain
+  base-aware in source.
 - `VITE_PUBLIC_BASE=/ VITE_CLASS_KIT_TARGET=remote bun run build`
   — expect `tsc -b` and Vite exit 0.
+- Inspect staging `dist/index.html` and its referenced assets
+  — require `/manifest.webmanifest`, `/icons/noya-icon-192.png`, and root-based
+  staging JS/CSS asset URLs; reject emitted `/noya_website/` asset or PWA URLs.
 - `test -f dist/index.html && test ! -e dist/404.html`
   — expect exit 0.
 - `node scripts/staging-artifact-evidence.mjs manifest dist`
   — expect canonical JSON and aggregate SHA-256 covering every dist file.
 - `if rg -n 'environment:[[:space:]]*github-pages|secrets\\.CLASS_KIT_SDK_DEPLOY_KEY|npm version|git commit|git push|pages:[[:space:]]*write|id-token:[[:space:]]*write|actions/deploy-pages|workflow_dispatch' .github/workflows/deploy-staging.yml; then exit 1; fi`
   — expect exit 0 with no forbidden staging behavior.
-- `git diff --exit-code 4c9f110 -- .github/workflows/deploy-pages.yml`
-  — expect exit 0; production workflow unchanged from the original
-  repository-inspection snapshot. This does not require `4c9f110` to be the
-  implementation branch tip.
+- `git diff --exit-code <implementation-base-sha> -- .github/workflows/deploy-pages.yml`
+  — expect exit 0; production workflow unchanged from the exact baseline
+  commit named by the approved implementation card.
 - `VITE_PUBLIC_BASE=/unexpected bun run build` with stdout/stderr captured to a
   temporary log
   — expect non-zero.
-- `rg -F 'VITE_PUBLIC_BASE must be either / or unset' <invalid-base-log>`
+- `rg -F 'VITE_PUBLIC_BASE must be "/" or unset' <invalid-base-log>`
   — expect exactly the named validation error; an unrelated failure does not
   satisfy the negative test.
 
@@ -171,5 +186,8 @@ practice permits; never remove a pre-existing user-owned artifact.
 - The five owned paths do not appear in another chunk's file map.
 - Workflow names, environment keys, project, URL, action outputs, and commands
   match the root plan.
-- Production's absent `VITE_PUBLIC_BASE` still produces `"./"`.
+- Production's absent or empty `VITE_PUBLIC_BASE` still produces
+  `/noya_website/`, while exact `/` produces root-hosted staging output.
+- `%BASE_URL%`, `getSitePath`, and `navigateTo` remain the current base-aware
+  production seams.
 - No command starts a dev server.

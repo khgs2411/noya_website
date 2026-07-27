@@ -1,8 +1,7 @@
 # Chunk 03: Staging Service Provisioning
 
 **Plan Set:** `../plan.md`
-**Canonical Source:** `../spec.md`, `../agenda.md`, and `../plan.md`; no
-Symphony mission file is required
+**Approved Source:** `../spec.md`
 **Status:** Ready for Review
 **Depends on:** Chunks 01 and 02
 **Enables:** Chunk 04
@@ -61,8 +60,15 @@ redirect only after the staging workflow passes semantic and build validation.
       `noya-website-staging.pages.dev`.
 - [ ] Create a Cloudflare API token with only account-level Pages Edit for that
       single-purpose account. Do not log or return the token value.
-- [ ] Create a dedicated read-only ClassKit SDK deploy key. Do not reuse the
-      production SDK credential or Cloudflare token.
+- [ ] After confirming target-specific authorization for
+      `khgs2411/class-kit-sdk`, generate a dedicated Ed25519 keypair for this
+      staging workflow. Preflight the repository's deploy-key inventory, then
+      register only the public key with title
+      `noya-website-staging-sdk-read` and `read_only=true`. Record the returned
+      key ID and verify the returned public-key fingerprint matches the
+      generated key. Never print, upload anywhere else, or persist the private
+      key outside the `STAGING_CLASS_KIT_SDK_DEPLOY_KEY` environment secret.
+      Do not reuse the production SDK credential or Cloudflare token.
 - [ ] Create GitHub environment `staging` with custom deployment-branch policy,
       add exactly branch policy `staging`, store the three secret names and
       three variable names from the shared contract, and perform exact
@@ -93,6 +99,13 @@ redirect only after the staging workflow passes semantic and build validation.
 - `gh api repos/khgs2411/noya_website/environments/staging/variables --jq '([.variables[] | {key:.name,value:.value}] | sort_by(.key)) == [{key:"STAGING_URL",value:"https://noya-website-staging.pages.dev/"},{key:"VITE_CLASS_KIT_TARGET",value:"remote"},{key:"VITE_PUBLIC_BASE",value:"/"}]'`
   — require the sole output `true`; this compares the exact non-secret
   name/value map without echoing returned values.
+- `gh api repos/khgs2411/class-kit-sdk/keys --paginate`
+  — before registration, require no existing deploy key with title
+  `noya-website-staging-sdk-read` or the generated public-key fingerprint;
+  after registration, require exactly one matching key with a numeric ID,
+  exact title, `read_only == true`, and a public-key fingerprint equal to the
+  locally generated public key. Persist only the key ID, title, read-only
+  boolean, and fingerprint; never persist or print the private key.
 - Cloudflare `GET /accounts/{account_id}/pages/projects`
   — require exactly one result.
 - Cloudflare `GET /accounts/{account_id}/pages/projects/noya-website-staging`
@@ -135,6 +148,8 @@ No install, lint, build, browser, branch creation, or deployment runs here.
 - No automatic cleanup is authorized. On failure, preserve an inventory of
   newly created staging-only objects and request target-specific rollback
   authority. Never delete or weaken production configuration.
+- Removing the ClassKit SDK deploy key is a separate destructive mutation that
+  requires new authorization naming its recorded key ID.
 - Secret/variable evidence contains names and redacted metadata only.
 
 ## Non-Goals

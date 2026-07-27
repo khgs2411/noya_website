@@ -1,180 +1,371 @@
-# Persistent Staging Deployment Plan-Set Rework Audit
+# Persistent Staging Deployment Plan-Set Audit
 
-## Audit Mode: Focused Rework
+## Audit Mode: Full
 
-Rework cycle 1 is limited to the execution-source, implementation-baseline,
-and status-metadata delta requested by reviewer feedback
-`6a638f9d14924559264d3e35`. Previously accepted domain, hosting, production
-guardrail, workflow, evidence, authority, ClassKit, and acceptance findings
-were carried forward and not replayed.
+Rationale: The plan set spans repository changes, two deployment providers,
+GitHub branch and environment administration, ClassKit product administration,
+shared Supabase Auth configuration, live authentication/PWA acceptance, and a
+four-chunk agent-executable sequence.
 
 ## Plan Overview
 
-Objective: Make the committed design directory a complete, durable execution
-source and ensure implementation starts from the resolved `version/1.1.5`
-commit that contains the approved artifacts.
+Objective: Implement a persistent Cloudflare Pages staging deployment from a
+protected `staging` branch while preserving the existing production GitHub
+Pages workflow, isolating ClassKit staging data and permissions, and proving
+the staging experience and promotion model without promoting to production.
 
-Scope: `spec.md`, `agenda.md`, the root `plan.md`, and all four chunk plans.
+Scope: One production-guardrail chunk, one repository-change chunk, one
+external-service provisioning chunk, and one live deployment/acceptance chunk.
+The repository changes are limited to a new staging workflow, two validation
+and evidence scripts, the bounded Vite public-base seam, and staging operations
+documentation.
 
-Target Audience: Human developers and AI agents executing a separately
-approved implementation card after the plan artifacts are committed.
+Explicitly excluded: Production workflow or hosting changes, production
+promotion, direct Supabase or raw ClassKit Edge Function access, production
+data reuse, preview deployments, a router or test-framework addition, custom
+domains, and broad CI/CD redesign.
+
+Target Audience: Human developers and AI agents operating under a separately
+approved implementation card.
 
 Readiness Level: Ready for Development.
 
-## Reviewer Feedback Closure
+Key Technical Decisions:
 
-| Feedback Reference | Required Correction | Status | Evidence |
-| --- | --- | --- | --- |
-| `6a638f9d14924559264d3e35` | Remove `.symphony/assignment.md` and other mission state as execution dependencies. | Closed | The root plan names the committed spec, agenda, roadmap, and four chunks as the canonical execution source. Every chunk points only to committed design artifacts, and the handoff explicitly states that no `.symphony` mission artifact is an execution input. |
-| `6a638f9d14924559264d3e35` | Resolve implementation against an artifact-containing `version/1.1.5` commit instead of hard-coding `4c9f110` as the branch tip. | Closed | The root plan defines the baseline as the resolved `version/1.1.5` commit containing the complete approved artifact set. Chunk 01 records its SHA and requires byte-for-byte presence of the spec, agenda, roadmap, four chunks, and both ready audits before any implementation work. |
-| `6a638f9d14924559264d3e35` | Retain `4c9f110` only as the original inspection/comparison snapshot. | Closed | The root plan and Chunk 01 explicitly disqualify `4c9f110` as the required implementation tip. Chunk 02 uses it only for the production-workflow non-mutation comparison. |
-| `6a638f9d14924559264d3e35` | Make plan-set status metadata internally consistent. | Closed | The spec and every plan are Ready for Review; the agenda says the plan set is ready for review but not approved for execution; the root plan requires a separate approved implementation card. No artifact claims current execution approval. |
+- Staging uses a dedicated Cloudflare Pages Direct Upload project and distinct
+  browser origin.
+- Production remains on `master` through the unchanged
+  `.github/workflows/deploy-pages.yml`.
+- Production retains `base: "/noya_website/"`; exact
+  `VITE_PUBLIC_BASE=/` selects staging root output, while an absent or empty
+  override preserves the production default.
+- `index.html`'s `%BASE_URL%` manifest/icon links,
+  `src/content/site-content.ts#getSitePath`, and
+  `src/App.tsx#navigateTo` remain protected base-aware production seams.
+- A future implementation card must name the exact `master`-derived commit
+  containing the complete approved artifact set. The old
+  `version/1.1.5`/`4c9f110` assumptions no longer appear in the plan set.
+- The staging product remains `invite_only`; `/auth?mode=signup` retains its
+  query-bearing URL but settles on sign-in after product policy loads.
+- External writes are intended to require target-specific authority, with
+  human-administrator gates where the executor is not the owner.
 
-## Canonical Execution Source Verification
+## Evidence Boundary
 
-The execution package is self-contained in the committed design directory:
+This focused rework audit inspected feedback `6a6728ae940e6a15bb3a2f7d`
+against resolved `master` baseline
+`c45145208adf63e88a931c3434fb6a17739e74d2`. That commit is the current
+planning branch's merge base and an ancestor of planning HEAD
+`b592c10fe42ed869cddf97828be5ae0ad88244fe`; the affected product files do not
+differ between the baseline and planning HEAD. No build, lint, test, install,
+browser session, deployment, branch mutation, or external administration
+command was run.
 
-| Artifact | Role | Status |
-| --- | --- | --- |
-| `spec.md` | Complete requirements and approved design decisions | Canonical source |
-| `agenda.md` | Recorded decision resolutions and approval state | Canonical source |
-| `plan.md` | Cross-chunk sequence, authority, dependencies, and handoff | Canonical source |
-| `plans/01-authority-and-production-guardrails.md` | Baseline, authority, and production safety | Canonical chunk |
-| `plans/02-staging-workflow-base-and-operations.md` | Repository and workflow implementation | Canonical chunk |
-| `plans/03-staging-service-provisioning.md` | External service provisioning | Canonical chunk |
-| `plans/04-live-deployment-acceptance-and-promotion-proof.md` | Live acceptance and promotion proof | Canonical chunk |
-| `spec-audit.md` | Ready design-audit gate | Required baseline evidence |
-| `plan-set-audit.md` | Ready plan-set gate | Required baseline evidence |
+Per the rework runbook, the audit compared only:
 
-References to `.symphony` remain only in negative declarations that no
-`.symphony` file is required. No task, dependency, preflight, or handoff step
-loads mission state or derives requirements from it.
+- `spec.md`;
+- resolved `agenda.md`;
+- refreshed ready `spec-audit.md`;
+- root `plan.md`;
+- `plans/02-staging-workflow-base-and-operations.md`; and
+- current `vite.config.ts`, `index.html`,
+  `src/content/site-content.ts`, `src/App.tsx`,
+  `src/features/classes/signup-links.ts`,
+  `src/register-service-worker.ts`, and `package.json`.
 
-## Implementation Baseline Verification
-
-The baseline contract is executable and guards against both stale code and
-missing planning artifacts:
-
-1. The approved implementation card must name a resolved commit on
-   `version/1.1.5`.
-2. Chunk 01 records that exact SHA before any mutation.
-3. The commit tree must contain the spec, agenda, roadmap, four chunks, and
-   both Ready audits byte-for-byte.
-4. Execution stops if the branch differs or an artifact is absent or
-   mismatched.
-5. `4c9f110` remains only the original repository-inspection snapshot and the
-   fixed comparison point for the untouched production workflow.
-
-This sequencing correctly allows the planning artifacts to be committed and
-merged before the implementation baseline is resolved. It does not assume
-that the current planning worktree or the earlier inspection SHA is the future
-implementation tip.
-
-## Status Consistency
-
-| Artifact | Status Meaning | Assessment |
-| --- | --- | --- |
-| `spec.md` | Ready for Review; canonical design source; full plan approval still required | Consistent |
-| `agenda.md` | Ready for plan-set review; not approved for execution | Consistent |
-| `plan.md` | Ready for Review; separate implementation approval pending | Consistent |
-| Four chunk plans | Ready for Review | Consistent |
-| `spec-audit.md` | Ready for Development | Completed audit gate |
-| `plan-set-audit.md` | Ready for Development | Completed audit gate |
-
-The audit verdict means the plan is executable once the normal approval and
-artifact-containing baseline conditions are satisfied. It does not itself
-authorize external mutations or implementation.
+All unaffected plan boundaries and prior accepted audit findings were carried
+forward without re-execution.
 
 ## File Path Verification
 
-All canonical source and audit paths named by the rework exist. Relative links
-from each chunk resolve to the design directory's `spec.md`, `agenda.md`, and
-`plan.md`. No removed or mission-local path is needed to understand or execute
-the plan.
+Verified using local repository inspection:
 
-## Carried-Forward Gates
+| Referenced Path | Status | Notes |
+| --- | --- | --- |
+| `.github/workflows/deploy-pages.yml` | Exists | Current production workflow triggers on `master` plus manual dispatch, writes source for push version bumps, creates `dist/404.html`, and deploys through `github-pages`. |
+| `.github/workflows/deploy-staging.yml` | Not Found — planned | Owned only by Chunk 02 as an expected new file. |
+| `vite.config.ts` | Exists | Current production base is exactly `"/noya_website/"`; Chunk 02 permits only the staging `/` override and preserves this default for absent/empty input. |
+| `index.html` | Exists | Manifest and Apple icon URLs use `%BASE_URL%`, so production and staging expand from the selected base. |
+| `README.md` | Exists | Chunk 02 owns the staging operations section. |
+| `DESIGN_GUIDE.md` | Exists | Context only; no plan chunk modifies it. |
+| `scripts/validate-staging-workflow.py` | Not Found — planned | Owned only by Chunk 02 as an expected new validator. |
+| `scripts/staging-artifact-evidence.mjs` | Not Found — planned | Owned only by Chunk 02 as an expected new evidence tool. |
+| `src/App.tsx` | Exists | `navigateTo` resolves route changes against `new URL(BASE_URL, origin)`; this production subpath seam is protected by Chunk 02. |
+| `src/content/site-content.ts` | Exists | `getSitePath` prefixes site-owned navigation with `BASE_URL`; route predicates and assets remain base-aware. |
+| `src/features/manager/manager-routes.ts` | Exists | Confirms all ten canonical manager tabs and trailing-slash normalization. |
+| `src/features/account/auth-page.tsx` | Exists | Confirms signup is visible only when product `auth_mode === "open"`; invite-only policy renders sign-in. |
+| `src/features/classes/signup-links.ts` | Exists | Confirms generated lesson signup URLs use `BASE_URL`. |
+| `src/lib/class-kit-client.ts` | Exists | Confirms the website delegates environment/product interpretation to `@class-kit/react`. |
+| `src/register-service-worker.ts` | Exists | Confirms worker registration uses `BASE_URL`. |
+| `public/manifest.webmanifest` | Exists | Uses relative `start_url`, scope, and icon paths. |
+| `public/service-worker.js` | Exists | Derives the cached shell from registration scope. |
+| `package.json` | Exists | Version is currently `1.1.14`; `lint` and `build` exist and no automated test script exists. |
+| `bun.lock` | Exists | Confirms the private SDK Git+SSH dependency and pinned SDK revision. |
+| `dist/index.html` | Not Found — generated | Correctly treated as build output rather than a source file. |
+| `dist/404.html` | Not Found — generated | Correctly absent from source and forbidden in staging output. |
+| `docs/design/2026-07-24-persistent-staging-deployment/spec.md` | Exists | Approved source. |
+| `docs/design/2026-07-24-persistent-staging-deployment/agenda.md` | Exists | Resolved decision record. |
+| `docs/design/2026-07-24-persistent-staging-deployment/spec-audit.md` | Exists | Ends with the ready design verdict. |
+| `docs/design/2026-07-24-persistent-staging-deployment/plan.md` | Exists | Root sequencing, authority, coverage, and handoff contract. |
+| `docs/design/2026-07-24-persistent-staging-deployment/plans/01-authority-and-production-guardrails.md` | Exists | No repository file ownership. |
+| `docs/design/2026-07-24-persistent-staging-deployment/plans/02-staging-workflow-base-and-operations.md` | Exists | Sole owner of all five planned repository paths. |
+| `docs/design/2026-07-24-persistent-staging-deployment/plans/03-staging-service-provisioning.md` | Exists | No repository file ownership. |
+| `docs/design/2026-07-24-persistent-staging-deployment/plans/04-live-deployment-acceptance-and-promotion-proof.md` | Exists | No repository file ownership. |
 
-The rework did not alter the previously audited implementation substance:
+All source paths are valid. Planned and generated paths are explicitly
+identified rather than incorrectly claimed to exist.
 
-- production remains protected and master-only;
-- the staging workflow and bounded Vite base remain isolated from production;
-- external mutations remain behind explicit target-specific authority;
-- Cloudflare, GitHub, Supabase Auth, and ClassKit responsibilities remain
-  separated;
-- evidence, rollback, quiet-window, identity-isolation, fixture-permission,
-  route/auth/signup/PWA, and promotion-proof requirements remain assigned to
-  deterministic chunks; and
-- execution remains ordered 01 → 02 → 03 → 04 with stop conditions at every
-  authority or provenance boundary.
+## Focused Rework Closure
+
+| Feedback Requirement | Status | Evidence |
+| --- | --- | --- |
+| Refresh against resolved `master` | Closed | `c45145208adf63e88a931c3434fb6a17739e74d2` is the planning branch merge base and ancestor; the affected source paths are unchanged through current planning HEAD. |
+| Preserve production `/noya_website/` | Closed | Root `plan.md` and Chunk 02 now match current `vite.config.ts` and forbid replacing the production default. |
+| Use `/` only for staging | Closed | Exact `VITE_PUBLIC_BASE=/` is the sole staging override and the staging environment contract fixes that value. |
+| Preserve absent/empty behavior | Closed | Chunk 02 explicitly maps both absent and empty input to `/noya_website/`; every other non-empty value fails with `VITE_PUBLIC_BASE must be "/" or unset`. |
+| Preserve `%BASE_URL%` HTML seams | Closed | Chunk 02 forbids altering the current manifest and Apple-icon placeholders and checks their expansion in both generated artifacts. |
+| Preserve base-aware routing | Closed | `getSitePath` and `navigateTo` are named source seams, forbidden from weakening, and inspected after the production-default build. Signup-link and service-worker consumers are preserved too. |
+| Verify the production artifact | Closed | The unset-variable build must emit manifest, Apple icon, JS, and CSS URLs beneath `/noya_website/`. |
+| Verify the staging artifact | Closed | The exact-`/` build must emit root manifest, icon, JS, CSS, signup-link, and service-worker behavior; `/noya_website/` output and `dist/404.html` are rejected. |
+| Remove stale repository assumptions | Closed | No `6f322ff` or `base: "./"`/relative-default assumption remains in the reworked spec, agenda, refreshed spec audit, root plan, or Chunk 02. |
+
+## Strengths
+
+### 1. Four-chunk sequencing protects production before staging exists
+
+The sequence is strict and non-parallel: authority and the master-only
+production environment first, repository semantics and static gates second,
+external staging services third, and branch creation/live deployment last.
+Chunk 04 cannot create `staging` until the production environment restriction,
+ruleset, workflow validation, and all service read-after-write checks pass.
+
+### 2. Repository file ownership is exact and non-overlapping
+
+Only Chunk 02 changes repository files. It owns exactly:
+
+- `.github/workflows/deploy-staging.yml`;
+- `vite.config.ts`;
+- `README.md`;
+- `scripts/validate-staging-workflow.py`; and
+- `scripts/staging-artifact-evidence.mjs`.
+
+Chunks 01, 03, and 04 correctly own external state and evidence rather than
+source files. The production workflow is explicitly read-only and compared
+byte-for-byte with the future implementation-card baseline.
+
+### 3. Route and invite-only behavior match current code
+
+The plan covers all eight current top-level routes:
+`/`, `/lessons`, `/pricing`, `/auth`, `/profile`, `/manager`, `/terms`, and
+`/health-declaration`. It separately covers the ten current manager tabs:
+`classes`, `pending`, `templates`, `schedules`, `documents`, `memberships`,
+`customers`, `permissions`, `change-requests`, and `settings`.
+
+`src/App.tsx` preserves the auth query while
+`src/features/account/auth-page.tsx` forces sign-in whenever the product is not
+open. The Chunk 04 requirement for `/auth?mode=signup` therefore matches the
+approved `invite_only` contract and observable code.
+
+### 4. Repository grounding now matches the production release
+
+The plan is grounded on resolved `master` baseline `c451452`, package version
+`1.1.14`, and the current production project-site base. The stale `6f322ff`
+and `"./"` assumptions are gone from the affected artifact set. The older
+`version/1.1.5`/`4c9f110` assumptions also remain absent. A future
+implementation card still names the exact artifact-containing commit used for
+production-workflow comparison.
+
+### 5. Production non-mutation is measured rather than assumed
+
+The plan combines workflow semantic exclusions, a production-workflow byte
+comparison, source/version/deployment snapshots, deterministic production web
+fingerprints, a quiet window, and production run-ID equality. A concurrent
+production run makes the result inconclusive and forces a later retry instead
+of being misattributed to staging.
+
+### 6. Repository-native verification is concrete
+
+The plan uses the existing Bun lockfile and package scripts:
+`bun install --frozen-lockfile`, `bun run lint`, one production-default build
+with `VITE_PUBLIC_BASE` removed from the environment, and one staging build
+with exact `/`. It then inspects both generated artifacts against distinct
+base-path contracts. The invalid-value build must fail with the exact named
+error. It correctly notes that no automated test script or existing browser
+framework is available. Structural YAML validation and deterministic artifact
+verification are assigned to the two planned repository scripts. No command
+starts a development server.
+
+### 7. External ownership and stop conditions are complete
+
+GitHub environment/ruleset changes, Cloudflare resources, ClassKit product
+configuration, shared Supabase Auth redirects, staging fixture writes, and
+branch creation each have classifications, preflights, post-write evidence,
+and rollback restrictions. The ClassKit SDK deploy-key collection is now also
+an explicit target with a read-only registration contract. Exact-hostname
+failure, unavailable authority, changed SDK inputs, production drift, and
+concurrent production activity all stop or invalidate execution.
 
 ## Critical Issues
 
-None. The newest ledger feedback is fully closed.
+None.
 
-## Questions For Plan Author
+The prior SDK deploy-key authority blocker is closed:
+
+- Root `plan.md` now names GitHub repository
+  `khgs2411/class-kit-sdk`, exact title
+  `noya-website-staging-sdk-read`, read-only registration, the ClassKit SDK
+  repository administrator, and the required implementation-card
+  authorization.
+- The matrix requires exact inventory and expected-fingerprint preflight,
+  then records the numeric key ID, exact title, `read_only == true`, and the
+  matching public-key fingerprint.
+- Chunk 03 generates a dedicated Ed25519 keypair only after target-specific
+  authorization, registers only the public key, and verifies exactly one
+  matching deploy key through the dedicated GitHub API.
+- Private key material may be stored only in
+  `STAGING_CLASS_KIT_SDK_DEPLOY_KEY` and is forbidden from logs and durable
+  evidence.
+- Removal is a separate destructive mutation requiring new authorization
+  naming the recorded key ID.
+
+This is continuous with Chunk 01's matrix-derived authority record and
+Chunk 03's GitHub-environment secret storage, so the executor no longer faces
+an unclassified cross-repository mutation.
+
+## Questions for Plan Author
 
 None.
+
+## Recommendations
+
+### Status precision
+
+- Change root `plan.md`'s “Canonical committed source verified: Yes” wording
+  to distinguish a defined future commit gate from a commit already verified.
+  The current planning artifacts are still uncommitted, although Chunk 01's
+  future baseline check is correct and sufficient for execution safety.
+
+### External evidence writes
+
+- Classify creation/update of the durable GitHub PR evidence comment and the
+  implementation-card link, or explicitly state that those reporting writes
+  are authorized by the future implementation card. They are lower risk than
+  credential registration, but the current blanket “external writes” wording
+  otherwise overstates matrix completeness.
+
+### Command reproducibility
+
+- Record the accepted `uv` execution expectation alongside the planned
+  PyYAML validator, because `uv run --with PyYAML` is an execution-host tool
+  rather than a package script. The command is concrete and currently
+  available, so this is not a development blocker.
+
+### Empty override evidence
+
+- Add one explicit `VITE_PUBLIC_BASE=` production-default check, or an
+  equivalent focused assertion, alongside the existing unset build. The
+  implementation task and consistency check already make empty-input behavior
+  unambiguous, and neither deployed workflow relies on an empty override, so
+  this is a non-blocking strengthening of the evidence rather than a missing
+  design decision.
 
 ## Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation |
 | --- | --- | --- | --- |
-| Executor starts from a pre-artifact `version/1.1.5` commit | Low | High | Chunk 01 requires a resolved SHA and byte-for-byte artifact gate. |
-| Executor consults unavailable mission state | Low | High | Canonical committed sources are explicit; mission artifacts are excluded from execution inputs. |
-| `4c9f110` is mistaken for the implementation tip | Low | High | Root and chunk wording limits it to inspection and production-workflow comparison. |
-| Review readiness is mistaken for mutation authority | Low | High | Agenda and root plan require separate execution approval and target-specific authority. |
+| Staging override regresses production project-site paths | Low | High | Preserve `/noya_website/` for absent/empty input and inspect `%BASE_URL%`, navigation seams, and both generated artifacts. |
+| SDK deploy key registration is duplicated or mismatched | Low | High | Require the exact title/fingerprint preflight, one numeric returned key ID, `read_only == true`, and matching post-write fingerprint. |
+| Exact Cloudflare hostname is unavailable | Low | High | Preserve the pre-ClassKit, pre-upload stop gate and require design review for any alternate URL. |
+| Production manual dispatch can target staging | Low | High | Complete Chunk 01's exact master-only environment policy before creating `staging`. |
+| ClassKit or shared Supabase administration is unavailable | Medium | High | Stop at the named human-admin gates; do not bypass from the website. |
+| A production run overlaps the staging observation window | Medium | Medium | Mark the window inconclusive by run ID and repeat it later. |
+| Future implementation starts from an artifact-incomplete commit | Low | High | Require the implementation-card SHA and Chunk 01 byte-for-byte artifact gate. |
 
-Highest Risk: The future implementation card could name the wrong branch or a
-commit that predates the approved artifact set. Chunk 01 converts either case
-into a mandatory stop before repository or external-state mutation.
+Highest Risk: Exact Cloudflare hostname reservation and authorized external
+administration remain the largest execution risks. Both have explicit stop
+conditions, target-specific authority, redacted evidence, and non-automatic
+rollback boundaries.
 
 ## Pre-Development Checklist
 
-- [x] Canonical requirements and design live in committed artifacts.
-- [x] Root plan and all four chunks exclude mission state as an execution input.
-- [x] Implementation baseline is a resolved `version/1.1.5` commit.
-- [x] Baseline must contain the complete approved artifact set byte-for-byte.
-- [x] `4c9f110` is only an inspection/comparison snapshot.
-- [x] Status and approval wording is internally consistent.
-- [x] Feedback `6a638f9d14924559264d3e35` is explicitly closed.
-- [x] Previously accepted implementation gates remain unchanged.
+- [x] Approved spec, agenda, and design audit are represented in the plan set.
+- [x] Four chunks have strict 01 → 02 → 03 → 04 dependencies.
+- [x] Repository file ownership is exact and non-overlapping.
+- [x] All eight top-level routes are covered.
+- [x] All ten canonical manager tab routes are covered.
+- [x] `/auth?mode=signup` preserves the URL and renders sign-in under
+      `invite_only`.
+- [x] Stale `version/1.1.5` and `4c9f110` assumptions are absent.
+- [x] The future implementation-card baseline owns workflow byte comparison.
+- [x] Production workflow, artifact, branch, and version non-mutation are
+      explicitly verified.
+- [x] Repository-native lint/build commands and the absence of an automated
+      test script are correctly represented.
+- [x] The ClassKit SDK deploy-key target, exact title, read-only registration,
+      preflight, evidence, private-key redaction, and rollback authority are
+      explicit.
+- [x] The resolved SDK deploy-key authority delta has been independently
+      re-audited.
+- [x] Resolved `master` baseline `c451452` is the planning branch merge base
+      and the affected source seams remain unchanged through planning HEAD.
+- [x] Absent or empty `VITE_PUBLIC_BASE` preserves `/noya_website/`.
+- [x] Exact `VITE_PUBLIC_BASE=/` selects staging-root output.
+- [x] Every other non-empty override fails with the named validation error.
+- [x] `%BASE_URL%`, `getSitePath`, `navigateTo`, signup-link, and
+      service-worker seams remain protected.
+- [x] Production-default and staging generated artifacts have distinct,
+      objective path checks.
+- [x] Stale `6f322ff` and `"./"` production-default assumptions are absent
+      from the affected plan artifacts.
+
+## Next Steps
+
+1. Approve the complete plan set for execution through a separate
+   implementation card.
+2. Name the exact `master`-derived artifact-containing commit and every
+   confirm-first external mutation in that card.
+3. Begin with Chunk 01; do not create or push `staging` until its production
+   and authority gates pass.
 
 ## Evaluation Matrix
 
 | Dimension | Weight | Raw Score | Weighted Score | Notes |
 | --- | --- | --- | --- | --- |
-| Completeness | x3 | 5/5 | 15/15 | The committed artifact set contains all requirements, decisions, chunks, audits, and handoff constraints needed for execution. |
-| Feasibility | x3 | 5/5 | 15/15 | The baseline can be resolved only after the artifacts are committed, and Chunk 01 verifies the exact tree before implementation. |
-| Clarity | x2 | 5/5 | 10/10 | Canonical sources, approval state, baseline identity, and the limited role of `4c9f110` are explicit. |
-| Logical Flow | x2 | 5/5 | 10/10 | Plan approval and artifact commit precede baseline resolution, which precedes all implementation work. |
-| Scope & Risk | x2 | 4/5 | 8/10 | External administration remains significant, but previously accepted authority, stop, rollback, and evidence controls remain intact. |
-| Developer Experience | x1 | 5/5 | 5/5 | The executor receives exact artifacts, a recorded baseline SHA, and deterministic stop conditions. |
-| AI Readiness | x1 | 5/5 | 5/5 | Execution is independent of ephemeral harness state and safe to resume from committed repository context. |
+| Completeness | x3 | 5/5 | 15/15 | Requirements, routes, files, dual-base artifacts, evidence, acceptance, and external mutations have complete ownership and coverage. |
+| Feasibility | x3 | 5/5 | 15/15 | Public-base seams and commands match resolved `master`; workflow topology, hosting, routing, and PWA checks remain feasible. |
+| Clarity | x2 | 5/5 | 10/10 | Production default, staging override, invalid values, protected consumers, exact identifiers, stop rules, and evidence are explicit. |
+| Logical Flow | x2 | 5/5 | 10/10 | The strict four-chunk critical path correctly orders production protection, code, services, and live acceptance. |
+| Scope & Risk | x2 | 4/5 | 8/10 | External hostname and administrator dependencies remain significant, with explicit stop, evidence, and rollback boundaries. |
+| Developer Experience | x1 | 5/5 | 5/5 | File ownership, commands, milestones, exact identifiers, and blocked-state behavior are concrete. |
+| AI Readiness | x1 | 5/5 | 5/5 | Autonomy, confirm-first and human-only gates, redaction, path accuracy, verification, and rollback rules are executable without guesswork. |
 
 Overall: 68/70 -> Ready for Development
 
-Critical Dimension Check: Pass; both weighted x3 dimensions score 5, and no
-critical issue remains.
+Critical Dimension Check: Pass; neither weighted x3 dimension scores 1.
 
 ## Handoff
 
-PLAN READY FOR REVIEW
+PLAN APPROVED FOR IMPLEMENTATION
 
-If the complete plan set receives separate execution approval, implementation
-must preserve these constraints:
+Key constraints:
 
-- Use only the committed spec, agenda, root plan, four chunks, and audits as
-  execution sources.
-- Start from the resolved artifact-containing `version/1.1.5` commit named by
-  the approved implementation card.
-- Record and verify that commit SHA before any mutation.
-- Use `4c9f110` only as the documented inspection and production-workflow
-  comparison snapshot.
-- Preserve the four-chunk sequence and every existing authority gate.
+- Start only from the exact artifact-containing commit named by the future
+  approved implementation card.
+- Execute 01 → 02 → 03 → 04 with no parallel chunks.
+- Do not create or push `staging` until production is verifiably master-only.
+- Register `noya-website-staging-sdk-read` on
+  `khgs2411/class-kit-sdk` only after exact confirm-first authorization; keep
+  it read-only and never expose the private key.
+- Preserve `.github/workflows/deploy-pages.yml`, production hosting,
+  production versioning, and all production before/after observations.
+- Preserve production `/noya_website/`, `%BASE_URL%` HTML links,
+  `getSitePath`, and `navigateTo`; exact `/` is staging-only.
 
-Post-approval starting point: Resolve and record the artifact-containing
-`version/1.1.5` commit named by the approved implementation card, then complete
-Chunk 01's byte-for-byte baseline and authority preflights. This audit does not
-grant that execution approval.
+Suggested starting point: Record the future implementation-card baseline and
+complete Chunk 01's byte-for-byte artifact, target-specific authority, and
+production guardrail checks.
+
+First milestone: All Chunk 01 gates pass without creating a staging ref,
+service, credential, or deployment.
 
 Verdict: Ready for Development
