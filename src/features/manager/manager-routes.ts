@@ -64,3 +64,10 @@ export function getManagerTabPathname(pathname: string, tab: ManagerTab) {
 
   return `${match[1]}/${getManagerTabPath(tab)}`;
 }
+
+export function getManagerExitPathname(pathname: string) {
+  const match = normalizePathname(pathname).match(/^(.*)\/manager(?:\/.*)?$/);
+  if (!match) return "/";
+
+  return `${match[1]}/`;
+}

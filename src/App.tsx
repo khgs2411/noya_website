@@ -28,8 +28,8 @@ import { HealthDeclarationGate } from "@/features/documents/health-declaration-g
 import { productDocumentTypes } from "@/features/documents/product-document-types";
 import type { ManagerAccessSnapshot } from "@/features/manager/manager-page";
 import {
+  getManagerExitPathname,
   getManagerRoute,
-  getManagerTabPath,
   getManagerTabPathname,
   type ManagerTab,
 } from "@/features/manager/manager-routes";
@@ -209,7 +209,13 @@ export default function App() {
     if (managerRoute.kind !== "manager-root") return;
 
     const timeoutId = window.setTimeout(() => {
-      replaceTo(getManagerTabPathname(route.pathname, "classes"));
+      window.history.replaceState(
+        {},
+        "",
+        getManagerTabPathname(route.pathname, "classes"),
+      );
+      setRoute(getCurrentRoute());
+      setMenuOpen(false);
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
@@ -288,7 +294,11 @@ export default function App() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      window.history.replaceState({}, "", "./");
+      window.history.replaceState(
+        {},
+        "",
+        getManagerExitPathname(route.pathname),
+      );
       setRoute(getCurrentRoute());
       setMenuOpen(false);
     }, 0);
@@ -332,7 +342,7 @@ export default function App() {
   }
 
   function openManager() {
-    navigateTo(getManagerTabPath("classes"));
+    navigateTo(getManagerTabPathname(route.pathname, "classes"));
   }
 
   function openAccount() {

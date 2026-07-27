@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { ManagerTabs } from "@/features/manager/manager-tabs";
 import {
+  getManagerExitPathname,
   getManagerRoute,
   type ManagerTab,
 } from "@/features/manager/manager-routes";
@@ -200,7 +201,7 @@ export function ManagerPage({
         <button
           type="button"
           className="inline-flex items-center gap-2 text-sm font-semibold text-blush-strong underline-offset-4 hover:underline"
-          onClick={() => onNavigate("../..")}
+          onClick={() => onNavigate(getManagerExitPathname(pathname))}
         >
           <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
           {t("actions.back")}
