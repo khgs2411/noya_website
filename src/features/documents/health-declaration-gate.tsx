@@ -1,5 +1,5 @@
 import { useProductContext } from "@class-kit/react";
-import { AlertCircle, CheckCircle2, HeartPulse, Loader2, RefreshCw } from "lucide-react";
+import { CheckCircle2, HeartPulse, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -55,7 +55,10 @@ export function HealthDeclarationGate() {
   const userId = session?.user.id ?? null;
   const isActiveUser = productUser?.status === "active";
   const isBlocking = Boolean(
-    userId && isActiveUser && status !== "unavailable" && status !== "accepted",
+    userId &&
+      isActiveUser &&
+      status === "required" &&
+      healthDeclaration,
   );
 
   const loadDeclaration = useCallback(async () => {
@@ -225,8 +228,6 @@ export function HealthDeclarationGate() {
 
   if (!isBlocking) return null;
 
-  const isLoading = status === "idle" || status === "loading";
-
   return (
     <div className="fixed inset-0 z-[90] grid place-items-center bg-background/88 px-4 py-5 backdrop-blur-sm">
       <section
@@ -237,35 +238,6 @@ export function HealthDeclarationGate() {
         tabIndex={-1}
         className="w-full max-w-2xl rounded-[1.4rem] border border-blush/32 bg-card p-5 text-foreground shadow-2xl sm:p-7"
       >
-        {isLoading && (
-          <div className="flex min-h-44 items-center justify-center gap-3 text-sm text-foreground/72">
-            <Loader2 className="size-5 animate-spin text-blush-strong" aria-hidden="true" />
-            {t("documents.healthGate.loading")}
-          </div>
-        )}
-
-        {status === "error" && (
-          <div className="grid gap-4">
-            <AlertCircle className="size-7 text-blush-strong" aria-hidden="true" />
-            <div>
-              <h2 id="health-declaration-gate-title" className="font-serif text-3xl">
-                {t("documents.healthGate.errorTitle")}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-foreground/72">
-                {errorMessage ?? t("documents.healthGate.errorBody")}
-              </p>
-            </div>
-            <Button
-              type="button"
-              className="w-full rounded-full bg-blush text-primary-foreground hover:bg-blush-strong"
-              onClick={() => void loadDeclaration()}
-            >
-              <RefreshCw className="size-4" aria-hidden="true" />
-              {t("documents.retry")}
-            </Button>
-          </div>
-        )}
-
         {status === "required" && healthDeclaration && (
           <div className="grid gap-5">
             <div className="flex items-start gap-3">
