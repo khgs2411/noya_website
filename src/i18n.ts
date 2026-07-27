@@ -35,7 +35,7 @@ const resources = {
         accept: 'Got it',
       },
       language: { label: 'Choose language' },
-      menu: { toggle: 'Open menu', close: 'Close menu', dialog: 'Menu' },
+      menu: { toggle: 'Open menu', close: 'Close menu', dialog: 'Menu', primary: 'Primary navigation' },
       theme: { toggle: 'Toggle theme', light: 'Light', dark: 'Dark' },
       nav: { about: 'About', work: 'Work', classes: 'Classes', lessons: 'Lessons', pricing: 'Pricing', contact: 'Contact' },
       pricing: {
@@ -1096,7 +1096,7 @@ const resources = {
         accept: 'Понятно',
       },
       language: { label: 'Выбрать язык' },
-      menu: { toggle: 'Открыть меню', close: 'Закрыть меню', dialog: 'Меню' },
+      menu: { toggle: 'Открыть меню', close: 'Закрыть меню', dialog: 'Меню', primary: 'Основная навигация' },
       theme: { toggle: 'Сменить тему', light: 'Светлая', dark: 'Темная' },
       nav: { about: 'Обо мне', work: 'Работы', classes: 'Занятия', lessons: 'Расписание', pricing: 'Цены', contact: 'Контакт' },
       pricing: {
@@ -2157,7 +2157,7 @@ const resources = {
         accept: 'הבנתי',
       },
       language: { label: 'בחירת שפה' },
-      menu: { toggle: 'פתיחת תפריט', close: 'סגירת תפריט', dialog: 'תפריט' },
+      menu: { toggle: 'פתיחת תפריט', close: 'סגירת תפריט', dialog: 'תפריט', primary: 'ניווט ראשי' },
       theme: { toggle: 'החלפת מצב תצוגה', light: 'בהיר', dark: 'כהה' },
       nav: { about: 'עליי', work: 'עבודות', classes: 'שיעורים', lessons: 'מערכת שיעורים', pricing: 'מחירון', contact: 'יצירת קשר' },
       pricing: {

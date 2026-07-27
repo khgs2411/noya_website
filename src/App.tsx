@@ -313,7 +313,10 @@ export default function App() {
   }, [canEnterManager, loading, managerAccessSnapshot, route.pathname]);
 
   function navigateTo(path: string, options: { replace?: boolean } = {}) {
-    const nextUrl = new URL(path, window.location.href);
+    const nextUrl = new URL(
+      path,
+      new URL(import.meta.env.BASE_URL, window.location.origin),
+    );
     window.history[options.replace ? "replaceState" : "pushState"](
       {},
       "",
@@ -400,6 +403,7 @@ export default function App() {
               onToggleTheme={toggleTheme}
               onOpenAccount={openAccount}
               onOpenMenu={openMenu}
+              onNavigate={navigateTo}
             />
           </div>
         )}

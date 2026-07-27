@@ -42,6 +42,7 @@ export function HeroSection({
         onToggleTheme={onToggleTheme}
         onOpenAccount={onOpenAccount}
         onOpenMenu={onOpenMenu}
+        onNavigate={onNavigate}
       />
 
       <div className="relative z-10 mx-auto grid max-w-6xl gap-8 px-5 pb-8 pt-8 sm:px-8 md:grid-cols-[0.9fr_1.1fr] md:pb-0 md:pt-8">

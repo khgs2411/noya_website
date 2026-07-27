@@ -2,6 +2,10 @@ import { isManagerPath, managerPath } from "@/features/manager/manager-routes";
 
 const assetBase = import.meta.env.BASE_URL;
 
+export function getSitePath(path: string) {
+  return `${assetBase}${path.replace(/^(?:\.\/|\/)/, "")}`;
+}
+
 export const lessonsPath = "lessons";
 export const pricingPath = "pricing";
 export const authPath = "auth";
