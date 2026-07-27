@@ -4,9 +4,9 @@
 
 - Spec: `docs/design/2026-07-24-persistent-staging-deployment/spec.md`
 - State: Approved
-- Approval: Approved for one-pass implementation planning by the Symphony Plan
-  Only assignment after independent design audit on 2026-07-27; not approved
-  for implementation
+- Approval: Repository-grounding rework approved for one-pass implementation
+  planning after independent design re-audit on 2026-07-27; not approved for
+  implementation
 
 ## Documented Decisions
 
@@ -26,8 +26,10 @@
   primary hosting documentation, then challenged by the recorded design and
   review gates. This agenda and `spec.md` preserve those decisions without
   requiring mission-ledger context.
-- Revalidation at repository `6f322ff` adds `/pricing` and all ten canonical
-  manager tab paths to the route/PWA acceptance matrix.
+- Revalidation at resolved `master` baseline `c451452` preserves `/pricing`
+  and all ten canonical manager tab paths, and adds the production
+  `/noya_website/` base, `%BASE_URL%` HTML links, `getSitePath`, and
+  `navigateTo` as protected seams.
 - The current production workflow injects `VITE_SUPABASE_TARGET`, remote
   URL/key, and `VITE_AUTH_REDIRECT_URL`; pinned SDK commit `a158bc5` does not
   consume them on the website's current client path. Production remains
@@ -222,15 +224,17 @@
   generated signup link. All requests must remain on staging, including the
   newly added `/pricing` route and canonical manager tab routes.
 - Options:
-  - A. Keep `base: "./"` everywhere and copy `404.html` — risks path-sensitive
-    staging URLs and disables Cloudflare's default SPA fallback.
+  - A. Keep production's fixed `/noya_website/` base for staging — preserves
+    production but breaks root-hosted staging URLs.
   - B. Replace the base globally with `/` — breaks production's GitHub project
     subpath.
-  - C. Add a bounded staging public-base input, default production to `"./"`,
-    and omit staging `404.html` — preserves both hosting contracts.
+  - C. Add a bounded staging public-base input, preserve production's
+    `/noya_website/` default when it is absent, and omit staging `404.html` —
+    preserves both hosting contracts.
 - Recommendation: C.
 - Answer: Add `VITE_PUBLIC_BASE=/` for staging only and preserve the existing
-  production default and `404.html` step.
+  production `/noya_website/` default, `%BASE_URL%` HTML links,
+  `getSitePath`/`navigateTo` routing seams, and `404.html` step.
 - Resulting decision: The new workflow does not create `dist/404.html`;
   Cloudflare serves the SPA shell for application routes. Acceptance covers
   all eight top-level routes, all ten canonical manager tab routes,

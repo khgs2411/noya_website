@@ -45,9 +45,15 @@ The design succeeds when:
   `github.ref_name`. Once a `staging` branch exists, the production
   `github-pages` environment must restrict deployments to `master`; otherwise
   a manual dispatch at `staging` could publish that ref to production.
-- `vite.config.ts` uses `base: "./"`. `src/content/site-content.ts`,
+- `vite.config.ts` uses `base: "/noya_website/"` for the production GitHub
+  Pages project site. `index.html` resolves its manifest and Apple icon through
+  `%BASE_URL%`; `src/content/site-content.ts`,
   `src/features/classes/signup-links.ts`, and
   `src/register-service-worker.ts` consume `import.meta.env.BASE_URL`.
+- `src/content/site-content.ts#getSitePath` prefixes site-owned navigation
+  with `BASE_URL`, and `src/App.tsx#navigateTo` resolves route changes against
+  `new URL(import.meta.env.BASE_URL, window.location.origin)`. These are the
+  current production subpath-navigation seams and must remain base-aware.
 - `public/manifest.webmanifest` uses relative `start_url`, `scope`, and icon
   paths. `public/service-worker.js` derives its shell URL from the worker
   registration scope.
@@ -310,11 +316,16 @@ without copying production business data.
 
 Make `vite.config.ts` read one deployment-only public base input:
 
-- when `VITE_PUBLIC_BASE` is present, use its validated value;
-- otherwise preserve the current `base: "./"` production behavior.
+- when `VITE_PUBLIC_BASE` is exact `/`, use `/` for staging;
+- when `VITE_PUBLIC_BASE` is absent or empty, preserve the current
+  `/noya_website/` production behavior; and
+- reject every other non-empty value with the named error
+  `VITE_PUBLIC_BASE must be "/" or unset`.
 
-The implementation must keep this input limited to `/` or the existing
-relative default. It is not a general multi-tenant base-path system.
+The implementation must keep this input limited to the root staging override
+or the fixed production default. It is not a general multi-tenant base-path
+system. It must not weaken or bypass the existing `%BASE_URL%`, `getSitePath`,
+`navigateTo`, signup-link, or service-worker consumers.
 
 For staging:
 
@@ -341,7 +352,7 @@ The staging route and PWA acceptance matrix is:
 | SPA fallback | A direct request for each route returns the root SPA shell while top-level `dist/404.html` remains absent. |
 
 The existing production workflow continues creating `dist/404.html` for
-GitHub Pages and continues using the relative base default.
+GitHub Pages and continues using the `/noya_website/` base default.
 
 ## Failure And Recovery Behavior
 
@@ -393,10 +404,14 @@ Static and workflow evidence:
 - verify staging contains no version bump, source write, GitHub Pages deploy,
   or `dist/404.html` creation;
 - run `npm run lint`;
-- run `npm run build` once with `VITE_PUBLIC_BASE=/` and
-  `VITE_CLASS_KIT_TARGET=remote`; and
-- inspect the emitted `dist/index.html`, manifest, service-worker registration,
-  and absence of `dist/404.html`.
+- run one production-default build with `VITE_PUBLIC_BASE` unset and verify
+  emitted HTML/assets use `/noya_website/`, including the manifest and Apple
+  icon expanded from `%BASE_URL%`;
+- run one staging build with `VITE_PUBLIC_BASE=/` and
+  `VITE_CLASS_KIT_TARGET=remote`, then verify emitted HTML/assets, generated
+  signup links, and service-worker registration use `/`; and
+- verify both builds preserve base-aware navigation through `getSitePath` and
+  `navigateTo`, while the staging artifact omits `dist/404.html`.
 
 Before the first staging upload, record:
 
@@ -466,7 +481,7 @@ evidence, and live ClassKit evidence.
 | Item | Provenance |
 | --- | --- |
 | Plan-only scope, production preservation, stable distinct URL, isolated staging product, and acceptance matrix | Assignment ledger |
-| Current workflows, production workflow inputs, base paths, routes, PWA files, scripts, and SDK call site | Repository inspection at `6f322ff` |
+| Current workflows, production workflow inputs, `/noya_website/` base, `%BASE_URL%` HTML links, base-aware navigation, routes, PWA files, scripts, and SDK call site | Repository inspection at resolved `master` baseline `c451452` |
 | `VITE_CLASS_KIT_TARGET` semantics, SDK-owned remote URL/key, product-context OAuth redirect, same-origin pathful discovery, and origin-scoped auth/manager caches | Pinned `@class-kit/react` source at `a158bc5`, ClassKit API origin resolver, and website storage keys |
 | OAuth `redirectTo` must appear exactly in Supabase Auth Redirect URLs | Current Supabase Auth redirect documentation and ClassKit auth contract |
 | Cloudflare Direct Upload, Pages Edit token, stable project URL, and no-`404.html` SPA fallback | Current Cloudflare Pages documentation |

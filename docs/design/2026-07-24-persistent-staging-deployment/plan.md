@@ -27,7 +27,15 @@ card.
   byte-comparison source for the production workflow.
 - `spec-audit.md` ends with `Verdict: Ready for Development`.
 - `.github/workflows/deploy-pages.yml` is the untouched production workflow.
-- `vite.config.ts` owns the current `base: "./"` production behavior.
+- The plan was re-grounded on resolved `master` baseline `c451452`, which is
+  an ancestor of the preserved planning branch.
+- `vite.config.ts` owns the current `base: "/noya_website/"` production
+  behavior, and `index.html` expands the manifest and Apple icon through
+  `%BASE_URL%`.
+- `src/content/site-content.ts#getSitePath`, `src/App.tsx#navigateTo`,
+  `src/features/classes/signup-links.ts`, and
+  `src/register-service-worker.ts` are current base-aware consumers that must
+  remain intact.
 - `src/content/site-content.ts`,
   `src/features/classes/signup-links.ts`, and
   `src/register-service-worker.ts` consume `BASE_URL`.
@@ -64,7 +72,8 @@ Missing artifacts:
   shared Supabase Auth redirect administration, protected branch flow, and
   production non-mutation.
 - Repository constraints reconciled:
-  - production keeps `base: "./"` and `dist/404.html`;
+  - production keeps `base: "/noya_website/"`, `%BASE_URL%` HTML links,
+    base-aware navigation, and `dist/404.html`;
   - staging uses `VITE_PUBLIC_BASE=/` and omits `dist/404.html`;
   - staging never uses the production `github-pages` environment;
   - current obsolete production environment inputs remain untouched.
@@ -199,9 +208,12 @@ target-specific authority.
    trigger, permission, environment, ordering, immutable pins, and
    forbidden-reference semantics. This is the authoritative workflow check;
    the execution environment has no repository-native `actionlint`.
-3. `bun run lint` and a staging-variable `bun run build` exercise TypeScript,
-   Vite, and public-base integration.
-4. Generated artifact inspection proves root paths and absence of `404.html`.
+3. `bun run lint`, a production-default build with `VITE_PUBLIC_BASE` unset,
+   and a staging build with `VITE_PUBLIC_BASE=/` exercise TypeScript, Vite, and
+   both public-base contracts.
+4. Generated artifact inspection proves `/noya_website/` production paths,
+   root staging paths, `%BASE_URL%` expansion, base-aware navigation seams, and
+   absence of `404.html` from staging.
 5. GitHub/Cloudflare deployment metadata maps source SHA to immutable and
    canonical staging URLs.
 6. Browser checks exercise all route, signup, PWA, password, Google, profile,
