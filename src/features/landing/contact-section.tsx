@@ -1,4 +1,4 @@
-import { Mail, MapPin } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { ContactLine, ContactLink } from "@/components/site/contact-line";
@@ -29,6 +29,12 @@ export function ContactSection() {
           </div>
           <div className="relative z-10 grid gap-4 text-sm text-foreground/74">
             <ContactLine icon={<Mail />} text="noyas2703@gmail.com" />
+            <ContactLink
+              href="tel:0536237331"
+              icon={<Phone />}
+              text="053-623-7331"
+              external={false}
+            />
             <ContactLink
               href="https://www.instagram.com/noyashlomo?utm_source=qr"
               icon={<InstagramIcon />}
