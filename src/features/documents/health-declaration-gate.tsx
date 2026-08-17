@@ -1,6 +1,6 @@
-import { useProductContext } from "@class-kit/react";
+import { useProductContext, type ClassKitClient } from "@class-kit/react";
 import { CheckCircle2, HeartPulse, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,18 @@ type HealthDeclarationDocument = {
   title: string;
   contentMarkdown: string;
   version: number;
+};
+
+type HealthDeclarationContext = {
+  client: ClassKitClient | null;
+  userId: string | null;
+  isActiveUser: boolean;
+};
+
+type HealthDeclarationAttempt = {
+  client: ClassKitClient;
+  userId: string;
+  isActiveUser: boolean;
 };
 
 function normalizeDocument(raw: unknown): HealthDeclarationDocument | null {
@@ -50,16 +62,26 @@ export function HealthDeclarationGate() {
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDivElement>(null);
-
   const userId = session?.user.id ?? null;
   const isActiveUser = productUser?.status === "active";
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const inFlightRef = useRef(false);
+  const latestContextRef = useRef<HealthDeclarationContext>({
+    client,
+    userId,
+    isActiveUser,
+  });
+
   const isBlocking = Boolean(
     userId &&
       isActiveUser &&
       status === "required" &&
       healthDeclaration,
   );
+
+  useLayoutEffect(() => {
+    latestContextRef.current = { client, userId, isActiveUser };
+  }, [client, isActiveUser, userId]);
 
   const loadDeclaration = useCallback(async () => {
     if (!client || !userId || !isActiveUser) return;
@@ -153,21 +175,33 @@ export function HealthDeclarationGate() {
 
       const focusable = Array.from(
         dialog.querySelectorAll<HTMLElement>(
-          "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
+          "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
         ),
       ).filter((element) => element.offsetParent !== null);
 
       if (focusable.length === 0) {
         event.preventDefault();
+        dialog.focus();
         return;
       }
 
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && window.document.activeElement === first) {
+      const activeElement = window.document.activeElement;
+      const activeElementIsFocusable =
+        activeElement instanceof HTMLElement && focusable.includes(activeElement);
+
+      if (
+        activeElement === dialog ||
+        !dialog.contains(activeElement) ||
+        !activeElementIsFocusable
+      ) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && activeElement === first) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && window.document.activeElement === last) {
+      } else if (!event.shiftKey && activeElement === last) {
         event.preventDefault();
         first.focus();
       }
@@ -180,48 +214,66 @@ export function HealthDeclarationGate() {
     };
   }, [isBlocking]);
 
+  function isCurrentAttempt(attempt: HealthDeclarationAttempt) {
+    const latestContext = latestContextRef.current;
+    return (
+      latestContext.client === attempt.client &&
+      latestContext.userId === attempt.userId &&
+      latestContext.isActiveUser === attempt.isActiveUser
+    );
+  }
+
   async function acceptDeclaration() {
-    if (!client || !healthDeclaration) return;
+    if (!client || !userId || !isActiveUser || !healthDeclaration) return;
 
     if (!agreed) {
       setErrorMessage(t("documents.healthGate.required"));
       return;
     }
 
+    if (inFlightRef.current) return;
+
+    const attempt: HealthDeclarationAttempt = { client, userId, isActiveUser };
+    inFlightRef.current = true;
     setSubmitting(true);
     setErrorMessage(null);
 
     try {
       const acceptanceResult = await acceptProductDocument(
-        client,
+        attempt.client,
         productDocumentTypes.healthDeclaration,
         i18n.language,
         "health_declaration_gate",
       );
 
+      if (!isCurrentAttempt(attempt)) return;
+
       if (acceptanceResult.error) {
-        setErrorMessage(acceptanceResult.error.message);
+        setErrorMessage(t("documents.healthGate.submitError"));
         return;
       }
 
-      const profileResult = await client.profile.update({
+      const profileResult = await attempt.client.profile.update({
         metadata: {
           [healthDeclarationAcceptanceVersionKey]:
             acceptanceResult.data.acceptance.document_version,
         },
       });
 
+      if (!isCurrentAttempt(attempt)) return;
+
       if (profileResult.error) {
-        setErrorMessage(profileResult.error.message);
+        setErrorMessage(t("documents.healthGate.submitError"));
         return;
       }
 
       setStatus("accepted");
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : t("documents.healthGate.errorBody"),
-      );
+    } catch {
+      if (isCurrentAttempt(attempt)) {
+        setErrorMessage(t("documents.healthGate.submitError"));
+      }
     } finally {
+      inFlightRef.current = false;
       setSubmitting(false);
     }
   }
@@ -229,18 +281,18 @@ export function HealthDeclarationGate() {
   if (!isBlocking) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] grid place-items-center bg-background/88 px-4 py-5 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[90] flex min-h-full items-center justify-center overflow-y-auto overscroll-contain bg-background/88 px-4 py-5 backdrop-blur-sm sm:px-8 sm:py-8">
       <section
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="health-declaration-gate-title"
         tabIndex={-1}
-        className="w-full max-w-2xl rounded-[1.4rem] border border-blush/32 bg-card p-5 text-foreground shadow-2xl sm:p-7"
+        className="mx-auto flex h-[calc(100dvh-2.5rem)] min-h-0 w-full max-w-2xl flex-col overflow-y-auto overscroll-contain rounded-[1.4rem] border border-blush/32 bg-card p-5 text-foreground shadow-2xl sm:h-[calc(100dvh-4rem)] sm:p-7"
       >
         {status === "required" && healthDeclaration && (
-          <div className="grid gap-5">
-            <div className="flex items-start gap-3">
+          <div className="flex min-h-0 flex-1 flex-col gap-5">
+            <div className="flex shrink-0 items-start gap-3">
               <span className="grid size-11 shrink-0 place-items-center rounded-full bg-blush text-primary-foreground">
                 <HeartPulse className="size-5" aria-hidden="true" />
               </span>
@@ -257,19 +309,23 @@ export function HealthDeclarationGate() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-blush/24 bg-background/45 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-blush/18 pb-3">
+            <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-blush/24 bg-background/45 p-4">
+              <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-blush/18 pb-3">
                 <p className="font-serif text-2xl text-foreground">{healthDeclaration.title}</p>
                 <span className="text-sm text-foreground/56">
                   {t("documents.version", { version: healthDeclaration.version })}
                 </span>
               </div>
-              <div className="mt-4 max-h-[42vh] overflow-y-auto pe-2">
+              <div
+                tabIndex={0}
+                aria-label={healthDeclaration.title}
+                className="mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pe-2 outline-none focus-visible:ring-2 focus-visible:ring-blush-strong/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
                 <MarkdownContent markdown={healthDeclaration.contentMarkdown} />
               </div>
             </div>
 
-            <label className="flex items-start gap-3 rounded-xl border border-blush/28 bg-background/45 p-4 text-sm leading-6 text-foreground/78">
+            <label className="flex shrink-0 items-start gap-3 rounded-xl border border-blush/28 bg-background/45 p-4 text-sm leading-6 text-foreground/78">
               <input
                 type="checkbox"
                 className="mt-1 size-4 shrink-0 accent-blush-strong"
@@ -277,19 +333,21 @@ export function HealthDeclarationGate() {
                 disabled={submitting}
                 onChange={(event) => {
                   setAgreed(event.target.checked);
-                  if (event.target.checked) setErrorMessage(null);
+                  setErrorMessage(null);
                 }}
               />
               {t("documents.healthGate.agreement")}
             </label>
 
             {errorMessage && (
-              <p className="text-sm leading-6 text-blush-strong">{errorMessage}</p>
+              <p role="alert" className="shrink-0 text-sm leading-6 text-blush-strong">
+                {errorMessage}
+              </p>
             )}
 
             <Button
               type="button"
-              className="h-12 w-full rounded-full bg-blush text-primary-foreground hover:bg-blush-strong"
+              className="h-12 w-full shrink-0 rounded-full bg-blush text-primary-foreground hover:bg-blush-strong"
               disabled={!agreed || submitting}
               onClick={() => void acceptDeclaration()}
             >
