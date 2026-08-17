@@ -13,16 +13,17 @@ export function ContactLink({
   href,
   icon,
   text,
+  external = true,
 }: {
   href: string;
   icon: ReactNode;
   text: string;
+  external?: boolean;
 }) {
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noreferrer"
+      {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
       className="flex items-center gap-4 transition hover:text-blush-strong"
     >
       <span className="text-blush-strong [&_svg]:size-5">{icon}</span>
