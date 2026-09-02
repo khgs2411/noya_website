@@ -9,7 +9,7 @@ type PricingCategory = "pilates" | "dance";
 type PricingPlan = {
   labelKey: string;
   price: number;
-  pricePerClass: number;
+  pricePerClass: number | null;
 };
 
 const pricingPlans: Record<PricingCategory, PricingPlan[]> = {
@@ -35,21 +35,31 @@ const pricingPlans: Record<PricingCategory, PricingPlan[]> = {
   dance: [
     { labelKey: "pricing.plans.single", price: 85, pricePerClass: 85 },
     { labelKey: "pricing.plans.threeClassCard", price: 247, pricePerClass: 82 },
-    { labelKey: "pricing.plans.tenClassCard", price: 790, pricePerClass: 79 },
+    { labelKey: "pricing.plans.tenClassCard", price: 750, pricePerClass: 75 },
     {
-      labelKey: "pricing.plans.weeklyMembership",
-      price: 375,
-      pricePerClass: 75,
+      labelKey: "pricing.plans.fourEntryMembership",
+      price: 290,
+      pricePerClass: 73,
     },
     {
-      labelKey: "pricing.plans.twiceWeeklyMembership",
-      price: 610,
-      pricePerClass: 68,
+      labelKey: "pricing.plans.fiveEntryMembership",
+      price: 350,
+      pricePerClass: 70,
     },
     {
-      labelKey: "pricing.plans.threeTimesWeeklyMembership",
-      price: 740,
-      pricePerClass: 56,
+      labelKey: "pricing.plans.eightEntryMembership",
+      price: 575,
+      pricePerClass: 72,
+    },
+    {
+      labelKey: "pricing.plans.twelveEntryMembership",
+      price: 780,
+      pricePerClass: 65,
+    },
+    {
+      labelKey: "pricing.plans.unlimitedMembership",
+      price: 860,
+      pricePerClass: null,
     },
   ],
 };
@@ -135,6 +145,17 @@ export function PricingPage({
               id={`pricing-panel-${category}`}
               aria-labelledby={`pricing-tab-${category}`}
             >
+              {category === "dance" && (
+                <div className="mb-5">
+                  <h2 className="font-serif text-2xl text-foreground">
+                    {t("pricing.combined.title")}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-foreground/68">
+                    {t("pricing.combined.body")}
+                  </p>
+                </div>
+              )}
+
               <div className="overflow-hidden rounded-[1.1rem] border border-blush/25 bg-background/48">
                 <table className="w-full table-fixed border-collapse text-start">
                   <thead className="bg-blush/14">
@@ -175,7 +196,9 @@ export function PricingPage({
                           {formatPrice(plan.price, i18n.language)}
                         </td>
                         <td className="px-2 py-4 text-center text-sm text-foreground/72 sm:px-4 sm:text-base">
-                          {formatPrice(plan.pricePerClass, i18n.language)}
+                          {plan.pricePerClass === null
+                            ? "—"
+                            : formatPrice(plan.pricePerClass, i18n.language)}
                         </td>
                       </tr>
                     ))}

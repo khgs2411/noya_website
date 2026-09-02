@@ -41,9 +41,13 @@ const resources = {
       pricing: {
         eyebrow: 'Studio pricing',
         title: 'Choose your plan',
-        body: 'Compare Equipment Pilates and Dance Class options to find the plan that fits your routine.',
+        body: 'Compare Equipment Pilates plans with combined dance, Pilates and barre plans to find the option that fits your routine.',
         categoryLabel: 'Pricing category',
-        categories: { pilates: 'Equipment Pilates', dance: 'Dance Classes' },
+        categories: { pilates: 'Equipment Pilates', dance: 'Dance, Pilates & Barre' },
+        combined: {
+          title: 'Combined class pricing',
+          body: 'Lyrical jazz, musical dance, Pilates and barre — all in one membership.',
+        },
         table: { plan: 'Plan', price: 'Price', pricePerClass: 'Per class' },
         plans: {
           single: 'Single class',
@@ -52,9 +56,11 @@ const resources = {
           fiveClassMembership: 'Monthly membership · once a week · 5 entries',
           nineClassMembership: 'Monthly membership · twice a week · 9 entries',
           thirteenClassMembership: 'Monthly membership · three times a week · 13 entries',
-          weeklyMembership: 'Monthly · once a week · 5 entries',
-          twiceWeeklyMembership: 'Monthly · twice a week · 9 entries',
-          threeTimesWeeklyMembership: 'Monthly · three times a week · 13 entries',
+          fourEntryMembership: 'Monthly membership · 4 entries',
+          fiveEntryMembership: 'Monthly membership · 5 entries',
+          eightEntryMembership: 'Monthly membership · 8 entries',
+          twelveEntryMembership: 'Monthly membership · 12 entries',
+          unlimitedMembership: 'Unlimited monthly membership',
         },
         schedule: {
           title: 'Equipment Pilates times',
@@ -1103,9 +1109,13 @@ const resources = {
       pricing: {
         eyebrow: 'Стоимость занятий',
         title: 'Выберите подходящий абонемент',
-        body: 'Сравните варианты пилатеса на тренажёрах и танцевальных занятий.',
+        body: 'Сравните абонементы на пилатес на тренажёрах и единые абонементы на танцы, пилатес и барре.',
         categoryLabel: 'Категория цен',
-        categories: { pilates: 'Пилатес на тренажёрах', dance: 'Танцевальные занятия' },
+        categories: { pilates: 'Пилатес на тренажёрах', dance: 'Танцы, пилатес и барре' },
+        combined: {
+          title: 'Цены на комбинированные занятия',
+          body: 'Лирический джаз, танцы в стиле мюзикла, пилатес и барре — всё в одном абонементе.',
+        },
         table: { plan: 'Тариф', price: 'Стоимость', pricePerClass: 'За занятие' },
         plans: {
           single: 'Разовое занятие',
@@ -1114,9 +1124,11 @@ const resources = {
           fiveClassMembership: 'Месячный абонемент · раз в неделю · 5 посещений',
           nineClassMembership: 'Месячный абонемент · два раза в неделю · 9 посещений',
           thirteenClassMembership: 'Месячный абонемент · три раза в неделю · 13 посещений',
-          weeklyMembership: 'Месячный · раз в неделю · 5 посещений',
-          twiceWeeklyMembership: 'Месячный · два раза в неделю · 9 посещений',
-          threeTimesWeeklyMembership: 'Месячный · три раза в неделю · 13 посещений',
+          fourEntryMembership: 'Месячный абонемент · 4 посещения',
+          fiveEntryMembership: 'Месячный абонемент · 5 посещений',
+          eightEntryMembership: 'Месячный абонемент · 8 посещений',
+          twelveEntryMembership: 'Месячный абонемент · 12 посещений',
+          unlimitedMembership: 'Безлимитный месячный абонемент',
         },
         schedule: {
           title: 'Время занятий по пилатесу',
@@ -2165,9 +2177,13 @@ const resources = {
       pricing: {
         eyebrow: 'מחירון הסטודיו',
         title: 'בחרי את המסלול שמתאים לך',
-        body: 'השווי בין מסלולי פילאטיס מכשירים ושיעורי ריקוד ומצאי את האפשרות שמתאימה לשגרה שלך.',
+        body: 'השווי בין מסלולי פילאטיס מכשירים למסלולים משולבים של ריקוד, פילאטיס ובר ומצאי את האפשרות שמתאימה לשגרה שלך.',
         categoryLabel: 'סוג המחירון',
-        categories: { pilates: 'פילאטיס מכשירים', dance: 'שיעורי ריקוד' },
+        categories: { pilates: 'פילאטיס מכשירים', dance: 'ריקוד, פילאטיס ובר' },
+        combined: {
+          title: 'מחירון משולב',
+          body: 'שיעורי ריקוד ג׳אז לירי ומיוזיקל, שיעורי פילאטיס ושיעורי בר — הכל במנוי אחד.',
+        },
         table: { plan: 'מסלול', price: 'מחיר', pricePerClass: 'מחיר לשיעור' },
         plans: {
           single: 'שיעור בודד',
@@ -2176,9 +2192,11 @@ const resources = {
           fiveClassMembership: 'מנוי חודשי · פעם בשבוע · 5 כניסות',
           nineClassMembership: 'מנוי חודשי · פעמיים בשבוע · 9 כניסות',
           thirteenClassMembership: 'מנוי חודשי · שלוש פעמים בשבוע · 13 כניסות',
-          weeklyMembership: 'מנוי חודשי · פעם בשבוע · 5 כניסות',
-          twiceWeeklyMembership: 'מנוי חודשי · פעמיים בשבוע · 9 כניסות',
-          threeTimesWeeklyMembership: 'מנוי חודשי · שלוש פעמים בשבוע · 13 כניסות',
+          fourEntryMembership: 'מנוי חודשי · 4 כניסות',
+          fiveEntryMembership: 'מנוי חודשי · 5 כניסות',
+          eightEntryMembership: 'מנוי חודשי · 8 כניסות',
+          twelveEntryMembership: 'מנוי חודשי · 12 כניסות',
+          unlimitedMembership: 'מנוי חודשי ללא הגבלה',
         },
         schedule: {
           title: 'שעות שיעורי פילאטיס מכשירים',
