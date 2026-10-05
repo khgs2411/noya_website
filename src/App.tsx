@@ -24,6 +24,7 @@ import {
 import { BrowserStorageNotice } from "@/components/site/browser-storage-notice";
 import { InstallAppPrompt } from "@/components/site/install-app-prompt";
 import { SiteHeader } from "@/components/site/site-header";
+import { FrontendPreviewNotice } from "@/components/site/frontend-preview-notice";
 import { PendingSignupTermsAcceptance } from "@/features/documents/pending-signup-terms-acceptance";
 import { HealthDeclarationGate } from "@/features/documents/health-declaration-gate";
 import { productDocumentTypes } from "@/features/documents/product-document-types";
@@ -36,6 +37,7 @@ import {
 } from "@/features/manager/manager-routes";
 import { useTheme } from "@/hooks/use-theme";
 import { captureActiveElement, restoreFocus } from "@/lib/focus";
+import { isFrontendPreview } from "@/lib/frontend-preview";
 
 const MANAGER_ACCESS_CACHE_KEY = "noya.manager.lastAccess";
 const MANAGER_ACCESS_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -394,6 +396,7 @@ export default function App() {
   function renderWithMenu(page: ReactNode, showHeader: boolean) {
     return (
       <>
+        {isFrontendPreview && <FrontendPreviewNotice />}
         {showHeader && (
           <div className="bg-background text-foreground">
             <SiteHeader

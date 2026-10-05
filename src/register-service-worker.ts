@@ -1,4 +1,7 @@
+import { isFrontendPreview } from "./lib/frontend-preview";
+
 export function registerServiceWorker() {
+  if (isFrontendPreview) return;
   if (!("serviceWorker" in navigator)) return;
 
   window.addEventListener("load", () => {

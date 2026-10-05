@@ -3,6 +3,18 @@
 Status: Approved — eligible for implementation planning.
 Design directory: `docs/design/2026-07-24-persistent-staging-deployment/`
 
+## Scoped frontend-preview exception — 2026-10-05
+
+Liad selected a GitHub Pages frontend preview using existing ClassKit data at
+`https://khgs2411.github.io/noya_website_staging/`, sourced from `staging` and
+published only to a separate compiled-artifact repository. This preview shares
+the existing product/data and browser session; it is not isolated staging.
+Writes affect existing/live data. See [frontend-preview operations](../../frontend-preview.md).
+This exception supersedes the isolation/hosting requirements below only for
+this frontend preview. It does not authorize production migration or revive the
+suspended historical provisioning chunks. The design below remains history for
+the separate isolated-staging/Cloudflare work.
+
 ## Architecture Addendum — 2026-07-27: Consolidate Frontend Hosting On Cloudflare Pages
 
 This addendum records a later user-approved architecture decision. It

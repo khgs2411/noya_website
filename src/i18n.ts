@@ -20,6 +20,10 @@ const resources = {
           "Noya's Flow offers dance, movement, and studio classes with public class browsing and booking.",
         loading: 'Loading',
       },
+      frontendPreview: {
+        title: 'Frontend preview · live data',
+        body: 'This preview uses the existing ClassKit data and browser session. Changes made here affect the same live data as the main site.',
+      },
       installPrompt: {
         label: 'Install app',
         title: "Add Noya's Flow",
@@ -1093,6 +1097,10 @@ const resources = {
           'Noya’s Flow предлагает танцевальные, двигательные и студийные занятия с открытым просмотром и записью.',
         loading: 'Загрузка',
       },
+      frontendPreview: {
+        title: 'Предпросмотр · реальные данные',
+        body: 'Этот предпросмотр использует существующие данные ClassKit и сеанс браузера. Изменения здесь влияют на те же реальные данные, что и на основном сайте.',
+      },
       installPrompt: {
         label: 'Установить приложение',
         title: "Добавить Noya's Flow",
@@ -2165,6 +2173,10 @@ const resources = {
         description:
           'Noya’s Flow מציעה שיעורי ריקוד, תנועה וסטודיו עם עיון והרשמה לשיעורים.',
         loading: 'בטעינה',
+      },
+      frontendPreview: {
+        title: 'תצוגה מקדימה · נתונים חיים',
+        body: 'התצוגה המקדימה משתמשת בנתוני ClassKit הקיימים ובהתחברות של הדפדפן. שינויים כאן משפיעים על אותם נתונים חיים שבאתר הראשי.',
       },
       installPrompt: {
         label: 'התקנת האפליקציה',

@@ -1,0 +1,128 @@
+name: Publish frontend preview
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: noya-frontend-preview
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install pinned dependencies
+        env:
+          CLASS_KIT_SDK_DEPLOY_KEY: ${{ secrets.CLASS_KIT_SDK_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$CLASS_KIT_SDK_DEPLOY_KEY" || { echo 'CLASS_KIT_SDK_DEPLOY_KEY is not set'; exit 1; }
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$CLASS_KIT_SDK_DEPLOY_KEY" > "$RUNNER_TEMP/class-kit-sdk-key"
+          ssh-keyscan github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+          GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/class-kit-sdk-key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" bun install --frozen-lockfile
+
+      - name: Build frontend preview
+        env:
+          VITE_FRONTEND_PREVIEW: 'true'
+          VITE_CLASS_KIT_TARGET: remote
+        run: bun run build -- --base=/noya_website_staging/
+
+      - name: Prepare Pages files and source receipt
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ github.run_id }}
+          SOURCE_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          dist = Path('dist')
+          index = dist / 'index.html'
+          html = index.read_text()
+          assert '</head>' in html
+          html = html.replace('</head>', '<meta name="robots" content="noindex, nofollow" /></head>', 1)
+          index.write_text(html)
+          (dist / '404.html').write_text(html)
+          (dist / '.nojekyll').touch()
+          # Never expose the broad origin-cache worker in this same-origin preview.
+          (dist / 'service-worker.js').unlink(missing_ok=True)
+          receipt = {
+              'sourceRepository': os.environ['SOURCE_REPOSITORY'],
+              'sourceBranch': 'staging',
+              'sourceSha': os.environ['SOURCE_SHA'],
+              'workflowRun': f"https://github.com/{os.environ['SOURCE_REPOSITORY']}/actions/runs/{os.environ['SOURCE_RUN_ID']}",
+              'runAttempt': os.environ['SOURCE_RUN_ATTEMPT'],
+              'previewUrl': 'https://khgs2411.github.io/noya_website_staging/',
+              'dataMode': 'existing-live-ClassKit-data',
+          }
+          (dist / 'deployment.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          PY
+
+      - name: Retain compiled preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: noya-frontend-preview-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist/
+          include-hidden-files: true
+          if-no-files-found: error
+
+      - name: Publish only to staging artifact repository
+        env:
+          STAGING_PAGES_DEPLOY_KEY: ${{ secrets.STAGING_PAGES_DEPLOY_KEY }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current_sha=$(gh api "repos/$SOURCE_REPOSITORY/git/ref/heads/staging" --jq '.object.sha')
+          if [ "$current_sha" != "$SOURCE_SHA" ]; then
+            echo 'Skipped publication: a newer staging source revision exists.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          test -n "$STAGING_PAGES_DEPLOY_KEY" || { echo 'STAGING_PAGES_DEPLOY_KEY is not set'; exit 1; }
+          umask 077
+          printf '%s\n' "$STAGING_PAGES_DEPLOY_KEY" > "$RUNNER_TEMP/staging-pages-key"
+          export GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/staging-pages-key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          git clone --no-checkout git@github.com:khgs2411/noya_website_staging.git "$RUNNER_TEMP/staging-pages"
+          cd "$RUNNER_TEMP/staging-pages"
+          if git show-ref --verify --quiet refs/heads/gh-pages; then
+            git switch gh-pages
+          elif git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git switch --track -c gh-pages origin/gh-pages
+          elif git rev-parse --verify HEAD >/dev/null 2>&1; then
+            git switch -c gh-pages
+          else
+            git switch --orphan gh-pages
+          fi
+          rsync --archive --delete --exclude=.git "$GITHUB_WORKSPACE/dist/" ./
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all -- .
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish Noya frontend preview from $SOURCE_SHA"
+          fi
+          git push origin HEAD:refs/heads/gh-pages
+          echo 'Preview published from source; Pages may take a few minutes to update.' >> "$GITHUB_STEP_SUMMARY"
+          echo "Source: $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+          echo 'Preview: https://khgs2411.github.io/noya_website_staging/' >> "$GITHUB_STEP_SUMMARY"
