@@ -1,9 +1,21 @@
 name: Publish frontend preview
 
 on:
-  push:
-    branches: [staging]
   workflow_dispatch:
+    inputs:
+      request_reason:
+        description: Explicit reason for this optional preview check
+        required: true
+        type: string
+      expected_sha:
+        description: Exact reviewed 40-hex staging source SHA
+        required: true
+        type: string
+      trello_card_url:
+        description: Optional requesting Trello card URL (blank for a direct request)
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -14,9 +26,26 @@ concurrency:
 
 jobs:
   publish:
-    if: github.ref == 'refs/heads/staging'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     steps:
+      - name: Validate explicit check request
+        env:
+          REQUEST_REASON: ${{ inputs.request_reason }}
+          EXPECTED_SOURCE_SHA: ${{ inputs.expected_sha }}
+          ACTUAL_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os, re
+          reason = os.environ['REQUEST_REASON']
+          expected = os.environ['EXPECTED_SOURCE_SHA']
+          actual = os.environ['ACTUAL_SOURCE_SHA']
+          if not reason.strip():
+              raise SystemExit('A nonempty explicit request reason is required.')
+          if not re.fullmatch(r'[0-9a-fA-F]{40}', expected) or expected != actual:
+              raise SystemExit('Expected SHA must be the exact reviewed 40-hex staging source SHA for this dispatch.')
+          PY
+
       - name: Checkout exact source
         uses: actions/checkout@v5
         with:
@@ -52,6 +81,8 @@ jobs:
           SOURCE_REPOSITORY: ${{ github.repository }}
           SOURCE_RUN_ID: ${{ github.run_id }}
           SOURCE_RUN_ATTEMPT: ${{ github.run_attempt }}
+          REQUEST_REASON: ${{ inputs.request_reason }}
+          REQUEST_TRELLO_CARD_URL: ${{ inputs.trello_card_url }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -75,6 +106,8 @@ jobs:
               'runAttempt': os.environ['SOURCE_RUN_ATTEMPT'],
               'previewUrl': 'https://khgs2411.github.io/noya_website_staging/',
               'dataMode': 'existing-live-ClassKit-data',
+              'requestReason': os.environ['REQUEST_REASON'],
+              'trelloCardUrl': os.environ['REQUEST_TRELLO_CARD_URL'],
           }
           (dist / 'deployment.json').write_text(json.dumps(receipt, indent=2) + '\n')
           PY

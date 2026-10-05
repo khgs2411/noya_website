@@ -10,6 +10,11 @@ Liad selected a GitHub Pages frontend preview using existing ClassKit data at
 published only to a separate compiled-artifact repository. This preview shares
 the existing product/data and browser session; it is not isolated staging.
 Writes affect existing/live data. See [frontend-preview operations](../../frontend-preview.md).
+The acknowledged frontend-preview pipeline is **explicitly on demand**: ordinary
+staging pushes do not deploy. A qualified **Staging Check** label request or
+direct Liad request is handled by an invoked Dante/operator through guarded
+exact-SHA workflow dispatch. Historical automatic-push language below does not
+apply to this preview; no automatic tracker watcher is installed.
 This exception supersedes the isolation/hosting requirements below only for
 this frontend preview. It does not authorize production migration or revive the
 suspended historical provisioning chunks. The design below remains history for

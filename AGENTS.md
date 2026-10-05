@@ -47,6 +47,18 @@ with the existing brand.
   user explicitly asks for it.
 - Report exactly what was checked and what was skipped.
 
+## Optional Frontend Preview
+
+- Read [the frontend-preview pipeline/runbook](docs/frontend-preview.md) before
+  deciding whether to publish a Noya preview.
+- Staging is on demand only: an explicitly handled **Staging Check** label
+  request or direct Liad request, not a default check for routine work/tests.
+- Follow the runbook's exact card/label qualification, Git authority, reviewed
+  SHA, evidence reuse and explicit dispatch rules. Ordinary pushes do not deploy.
+- This preview shares existing/live ClassKit data and browser authentication.
+  Build success is not human acceptance or production-promotion authority.
+- No automatic Trello intake is installed by this pipeline.
+
 ## Git
 
 - Do not commit, push, rebase, reset, or stage files unless explicitly asked.
