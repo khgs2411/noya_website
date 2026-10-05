@@ -571,7 +571,7 @@ const resources = {
         },
         cancel: {
           title: 'Cancel class',
-          body: 'Cancellation keeps the class record in place. It does not erase class history.',
+          body: 'Cancelled classes disappear from the normal class lists. Their history is kept and can be viewed with “Show cancelled classes”. You can create a replacement class.',
           reason: 'Reason',
           exposeReason: 'Show this reason to students',
         },
@@ -666,8 +666,13 @@ const resources = {
           errorTitle: 'Templates could not load',
           errorBody: 'Try refreshing templates.',
           retry: 'Retry',
-          emptyTitle: 'No templates yet',
+          emptyTitle: 'No templates to show',
           emptyBody: 'Create a template to reuse class defaults.',
+        },
+        history: {
+          showInactiveTemplates: 'Show inactive templates',
+          showArchivedSchedules: 'Show archived schedules',
+          showCancelledClasses: 'Show cancelled classes',
         },
         templateStatus: {
           active: 'Active',
@@ -717,7 +722,7 @@ const resources = {
         },
         templateDeactivate: {
           title: 'Deactivate template',
-          body: 'Inactive templates stay in history but cannot be selected for new classes.',
+          body: 'Inactive templates are hidden from the normal template list and cannot be selected for new classes or schedules. You can create a new template. Review existing schedules and classes separately. Archive unused schedules and cancel unused classes using their own controls.',
         },
         schedules: {
           title: 'Schedules',
@@ -730,7 +735,7 @@ const resources = {
           errorTitle: 'Schedules could not load',
           errorBody: 'Try refreshing schedules.',
           retry: 'Retry',
-          emptyTitle: 'No schedules yet',
+          emptyTitle: 'No schedules to show',
           emptyBody: 'Create a schedule rule to generate upcoming classes.',
         },
         scheduleStatus: {
@@ -778,7 +783,7 @@ const resources = {
         },
         scheduleLifecycle: {
           title: 'Schedule lifecycle',
-          body: 'Pause future generation or archive a schedule that should no longer be used.',
+          body: 'Pause future generation or archive a schedule that should no longer be used. Archived schedules are hidden from the normal list. You can create a new schedule. Review generated classes separately in Classes and cancel those no longer needed.',
         },
         scheduleSkips: {
           title: 'Skipped dates',
@@ -1639,7 +1644,7 @@ const resources = {
         },
         cancel: {
           title: 'Отменить занятие',
-          body: 'Отмена сохраняет запись занятия. История занятия не стирается.',
+          body: 'Отменённые занятия скрываются из обычных списков. История сохраняется и доступна через «Показать отменённые занятия». Можно создать новое занятие взамен.',
           reason: 'Причина',
           exposeReason: 'Показать эту причину ученикам',
         },
@@ -1734,8 +1739,13 @@ const resources = {
           errorTitle: 'Не удалось загрузить шаблоны',
           errorBody: 'Попробуйте обновить шаблоны.',
           retry: 'Повторить',
-          emptyTitle: 'Шаблонов пока нет',
+          emptyTitle: 'Нет шаблонов для отображения',
           emptyBody: 'Создайте шаблон, чтобы повторно использовать настройки занятий.',
+        },
+        history: {
+          showInactiveTemplates: 'Показать неактивные шаблоны',
+          showArchivedSchedules: 'Показать архивные расписания',
+          showCancelledClasses: 'Показать отменённые занятия',
         },
         templateStatus: {
           active: 'Активен',
@@ -1785,7 +1795,7 @@ const resources = {
         },
         templateDeactivate: {
           title: 'Деактивировать шаблон',
-          body: 'Неактивные шаблоны остаются в истории, но их нельзя выбрать для новых занятий.',
+          body: 'Неактивные шаблоны скрываются из обычного списка и недоступны для новых занятий и расписаний. Можно создать новый шаблон. Проверьте существующие расписания и занятия отдельно. Ненужные расписания отправьте в архив, а занятия отмените через их собственные элементы управления.',
         },
         schedules: {
           title: 'Расписания',
@@ -1798,7 +1808,7 @@ const resources = {
           errorTitle: 'Не удалось загрузить расписания',
           errorBody: 'Попробуйте обновить расписания.',
           retry: 'Повторить',
-          emptyTitle: 'Расписаний пока нет',
+          emptyTitle: 'Нет расписаний для отображения',
           emptyBody: 'Создайте правило расписания, чтобы генерировать ближайшие занятия.',
         },
         scheduleStatus: {
@@ -1846,7 +1856,7 @@ const resources = {
         },
         scheduleLifecycle: {
           title: 'Жизненный цикл расписания',
-          body: 'Поставьте на паузу будущую генерацию или отправьте расписание в архив, если оно больше не используется.',
+          body: 'Приостановите генерацию или отправьте ненужное расписание в архив, чтобы скрыть его из обычного списка. Можно создать новое расписание. Проверьте созданные занятия отдельно в разделе «Занятия» и отмените те, которые больше не нужны.',
         },
         scheduleSkips: {
           title: 'Пропущенные даты',
@@ -2707,7 +2717,7 @@ const resources = {
         },
         cancel: {
           title: 'ביטול שיעור',
-          body: 'ביטול שומר את רשומת השיעור במקום. הוא לא מוחק את היסטוריית השיעור.',
+          body: 'שיעורים מבוטלים לא יופיעו ברשימות השיעורים הרגילות. ההיסטוריה נשמרת ואפשר לראות אותה דרך ״הצגת שיעורים מבוטלים״. אפשר ליצור שיעור חדש במקומם.',
           reason: 'סיבה',
           exposeReason: 'להציג את הסיבה לתלמידות',
         },
@@ -2802,8 +2812,13 @@ const resources = {
           errorTitle: 'לא ניתן לטעון תבניות',
           errorBody: 'אפשר לנסות לרענן את התבניות.',
           retry: 'ניסיון נוסף',
-          emptyTitle: 'עדיין אין תבניות',
+          emptyTitle: 'אין תבניות להצגה',
           emptyBody: 'צרי תבנית כדי להשתמש שוב בברירות מחדל של שיעור.',
+        },
+        history: {
+          showInactiveTemplates: 'הצגת תבניות לא פעילות',
+          showArchivedSchedules: 'הצגת מערכות בארכיון',
+          showCancelledClasses: 'הצגת שיעורים מבוטלים',
         },
         templateStatus: {
           active: 'פעילה',
@@ -2853,7 +2868,7 @@ const resources = {
         },
         templateDeactivate: {
           title: 'השבתת תבנית',
-          body: 'תבניות לא פעילות נשארות בהיסטוריה אבל אי אפשר לבחור אותן לשיעורים חדשים.',
+          body: 'תבניות לא פעילות מוסתרות מהרשימה הרגילה ולא זמינות לשיעורים ולמערכות חדשים. אפשר ליצור תבנית חדשה. בדקי מערכות ושיעורים קיימים בנפרד. העבירי מערכות שאינן בשימוש לארכיון ובטלי שיעורים שאינם בשימוש דרך הפעולות שלהם.',
         },
         schedules: {
           title: 'מערכות',
@@ -2866,7 +2881,7 @@ const resources = {
           errorTitle: 'לא ניתן לטעון מערכות',
           errorBody: 'אפשר לנסות לרענן את המערכות.',
           retry: 'ניסיון נוסף',
-          emptyTitle: 'עדיין אין מערכות',
+          emptyTitle: 'אין מערכות להצגה',
           emptyBody: 'צרי כלל מערכת כדי להפיק שיעורים קרובים.',
         },
         scheduleStatus: {
@@ -2914,7 +2929,7 @@ const resources = {
         },
         scheduleLifecycle: {
           title: 'מחזור חיי מערכת',
-          body: 'השהיית הפקות עתידיות או העברת מערכת לארכיון כשהיא כבר לא בשימוש.',
+          body: 'השהיית הפקות עתידיות או העברת מערכת שאינה בשימוש לארכיון כדי להסתיר אותה מהרשימה הרגילה. אפשר ליצור מערכת חדשה. בדקי שיעורים שכבר הופקו בנפרד בלשונית השיעורים ובטלי את אלו שאינם נחוצים עוד.',
         },
         scheduleSkips: {
           title: 'תאריכים שדולגו',

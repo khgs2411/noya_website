@@ -19,6 +19,7 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { getVisibleLessons } from "@/lib/lifecycle-visibility";
 import { ToastStack, type ToastItem } from "@/components/ui/toast";
 import {
   authPath,
@@ -239,7 +240,7 @@ export function LessonsPage({
   );
   const visibleRange = useMemo(() => toVisibleRange(localRange), [localRange]);
   const classViewItems = useMemo(
-    () => classes.map((classSummary) => toClassViewItem(classSummary, t)),
+    () => getVisibleLessons(classes).map((classSummary) => toClassViewItem(classSummary, t)),
     [classes, t],
   );
   const classViewGroups = useMemo(
@@ -304,7 +305,7 @@ export function LessonsPage({
       return;
     }
 
-    setClasses(result.data.classes);
+    setClasses(getVisibleLessons(result.data.classes));
     setLoadStatus("loaded");
     setErrorMessage(null);
     setOperationError(null);

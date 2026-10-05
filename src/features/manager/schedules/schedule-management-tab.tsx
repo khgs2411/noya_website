@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { getVisibleSchedules } from "@/lib/lifecycle-visibility";
+import { HistoryVisibilityToggle } from "@/features/manager/history-visibility-toggle";
 import { ScheduleCard } from "@/features/manager/schedules/schedule-card";
 import { ScheduleDetailPanel } from "@/features/manager/schedules/schedule-detail-panel";
 import { ScheduleFormDialog } from "@/features/manager/schedules/schedule-form-dialog";
@@ -25,18 +27,22 @@ export function ScheduleManagementTab({
   const { t } = useTranslation();
   const { client } = useProductContext();
   const [formSurface, setFormSurface] = useState<FormSurface>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const managedSchedules = useManagedSchedules({ client, canManageSchedules });
   const managedTemplates = useManagedTemplates({
     client,
     canManageTemplates: canManageSchedules,
   });
   const { state, actions } = managedSchedules;
+  const visibleSchedules = getVisibleSchedules(state.sortedSchedules, showArchived);
+  const selectedSchedule =
+    visibleSchedules.find((schedule) => schedule.id === state.selectedScheduleId) ?? null;
   const activeTemplates = managedTemplates.state.activeTemplates;
   const canCreateSchedule = activeTemplates.length > 0;
   const formSchedule =
     formSurface?.mode === "edit"
-      ? state.schedules.find((schedule) => schedule.id === formSurface.scheduleId) ??
-        state.selectedSchedule
+      ? visibleSchedules.find((schedule) => schedule.id === formSurface.scheduleId) ??
+        null
       : null;
 
   return (
@@ -159,7 +165,19 @@ export function ScheduleManagementTab({
             </p>
           )}
 
-          {state.loadStatus === "loaded" && state.sortedSchedules.length === 0 && (
+          <HistoryVisibilityToggle
+            checked={showArchived}
+            label={t("manager.history.showArchivedSchedules")}
+            onChange={(checked) => {
+              setShowArchived(checked);
+              actions.clearSelection();
+              actions.clearPreview();
+              actions.clearGenerationResult();
+              setFormSurface(null);
+            }}
+          />
+
+          {state.loadStatus === "loaded" && visibleSchedules.length === 0 && (
             <div className="rounded-xl border border-blush/24 bg-background/46 p-5">
               <p className="font-serif text-xl text-foreground">
                 {t("manager.schedules.emptyTitle")}
@@ -170,9 +188,9 @@ export function ScheduleManagementTab({
             </div>
           )}
 
-          {state.loadStatus === "loaded" && state.sortedSchedules.length > 0 && (
+          {state.loadStatus === "loaded" && visibleSchedules.length > 0 && (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {state.sortedSchedules.map((schedule) => (
+              {visibleSchedules.map((schedule) => (
                 <ScheduleCard
                   key={schedule.id}
                   schedule={schedule}
@@ -185,7 +203,7 @@ export function ScheduleManagementTab({
           )}
 
           <ScheduleDetailPanel
-            schedule={state.selectedSchedule}
+            schedule={selectedSchedule}
             templates={managedTemplates.state.templates}
             preview={state.preview}
             generationResult={state.generationResult}
@@ -203,10 +221,10 @@ export function ScheduleManagementTab({
               actions.clearGenerationResult();
             }}
             onEdit={() => {
-              if (!state.selectedSchedule) return;
+              if (!selectedSchedule) return;
               setFormSurface({
                 mode: "edit",
-                scheduleId: state.selectedSchedule.id,
+                scheduleId: selectedSchedule.id,
               });
               actions.clearSelection();
             }}
@@ -220,7 +238,9 @@ export function ScheduleManagementTab({
               void actions.pauseSchedule(scheduleId);
             }}
             onArchive={(scheduleId) => {
-              void actions.archiveSchedule(scheduleId);
+              void actions.archiveSchedule(scheduleId).then((result) => {
+                if (result.ok) actions.clearSelection();
+              });
             }}
             onSkipDate={(scheduleId, date, reason) => {
               void actions.skipScheduleDate(scheduleId, date, reason);
@@ -231,7 +251,7 @@ export function ScheduleManagementTab({
           />
 
           <ScheduleFormDialog
-            open={formSurface !== null}
+            open={formSurface?.mode === "create" || (formSurface?.mode === "edit" && formSchedule !== null)}
             mode={formSurface?.mode ?? "create"}
             schedule={formSchedule}
             activeTemplates={activeTemplates}

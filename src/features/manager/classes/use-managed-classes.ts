@@ -13,6 +13,7 @@ import type {
   UpdateManagedClassInput,
 } from "@class-kit/react";
 import { useTranslation } from "react-i18next";
+import { getVisibleManagedClasses, isCancelledClass } from "@/lib/lifecycle-visibility";
 
 import {
   type CustomRangeValue,
@@ -105,6 +106,7 @@ export function useManagedClasses({
     useState<CustomRangeValue | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [classes, setClasses] = useState<ManagedClass[]>([]);
+  const [showCancelled, setShowCancelled] = useState(false);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
   const loadStatusRef = useRef<LoadStatus>("idle");
@@ -125,13 +127,17 @@ export function useManagedClasses({
     () => getVisibleRangeLabel(localRange, i18n.language),
     [i18n.language, localRange],
   );
+  const visibleClasses = useMemo(
+    () => getVisibleManagedClasses(classes, showCancelled),
+    [classes, showCancelled],
+  );
   const selectedClass = useMemo(
-    () => classes.find((managedClass) => managedClass.id === selectedClassId) ?? null,
-    [classes, selectedClassId],
+    () => visibleClasses.find((managedClass) => managedClass.id === selectedClassId) ?? null,
+    [visibleClasses, selectedClassId],
   );
   const classesGroupedByDate = useMemo(
-    () => groupClassesByDate(classes, i18n.language),
-    [classes, i18n.language],
+    () => groupClassesByDate(visibleClasses, i18n.language),
+    [visibleClasses, i18n.language],
   );
 
   const setTrackedLoadStatus = useCallback((status: LoadStatus) => {
@@ -152,6 +158,9 @@ export function useManagedClasses({
 
   const applyClassMutationResult = useCallback(
     (managedClass: ManagedClass) => {
+      if (!showCancelled && isCancelledClass(managedClass)) {
+        setSelectedClassId((current) => current === managedClass.id ? null : current);
+      }
       if (!classIsInVisibleRange(managedClass)) {
         setClasses((current) =>
           current.filter((item) => item.id !== managedClass.id),
@@ -175,7 +184,7 @@ export function useManagedClasses({
         );
       });
     },
-    [classIsInVisibleRange],
+    [classIsInVisibleRange, showCancelled],
   );
 
   const reconcileSelectedClass = useCallback(
@@ -183,6 +192,12 @@ export function useManagedClasses({
       setSelectedClassId((currentSelectedClassId) => {
         const idToKeep = mutatedClassId ?? currentSelectedClassId;
         if (!idToKeep) return currentSelectedClassId;
+
+        const refreshedClass = refreshedClasses.find((item) => item.id === idToKeep);
+        if (refreshedClass && !showCancelled && isCancelledClass(refreshedClass)) {
+          setReconciliationNotice(null);
+          return null;
+        }
 
         const existsInRange = refreshedClasses.some(
           (managedClass) => managedClass.id === idToKeep,
@@ -200,7 +215,7 @@ export function useManagedClasses({
         return null;
       });
     },
-    [],
+    [showCancelled],
   );
 
   const refreshVisibleRange = useCallback(async (
@@ -507,6 +522,8 @@ export function useManagedClasses({
       visibleRangeLabel,
       viewMode,
       classes,
+      visibleClasses,
+      showCancelled,
       classesGroupedByDate,
       selectedClass,
       selectedClassId,
@@ -518,6 +535,10 @@ export function useManagedClasses({
       canManageClasses,
     },
     actions: {
+      setShowCancelled: (checked: boolean) => {
+        setShowCancelled(checked);
+        setSelectedClassId(null);
+      },
       setRangeScope: setScope,
       setCustomRange,
       goToPreviousRange,

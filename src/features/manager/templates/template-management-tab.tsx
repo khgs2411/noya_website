@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { getVisibleTemplates } from "@/lib/lifecycle-visibility";
+import { HistoryVisibilityToggle } from "@/features/manager/history-visibility-toggle";
 import { TemplateCard } from "@/features/manager/templates/template-card";
 import { TemplateDeactivateDialog } from "@/features/manager/templates/template-deactivate-dialog";
 import { TemplateDetailPanel } from "@/features/manager/templates/template-detail-panel";
@@ -28,12 +30,16 @@ export function TemplateManagementTab({
   const { client } = useProductContext();
   const [formSurface, setFormSurface] = useState<FormSurface>(null);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
   const managedTemplates = useManagedTemplates({ client, canManageTemplates });
   const { state, actions } = managedTemplates;
+  const visibleTemplates = getVisibleTemplates(state.sortedTemplates, showInactive);
+  const selectedTemplate =
+    visibleTemplates.find((template) => template.id === state.selectedTemplateId) ?? null;
   const formTemplate =
     formSurface?.mode === "edit"
-      ? state.templates.find((template) => template.id === formSurface.templateId) ??
-        state.selectedTemplate
+      ? visibleTemplates.find((template) => template.id === formSurface.templateId) ??
+        null
       : null;
 
   return (
@@ -132,7 +138,18 @@ export function TemplateManagementTab({
             </p>
           )}
 
-          {state.loadStatus === "loaded" && state.sortedTemplates.length === 0 && (
+          <HistoryVisibilityToggle
+            checked={showInactive}
+            label={t("manager.history.showInactiveTemplates")}
+            onChange={(checked) => {
+              setShowInactive(checked);
+              actions.clearSelection();
+              setDeactivateOpen(false);
+              setFormSurface(null);
+            }}
+          />
+
+          {state.loadStatus === "loaded" && visibleTemplates.length === 0 && (
             <div className="rounded-xl border border-blush/24 bg-background/46 p-5">
               <p className="font-serif text-xl text-foreground">
                 {t("manager.templates.emptyTitle")}
@@ -143,9 +160,9 @@ export function TemplateManagementTab({
             </div>
           )}
 
-          {state.loadStatus === "loaded" && state.sortedTemplates.length > 0 && (
+          {state.loadStatus === "loaded" && visibleTemplates.length > 0 && (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {state.sortedTemplates.map((template) => (
+              {visibleTemplates.map((template) => (
                 <TemplateCard
                   key={template.id}
                   template={template}
@@ -157,13 +174,13 @@ export function TemplateManagementTab({
           )}
 
           <TemplateDetailPanel
-            template={state.selectedTemplate}
+            template={selectedTemplate}
             onClose={actions.clearSelection}
             onEdit={() => {
-              if (!state.selectedTemplate) return;
+              if (!selectedTemplate) return;
               setFormSurface({
                 mode: "edit",
-                templateId: state.selectedTemplate.id,
+                templateId: selectedTemplate.id,
               });
               actions.clearSelection();
             }}
@@ -171,7 +188,7 @@ export function TemplateManagementTab({
           />
 
           <TemplateFormDialog
-            open={formSurface !== null}
+            open={formSurface?.mode === "create" || (formSurface?.mode === "edit" && formTemplate !== null)}
             mode={formSurface?.mode ?? "create"}
             template={formTemplate}
             client={client}
@@ -188,11 +205,15 @@ export function TemplateManagementTab({
 
           <TemplateDeactivateDialog
             open={deactivateOpen}
-            template={state.selectedTemplate}
+            template={selectedTemplate}
             submitting={state.mutationStatus === "deactivating"}
             errorMessage={state.operationError}
             onClose={() => setDeactivateOpen(false)}
-            onConfirm={actions.deactivateTemplate}
+            onConfirm={async (templateId) => {
+              const result = await actions.deactivateTemplate(templateId);
+              if (result.ok) actions.clearSelection();
+              return result;
+            }}
           />
         </div>
       ) : (

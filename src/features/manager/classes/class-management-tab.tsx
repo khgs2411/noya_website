@@ -16,6 +16,7 @@ import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { HistoryVisibilityToggle } from "@/features/manager/history-visibility-toggle";
 import { ClassCalendarView } from "@/features/classes/class-calendar-view";
 import { ClassListView } from "@/features/classes/class-list-view";
 import { ClassRangeToolbar } from "@/features/classes/class-range-toolbar";
@@ -191,11 +192,11 @@ export function ClassManagementTab({
   const { state, actions } = managedClasses;
   const formClass =
     formSurface?.mode === "edit"
-      ? state.classes.find((managedClass) => managedClass.id === formSurface.classId) ?? state.selectedClass
+      ? state.visibleClasses.find((managedClass) => managedClass.id === formSurface.classId) ?? null
       : null;
   const attendanceClass =
     attendanceSurface?.classId
-      ? state.classes.find(
+      ? state.visibleClasses.find(
           (managedClass) => managedClass.id === attendanceSurface.classId,
         ) ?? null
       : null;
@@ -478,6 +479,17 @@ export function ClassManagementTab({
             onViewModeChange={actions.setViewMode}
           />
 
+          <HistoryVisibilityToggle
+            checked={state.showCancelled}
+            label={t("manager.history.showCancelledClasses")}
+            onChange={(checked) => {
+              actions.setShowCancelled(checked);
+              setFormSurface(null);
+              setAttendanceSurface(null);
+              setCancelOpen(false);
+            }}
+          />
+
           {state.loadStatus === "loading" && (
             <div className="rounded-xl border border-blush/24 bg-background/46 p-5">
               <div className="flex items-center gap-3 text-sm text-foreground/68">
@@ -556,7 +568,7 @@ export function ClassManagementTab({
             </p>
           )}
 
-          {state.loadStatus === "loaded" && state.classes.length === 0 && (
+          {state.loadStatus === "loaded" && state.visibleClasses.length === 0 && (
             <div className="rounded-xl border border-blush/24 bg-background/46 p-5">
               <p className="font-serif text-xl text-foreground">
                 {t("manager.classes.emptyTitle")}
@@ -567,7 +579,7 @@ export function ClassManagementTab({
             </div>
           )}
 
-          {state.loadStatus === "loaded" && state.classes.length > 0 && (
+          {state.loadStatus === "loaded" && state.visibleClasses.length > 0 && (
             <>
               <div className="md:hidden">{listView}</div>
               <div className="hidden md:block">
@@ -628,7 +640,7 @@ export function ClassManagementTab({
           />
 
           <ClassFormDialog
-            open={formSurface !== null}
+            open={formSurface?.mode === "create" || (formSurface?.mode === "edit" && formClass !== null)}
             mode={formSurface?.mode ?? "create"}
             managedClass={formClass}
             templates={managedTemplates.state.activeTemplates}
