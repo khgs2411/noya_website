@@ -9,6 +9,7 @@ import {
   Check,
   ChevronRight,
   CircleUserRound,
+  HeartPulse,
   Info,
   Loader2,
   LogOut,
@@ -29,7 +30,9 @@ import {
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
-import { images } from "@/content/site-content";
+import { healthDeclarationPath, images } from "@/content/site-content";
+import { DocumentAgreement } from "@/features/documents/document-agreement";
+import { useHealthDeclaration } from "@/features/documents/use-health-declaration";
 import { getUserSupportingEmail } from "@/features/users/user-labels";
 
 type ProductProfileResponse = NonNullable<
@@ -298,6 +301,7 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
     session?.user.email ??
     null;
   const onboardingComplete = isOnboardingComplete(profile);
+  const healthDeclaration = useHealthDeclaration(onboardingComplete);
   const activeGrant = profile?.memberships.active_grant ?? null;
   const membershipFacts = useMemo(() => {
     if (!activeGrant) return [];
@@ -814,6 +818,74 @@ export function ProfilePage({ onNavigate }: { onNavigate: (path: string) => void
                         />
                       </div>
                     </section>
+                    {healthDeclaration.status !== "idle" &&
+                      healthDeclaration.status !== "unavailable" && (
+                      <>
+                        <div className="my-7 h-px bg-blush/18" />
+
+                        <section className="grid gap-5">
+                          <div className="flex items-start gap-4">
+                            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-blush-strong text-background">
+                              <HeartPulse className="size-6" aria-hidden="true" />
+                            </span>
+                            <div className="min-w-0">
+                              <h2 className="font-serif text-2xl leading-7 text-foreground">
+                                {t("profile.healthDeclaration.title")}
+                              </h2>
+                              <p className="mt-1 text-sm leading-6 text-foreground/64">
+                                {t("profile.healthDeclaration.body")}
+                              </p>
+                            </div>
+                          </div>
+
+                          {healthDeclaration.status === "loading" && (
+                            <p role="status" className="flex items-center gap-2 text-sm text-foreground/64">
+                              <Loader2 className="size-4 animate-spin text-blush-strong" aria-hidden="true" />
+                              {t("profile.healthDeclaration.loading")}
+                            </p>
+                          )}
+
+                          {healthDeclaration.status === "signed" && (
+                            <p role="status" className="flex items-center gap-2 text-sm leading-6 text-foreground/68">
+                              <Check className="size-4 shrink-0 text-blush-strong" aria-hidden="true" />
+                              {t("profile.healthDeclaration.signed", { version: healthDeclaration.version })}
+                            </p>
+                          )}
+
+                          {healthDeclaration.status === "unsigned" && (
+                            <>
+                              <DocumentAgreement
+                                checked={healthDeclaration.checked}
+                                labelKey="profile.healthDeclaration.agreement"
+                                linkLabelKey="documents.healthDeclaration.label"
+                                documentPath={healthDeclarationPath}
+                                disabled={healthDeclaration.submitting}
+                                onCheckedChange={healthDeclaration.setChecked}
+                              />
+                              <Button
+                                type="button"
+                                className="h-12 w-full rounded-full bg-blush px-7 text-primary-foreground hover:bg-blush-strong sm:w-fit"
+                                disabled={!healthDeclaration.checked || healthDeclaration.submitting}
+                                onClick={() => void healthDeclaration.sign()}
+                              >
+                                {healthDeclaration.submitting
+                                  ? <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                                  : <Check className="size-4" aria-hidden="true" />}
+                                {t(healthDeclaration.submitting
+                                  ? "profile.healthDeclaration.signing"
+                                  : "profile.healthDeclaration.sign")}
+                              </Button>
+                            </>
+                          )}
+
+                          {healthDeclaration.error && (
+                            <p role="alert" className="text-sm leading-6 text-blush-strong">
+                              {healthDeclaration.error}
+                            </p>
+                          )}
+                        </section>
+                      </>
+                    )}
                   </>
                 )}
 

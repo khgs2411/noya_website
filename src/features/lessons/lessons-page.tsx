@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { ToastStack, type ToastItem } from "@/components/ui/toast";
 import {
   authPath,
-  healthDeclarationPath,
   termsPath,
 } from "@/content/site-content";
 import { ClassCalendarView } from "@/features/classes/class-calendar-view";
@@ -54,10 +53,6 @@ import { cn } from "@/lib/utils";
 import { DocumentAgreement } from "@/features/documents/document-agreement";
 import { acceptProductDocument } from "@/features/documents/product-document-acceptance";
 import {
-  hasAcceptedHealthDeclaration,
-  healthDeclarationAcceptanceVersionKey,
-} from "@/features/documents/health-declaration-acceptance";
-import {
   productDocumentFallbackLocale,
   productDocumentTypes,
 } from "@/features/documents/product-document-types";
@@ -74,7 +69,6 @@ type RegistrationMutation =
 
 type DetailStatus = "idle" | "loading" | "loaded" | "error";
 type SignupLinkStatus = "idle" | "resolving" | "resolved" | "error";
-type HealthDeclarationStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
 type TermsStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
 type ClassToast = ToastItem;
 type ProductProfile = NonNullable<
@@ -210,14 +204,6 @@ export function LessonsPage({
   const [signupLinkStatus, setSignupLinkStatus] =
     useState<SignupLinkStatus>("idle");
   const [signupLinkError, setSignupLinkError] = useState<string | null>(null);
-  const [healthDeclarationStatus, setHealthDeclarationStatus] =
-    useState<HealthDeclarationStatus>("idle");
-  const [healthDeclarationAccepted, setHealthDeclarationAccepted] =
-    useState(false);
-  const [healthDeclarationChecked, setHealthDeclarationChecked] =
-    useState(false);
-  const [healthDeclarationError, setHealthDeclarationError] =
-    useState<string | null>(null);
   const [termsStatus, setTermsStatus] = useState<TermsStatus>("idle");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
@@ -597,10 +583,6 @@ export function LessonsPage({
   useEffect(() => {
     if (!client || !session || !selectedClassId) {
       const timeoutId = window.setTimeout(() => {
-        setHealthDeclarationStatus("idle");
-        setHealthDeclarationAccepted(false);
-        setHealthDeclarationChecked(false);
-        setHealthDeclarationError(null);
         setTermsStatus("idle");
         setTermsAccepted(false);
         setTermsChecked(false);
@@ -615,12 +597,8 @@ export function LessonsPage({
 
     async function loadRegistrationAgreements() {
       try {
-        const [termsResult, healthDeclarationResult, profileResult] = await Promise.all([
+        const [termsResult, profileResult] = await Promise.all([
           activeClient.productDocuments.get(productDocumentTypes.terms, {
-            locale: i18n.language,
-            fallbackLocale: productDocumentFallbackLocale,
-          }),
-          activeClient.productDocuments.get(productDocumentTypes.healthDeclaration, {
             locale: i18n.language,
             fallbackLocale: productDocumentFallbackLocale,
           }),
@@ -644,44 +622,14 @@ export function LessonsPage({
           );
           setTermsStatus("ready");
         }
-
-        if (healthDeclarationResult.error?.code === "not_found") {
-          setHealthDeclarationStatus("unavailable");
-          return;
-        }
-
-        if (healthDeclarationResult.error || profileResult.error) {
-          setHealthDeclarationStatus("error");
-          setHealthDeclarationError(
-            healthDeclarationResult.error?.message ?? profileResult.error?.message ?? t("classes.healthDeclaration.loadError"),
-          );
-          return;
-        }
-
-        const profile = profileResult.data as ProductProfile;
-        setHealthDeclarationAccepted(
-          hasAcceptedHealthDeclaration(
-            profile.user.metadata,
-            healthDeclarationResult.data.document.version,
-          ),
-        );
-        setHealthDeclarationStatus("ready");
-      } catch (error) {
+      } catch {
         if (cancelled) return;
-        setHealthDeclarationStatus("error");
-        setHealthDeclarationError(
-          error instanceof Error ? error.message : t("classes.healthDeclaration.loadError"),
-        );
         setTermsStatus("error");
         setTermsError(t("classes.terms.loadError"));
       }
     }
 
     const timeoutId = window.setTimeout(() => {
-      setHealthDeclarationStatus("loading");
-      setHealthDeclarationAccepted(false);
-      setHealthDeclarationChecked(false);
-      setHealthDeclarationError(null);
       setTermsStatus("loading");
       setTermsAccepted(false);
       setTermsChecked(false);
@@ -712,7 +660,7 @@ export function LessonsPage({
 
   async function registerForClass(
     item: ClassViewItem,
-    options?: { requiresHealthDeclaration?: boolean; requiresTerms?: boolean },
+    options?: { requiresTerms?: boolean },
   ) {
     setOperationError(null);
 
@@ -748,25 +696,6 @@ export function LessonsPage({
       }
     }
 
-    if (options?.requiresHealthDeclaration) {
-      if (healthDeclarationStatus === "unavailable") {
-        setOperationError(t("classes.healthDeclaration.unavailable"));
-        return;
-      }
-
-      if (healthDeclarationStatus !== "ready") {
-        setOperationError(
-          healthDeclarationError ?? t("classes.healthDeclaration.loadError"),
-        );
-        return;
-      }
-
-      if (!healthDeclarationAccepted && !healthDeclarationChecked) {
-        setHealthDeclarationError(t("classes.healthDeclaration.required"));
-        return;
-      }
-    }
-
     setRegistrationMutation({ type: "register", classId: item.id });
 
     try {
@@ -798,36 +727,6 @@ export function LessonsPage({
         setTermsAccepted(true);
         setTermsChecked(false);
         setTermsError(null);
-      }
-
-      if (options?.requiresHealthDeclaration && !healthDeclarationAccepted) {
-        const acceptanceResult = await acceptProductDocument(
-          client,
-          productDocumentTypes.healthDeclaration,
-          i18n.language,
-          "registration_health_declaration",
-        );
-
-        if (acceptanceResult.error) {
-          showOperationError(acceptanceResult.error.message);
-          return;
-        }
-
-        const profileResult = await client.profile.update({
-          metadata: {
-            [healthDeclarationAcceptanceVersionKey]:
-              acceptanceResult.data.acceptance.document_version,
-          },
-        });
-
-        if (profileResult.error) {
-          showOperationError(profileResult.error.message);
-          return;
-        }
-
-        setHealthDeclarationAccepted(true);
-        setHealthDeclarationChecked(false);
-        setHealthDeclarationError(null);
       }
 
       const result = await client.classes.register(item.id);
@@ -1391,54 +1290,7 @@ export function LessonsPage({
                                 }}
                               />
                             )}
-
-                            <div className="border-t border-blush/18 pt-3" />
                           </>
-                        )}
-
-                        <div className="grid gap-1">
-                          <p className="font-serif text-xl text-foreground">
-                            {t("classes.healthDeclaration.title")}
-                          </p>
-                          <p className="text-sm leading-6 text-foreground/68">
-                            {healthDeclarationAccepted
-                              ? t("classes.healthDeclaration.alreadyAccepted")
-                              : t("classes.healthDeclaration.body")}
-                          </p>
-                        </div>
-
-                        {healthDeclarationStatus === "loading" && (
-                          <div className="flex items-center gap-2 text-sm text-foreground/64">
-                            <Loader2 className="size-4 animate-spin text-blush-strong" aria-hidden="true" />
-                            {t("classes.healthDeclaration.loading")}
-                          </div>
-                        )}
-
-                        {healthDeclarationStatus === "unavailable" && (
-                          <p className="text-sm leading-6 text-blush-strong">
-                            {t("classes.healthDeclaration.unavailable")}
-                          </p>
-                        )}
-
-                        {healthDeclarationStatus === "error" && (
-                          <p className="text-sm leading-6 text-blush-strong">
-                            {healthDeclarationError ?? t("classes.healthDeclaration.loadError")}
-                          </p>
-                        )}
-
-                        {healthDeclarationStatus === "ready" && !healthDeclarationAccepted && (
-                          <DocumentAgreement
-                            checked={healthDeclarationChecked}
-                            labelKey="classes.healthDeclaration.agreement"
-                            linkLabelKey="documents.healthDeclaration.label"
-                            documentPath={healthDeclarationPath}
-                            disabled={registrationMutation?.classId === selectedClass.id}
-                            error={healthDeclarationError}
-                            onCheckedChange={(checked) => {
-                              setHealthDeclarationChecked(checked);
-                              setHealthDeclarationError(null);
-                            }}
-                          />
                         )}
 
                         <Button
@@ -1447,14 +1299,11 @@ export function LessonsPage({
                           disabled={
                             registrationMutation?.classId === selectedClass.id ||
                             termsStatus !== "ready" ||
-                            (!termsAccepted && !termsChecked) ||
-                            healthDeclarationStatus !== "ready" ||
-                            (!healthDeclarationAccepted && !healthDeclarationChecked)
+                            (!termsAccepted && !termsChecked)
                           }
                           onClick={() =>
                             void registerForClass(selectedClass, {
                               requiresTerms: true,
-                              requiresHealthDeclaration: true,
                             })
                           }
                         >
