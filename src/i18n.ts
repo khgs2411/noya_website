@@ -3369,7 +3369,8 @@ i18n
     supportedLngs: languages.map((language) => language.code),
     load: 'languageOnly',
     detection: {
-      order: ['localStorage', 'navigator'],
+      // Hebrew unless the visitor picked a language; browser locale is ignored.
+      order: ['localStorage'],
       caches: ['localStorage'],
       lookupLocalStorage: 'noya-language',
     },
