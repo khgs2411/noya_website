@@ -102,6 +102,26 @@ function toTemplateInput(
   return input;
 }
 
+// The template fields ClassKit can copy onto upcoming generated lessons.
+function changesUpcomingLessonFields(
+  input: CreateClassTemplateInput,
+  template: ClassTemplate,
+) {
+  const locationChanged =
+    "defaultLocation" in input &&
+    ((input.defaultLocation ?? null) !== (template.default_location ?? null) ||
+      JSON.stringify(input.defaultLocationSnapshot ?? null) !==
+        JSON.stringify(template.default_location_snapshot ?? null));
+
+  return (
+    input.name !== template.name ||
+    (input.description ?? null) !== (template.description ?? null) ||
+    (input.category ?? null) !== (template.category ?? null) ||
+    (input.defaultNotes ?? null) !== (template.default_notes ?? null) ||
+    locationChanged
+  );
+}
+
 function validateTemplateForm(
   fields: TemplateFormFields,
   t: (key: string) => string,
@@ -210,6 +230,10 @@ function TemplateFormDialogContent({
     ),
   );
 
+  const [pendingUpdate, setPendingUpdate] =
+    useState<UpdateClassTemplateInput | null>(null);
+  const [applyToUpcomingLessons, setApplyToUpcomingLessons] = useState(true);
+
   const updateField = <K extends keyof TemplateFormFields>(
     key: K,
     value: TemplateFormFields[K],
@@ -224,11 +248,26 @@ function TemplateFormDialogContent({
     if (errors.length > 0) return;
 
     const input = toTemplateInput(fields, locationDraft);
-    const result =
-      mode === "edit" && template
-        ? await onUpdate({ ...input, templateId: template.id })
-        : await onCreate(input);
 
+    if (mode === "edit" && template) {
+      const update = { ...input, templateId: template.id };
+      if (changesUpcomingLessonFields(input, template)) {
+        setApplyToUpcomingLessons(true);
+        setPendingUpdate(update);
+        return;
+      }
+      const result = await onUpdate(update);
+      if (result.ok) onClose();
+      return;
+    }
+
+    const result = await onCreate(input);
+    if (result.ok) onClose();
+  }
+
+  async function confirmPendingUpdate() {
+    if (!pendingUpdate) return;
+    const result = await onUpdate({ ...pendingUpdate, applyToUpcomingLessons });
     if (result.ok) onClose();
   }
 
@@ -405,6 +444,67 @@ function TemplateFormDialogContent({
             </Button>
           </footer>
         </form>
+
+        {pendingUpdate && (
+          <div
+            className="fixed inset-0 z-[60] grid place-items-end bg-black/40 p-0 sm:place-items-center sm:p-6"
+            onClick={() => setPendingUpdate(null)}
+          >
+            <section
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="template-upcoming-lessons-title"
+              className="w-full rounded-t-[1.4rem] border border-blush/24 bg-background p-5 text-foreground shadow-soft sm:max-w-lg sm:rounded-[1.4rem]"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h3
+                id="template-upcoming-lessons-title"
+                className="font-serif text-2xl"
+              >
+                {t("manager.templateUpcomingLessons.title")}
+              </h3>
+              <label className="mt-4 flex items-start gap-3 rounded-xl border border-blush/24 bg-background/46 p-4 text-sm leading-6">
+                <input
+                  type="checkbox"
+                  className="mt-1 size-4 shrink-0 accent-blush-strong"
+                  checked={applyToUpcomingLessons}
+                  onChange={(event) =>
+                    setApplyToUpcomingLessons(event.target.checked)
+                  }
+                />
+                <span>{t("manager.templateUpcomingLessons.question")}</span>
+              </label>
+              <ul className="mt-4 list-disc space-y-1 ps-5 text-sm leading-6 text-foreground/68">
+                <li>{t("manager.templateUpcomingLessons.pastUnchanged")}</li>
+                <li>{t("manager.templateUpcomingLessons.handEditsKept")}</li>
+                <li>{t("manager.templateUpcomingLessons.noNotification")}</li>
+              </ul>
+              {errorMessage && (
+                <p className="mt-4 text-sm leading-6 text-blush-strong">
+                  {errorMessage}
+                </p>
+              )}
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => setPendingUpdate(null)}
+                >
+                  {t("manager.templateUpcomingLessons.back")}
+                </Button>
+                <Button
+                  type="button"
+                  className="rounded-full"
+                  disabled={submitting}
+                  onClick={() => void confirmPendingUpdate()}
+                >
+                  {t("manager.templateActions.save")}
+                </Button>
+              </div>
+            </section>
+          </div>
+        )}
       </section>
     </div>
   );

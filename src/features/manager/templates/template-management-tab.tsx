@@ -1,9 +1,11 @@
-import { useProductContext } from "@class-kit/react";
+import { type UpdateClassTemplateInput, useProductContext } from "@class-kit/react";
 import { AlertCircle, Layers3, Loader2, Plus, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { ToastStack } from "@/components/ui/toast";
+import { useToastQueue } from "@/components/ui/use-toast-queue";
 import { getVisibleTemplates } from "@/lib/lifecycle-visibility";
 import { HistoryVisibilityToggle } from "@/features/manager/history-visibility-toggle";
 import { TemplateCard } from "@/features/manager/templates/template-card";
@@ -26,7 +28,8 @@ export function TemplateManagementTab({
   canManageTemplates,
   canAutocompleteLocations,
 }: TemplateManagementTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { toasts, showToast, dismissToast } = useToastQueue();
   const { client } = useProductContext();
   const [formSurface, setFormSurface] = useState<FormSurface>(null);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
@@ -41,6 +44,19 @@ export function TemplateManagementTab({
       ? visibleTemplates.find((template) => template.id === formSurface.templateId) ??
         null
       : null;
+
+  async function updateTemplate(input: UpdateClassTemplateInput) {
+    const outcome = await actions.updateTemplate(input);
+    if (outcome.ok && input.applyToUpcomingLessons) {
+      showToast({
+        title: t("manager.templateUpcomingLessons.savedTitle"),
+        description: t("manager.templateUpcomingLessons.updatedCount", {
+          count: outcome.result?.updatedClassCount ?? 0,
+        }),
+      });
+    }
+    return outcome;
+  }
 
   return (
     <section className="rounded-[1.4rem] border border-blush/24 bg-card/78 p-5 shadow-soft sm:p-6">
@@ -200,7 +216,7 @@ export function TemplateManagementTab({
             errorMessage={state.operationError}
             onClose={() => setFormSurface(null)}
             onCreate={actions.createTemplate}
-            onUpdate={actions.updateTemplate}
+            onUpdate={updateTemplate}
           />
 
           <TemplateDeactivateDialog
@@ -226,6 +242,7 @@ export function TemplateManagementTab({
           </p>
         </div>
       )}
+      <ToastStack toasts={toasts} dir={i18n.dir()} onDismiss={dismissToast} />
     </section>
   );
 }
