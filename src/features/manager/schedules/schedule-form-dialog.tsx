@@ -9,6 +9,7 @@ import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { getTemplateLabel } from "@/lib/template-label";
 import {
   createScheduleDefaults,
   DEFAULT_TIMEZONE,
@@ -309,7 +310,7 @@ function ScheduleFormDialogContent({
                 onChange={updateTemplate}
                 options={activeTemplates.map((template) => ({
                   value: template.id,
-                  label: template.name,
+                  label: getTemplateLabel(template),
                 }))}
               />
             </div>

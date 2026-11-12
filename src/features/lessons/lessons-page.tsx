@@ -171,6 +171,7 @@ export function LessonsPage({
 }) {
   const { t, i18n } = useTranslation();
   const { client, session } = useProductContext();
+  const userId = session?.user.id;
   const [initialClassFocus] = useState(() => getInitialClassFocus(search));
   const [rangeScope, setRangeScope] = useState<RangeScope>(() =>
     initialClassFocus.date ? "custom" : "week",
@@ -214,7 +215,8 @@ export function LessonsPage({
   const detailRequestIdRef = useRef(0);
   const resolvedSignupSlugRef = useRef<string | null>(null);
   const classDetailFocusReturnRef = useRef<HTMLElement | null>(null);
-  const toastTimeoutsRef = useRef<number[]>([]);
+  const toastTimeoutsRef = useRef(new Map<string, number>());
+  const classDetailDialogRef = useRef<HTMLElement | null>(null);
 
   const localRange = useMemo(
     () => getLocalRange(rangeScope, rangeAnchorDate, customRange),
@@ -310,11 +312,17 @@ export function LessonsPage({
       toastTimeoutsRef.current.forEach((timeoutId) =>
         window.clearTimeout(timeoutId),
       );
+      toastTimeoutsRef.current.clear();
     },
     [],
   );
 
   function dismissToast(toastId: string) {
+    const timeoutId = toastTimeoutsRef.current.get(toastId);
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+      toastTimeoutsRef.current.delete(toastId);
+    }
     setToasts((current) => current.filter((toast) => toast.id !== toastId));
   }
 
@@ -325,7 +333,7 @@ export function LessonsPage({
     const timeoutId = window.setTimeout(() => {
       dismissToast(toastId);
     }, 4200);
-    toastTimeoutsRef.current.push(timeoutId);
+    toastTimeoutsRef.current.set(toastId, timeoutId);
   }
 
   function showOperationError(message: string) {
@@ -394,7 +402,7 @@ export function LessonsPage({
     closeClassDetails({ restore: false });
   }
 
-  function closeClassDetails(options: { restore?: boolean } = {}) {
+  const closeClassDetails = useCallback((options: { restore?: boolean } = {}) => {
     setSelectedClassId(null);
     setSelectedClassDetail(null);
     setDetailStatus("idle");
@@ -402,7 +410,55 @@ export function LessonsPage({
     if (options.restore !== false) {
       restoreFocus(classDetailFocusReturnRef.current);
     }
-  }
+  }, []);
+
+  const classDetailOpen = selectedClass !== null;
+  useEffect(() => {
+    if (!classDetailOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    if (!classDetailFocusReturnRef.current) {
+      classDetailFocusReturnRef.current = captureActiveElement();
+    }
+    const focusId = window.setTimeout(
+      () => classDetailDialogRef.current?.focus(),
+      0,
+    );
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        closeClassDetails();
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      const dialog = classDetailDialogRef.current;
+      const focusable = dialog?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), select:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex="0"]',
+      );
+      if (!focusable?.length) {
+        event.preventDefault();
+        dialog?.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const focusOutside = document.activeElement === dialog || !dialog?.contains(document.activeElement);
+      if (event.shiftKey && (document.activeElement === first || focusOutside)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || focusOutside)) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.clearTimeout(focusId);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [classDetailOpen, closeClassDetails]);
 
   const loadClassDetail = useCallback(
     async (classId: string, options?: { silent?: boolean }) => {
@@ -582,7 +638,7 @@ export function LessonsPage({
   }, [client, detailStatus, loadClassDetail, selectedClassDetail?.id, selectedClassId]);
 
   useEffect(() => {
-    if (!client || !session || !selectedClassId) {
+    if (!client || !userId || !selectedClassId) {
       const timeoutId = window.setTimeout(() => {
         setTermsStatus("idle");
         setTermsAccepted(false);
@@ -647,7 +703,7 @@ export function LessonsPage({
     client,
     i18n.language,
     selectedClassId,
-    session,
+    userId,
     t,
   ]);
 
@@ -936,15 +992,20 @@ export function LessonsPage({
     );
   }
 
+  const classFactsFormatter = useMemo(
+    () => new Intl.DateTimeFormat(i18n.language, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }),
+    [i18n.language],
+  );
+
   function renderClassFacts(item: ClassViewItem) {
     const description = item.description?.trim();
     const facts = [
       {
         label: t("classes.detail.time"),
-        value: new Intl.DateTimeFormat(i18n.language, {
-          dateStyle: "medium",
-          timeStyle: "short",
-        }).formatRange(new Date(item.startsAt), new Date(item.endsAt)),
+        value: classFactsFormatter.formatRange(new Date(item.startsAt), new Date(item.endsAt)),
       },
       {
         label: t("classes.detail.capacity"),
@@ -1170,6 +1231,8 @@ export function LessonsPage({
                 onClick={() => closeClassDetails()}
               >
                 <aside
+                  ref={classDetailDialogRef}
+                  tabIndex={-1}
                   role="dialog"
                   aria-modal="true"
                   aria-label={`${t("classes.detail.eyebrow")}: ${selectedClass.name}`}

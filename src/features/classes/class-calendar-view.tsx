@@ -140,20 +140,22 @@ export function ClassCalendarView({
 }: ClassCalendarViewProps) {
   const { t, i18n } = useTranslation();
   const [expandedDateKey, setExpandedDateKey] = useState<string | null>(null);
-  const dateFormatter = new Intl.DateTimeFormat(i18n.language, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-  const fullDateFormatter = new Intl.DateTimeFormat(i18n.language, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-  const timeFormatter = new Intl.DateTimeFormat(i18n.language, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const { dateFormatter, fullDateFormatter, timeFormatter } = useMemo(() => ({
+    dateFormatter: new Intl.DateTimeFormat(i18n.language, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }),
+    fullDateFormatter: new Intl.DateTimeFormat(i18n.language, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    }),
+    timeFormatter: new Intl.DateTimeFormat(i18n.language, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  }), [i18n.language]);
   const days = useMemo(() => getCalendarDays(localRange), [localRange]);
   const classesByDate = useMemo(() => {
     const groups = new Map<string, ClassViewItem[]>();

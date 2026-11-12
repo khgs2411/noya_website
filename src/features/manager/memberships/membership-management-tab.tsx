@@ -23,6 +23,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { getTemplateLabel } from "@/lib/template-label";
 import {
   getCustomerContact,
   getCustomerInitials,
@@ -154,9 +155,9 @@ function getTemplateBindingLabel(
   }
 
   return template.status === "active"
-    ? template.name
+    ? getTemplateLabel(template)
     : t("manager.memberships.inactiveTemplate", {
-        templateName: template.name,
+        templateName: getTemplateLabel(template),
       });
 }
 
@@ -204,7 +205,7 @@ function TemplateEligibilityField({
           )}
           {activeTemplates.map((template) => (
             <option key={template.id} value={template.id}>
-              {template.name}
+              {getTemplateLabel(template)}
             </option>
           ))}
         </select>

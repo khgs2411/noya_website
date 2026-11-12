@@ -10,6 +10,7 @@ import { type FormEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
+import { getTemplateLabel } from "@/lib/template-label";
 import {
   createLocationDraft,
   type LocationDraft,
@@ -385,7 +386,7 @@ function ClassFormDialogContent({
                     { value: "", label: t("manager.form.noTemplate") },
                     ...templates.map((template) => ({
                       value: template.id,
-                      label: template.name,
+                      label: getTemplateLabel(template),
                     })),
                   ]}
                 />
