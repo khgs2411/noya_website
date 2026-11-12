@@ -6,4 +6,4 @@ export const productDocumentTypes = {
 export type ProductDocumentType =
   (typeof productDocumentTypes)[keyof typeof productDocumentTypes];
 
-export const productDocumentFallbackLocale = "en";
+export const productDocumentFallbackLocale = "he";

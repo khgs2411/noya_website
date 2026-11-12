@@ -2,9 +2,13 @@ import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { version } from './package.json'
 
 export default defineConfig({
   base: '/noya_website/',
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+  },
   build: {
     rollupOptions: {
       output: {
@@ -28,7 +32,20 @@ export default defineConfig({
       },
     },
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    {
+      name: 'app-version',
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: JSON.stringify({ version }),
+        })
+      },
+    },
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

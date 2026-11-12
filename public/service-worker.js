@@ -1,4 +1,4 @@
-const CACHE_NAME = "noya-flow-shell-v1";
+const CACHE_NAME = "noya-flow-shell-v2";
 const APP_SHELL_URL = new URL("./", self.registration.scope).toString();
 
 self.addEventListener("install", (event) => {
@@ -31,7 +31,7 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(APP_SHELL_URL)),
+      fetch(event.request, { cache: "no-store" }).catch(() => caches.match(APP_SHELL_URL)),
     );
   }
 });
