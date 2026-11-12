@@ -188,7 +188,10 @@ export function LessonsPage({
           }
         : null,
     );
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  // A focused class opens a custom range, which the page always shows as a list.
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    initialClassFocus.date ? "list" : "calendar",
+  );
   const [classes, setClasses] = useState<ClassSummary[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string | null>(
     initialClassFocus.classId,
