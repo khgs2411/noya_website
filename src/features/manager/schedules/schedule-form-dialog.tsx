@@ -5,11 +5,13 @@ import type {
   UpdateScheduleInput,
 } from "@class-kit/react";
 import { X } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { getTemplateLabel } from "@/lib/template-label";
+import { isScheduleTemplateChange } from "@/features/manager/schedules/schedule-template-change";
 import {
   createScheduleDefaults,
   DEFAULT_TIMEZONE,
@@ -214,7 +216,10 @@ function ScheduleFormDialogContent({
   onCreate,
   onUpdate,
 }: Omit<ScheduleFormDialogProps, "open">) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const confirmationRef = useRef<HTMLDialogElement>(null);
+  const pendingUpdateRef = useRef<UpdateScheduleInput | null>(null);
+  const confirmingRef = useRef(false);
   const [fields, setFields] = useState<ScheduleFormFields>(() =>
     fieldsFromSchedule(mode === "edit" ? schedule : null, activeTemplates),
   );
@@ -250,17 +255,44 @@ function ScheduleFormDialogContent({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting || confirmingRef.current) return;
     const errors = validateScheduleForm(fields, t);
     setValidationErrors(errors);
     if (errors.length > 0) return;
 
     const input = toScheduleInput(fields);
+    if (
+      mode === "edit" && schedule &&
+      isScheduleTemplateChange(schedule, input.templateId)
+    ) {
+      pendingUpdateRef.current = { ...input, scheduleId: schedule.id };
+      confirmationRef.current?.showModal();
+      return;
+    }
+
     const result =
       mode === "edit" && schedule
         ? await onUpdate({ ...input, scheduleId: schedule.id })
         : await onCreate(input);
 
     if (result.ok) onClose();
+  }
+
+  function cancelTemplateChange() {
+    if (confirmingRef.current) return;
+    confirmationRef.current?.close();
+    pendingUpdateRef.current = null;
+  }
+
+  async function confirmTemplateChange() {
+    if (!pendingUpdateRef.current || submitting || confirmingRef.current) return;
+    confirmingRef.current = true;
+    try {
+      const result = await onUpdate(pendingUpdateRef.current);
+      if (result.ok) onClose();
+    } finally {
+      confirmingRef.current = false;
+    }
   }
 
   return (
@@ -438,6 +470,40 @@ function ScheduleFormDialogContent({
           </footer>
         </form>
       </section>
+      {createPortal(
+        <dialog
+          ref={confirmationRef}
+          dir={i18n.dir()}
+          aria-label={t("manager.scheduleTemplateChange.title")}
+          aria-describedby="schedule-template-change-description"
+          className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[92vh] w-full max-w-none overflow-y-auto rounded-t-[1.4rem] border border-blush/24 bg-background p-5 text-foreground shadow-soft backdrop:bg-black/50 sm:inset-0 sm:m-auto sm:max-w-lg sm:rounded-[1.4rem]"
+          onCancel={(event) => { event.preventDefault(); cancelTemplateChange(); }}
+          onKeyDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (event.target === event.currentTarget) cancelTemplateChange();
+          }}
+        >
+          <div>
+            <h2 className="font-serif text-3xl">
+              {t("manager.scheduleTemplateChange.title")}
+            </h2>
+            <p id="schedule-template-change-description" className="mt-3 text-sm leading-6 text-foreground/68">
+              {t("manager.scheduleTemplateChange.body")}
+            </p>
+            {errorMessage && <p role="alert" className="mt-4 text-sm text-status-closed">{errorMessage}</p>}
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Button type="button" variant="outline" className="rounded-full" disabled={submitting} onClick={cancelTemplateChange}>
+                {t("manager.scheduleTemplateChange.cancel")}
+              </Button>
+              <Button type="button" className="rounded-full bg-status-closed text-background hover:bg-status-closed/90" disabled={submitting} onClick={() => void confirmTemplateChange()}>
+                {t("manager.scheduleTemplateChange.confirm")}
+              </Button>
+            </div>
+          </div>
+        </dialog>,
+        document.body,
+      )}
     </div>
   );
 }
