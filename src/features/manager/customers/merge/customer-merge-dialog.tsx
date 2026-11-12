@@ -1,6 +1,6 @@
 import type { ClassKitClient, Customer } from "@class-kit/react";
 import { AlertCircle, Loader2, X } from "lucide-react";
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -73,6 +73,14 @@ export function CustomerMergeDialog({
     void merge.requestPreview();
   };
 
+  // The preview countdown re-renders every second and `merge` is a fresh object
+  // each render, so the focus trap reads these through a ref. Re-running the
+  // effect would restore and re-take focus, which closes an open <select>.
+  const keyboardRef = useRef({ dismiss, locked });
+  useLayoutEffect(() => {
+    keyboardRef.current = { dismiss, locked };
+  });
+
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
@@ -81,7 +89,7 @@ export function CustomerMergeDialog({
     const focusId = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        if (!locked) dismiss();
+        if (!keyboardRef.current.locked) keyboardRef.current.dismiss();
         return;
       }
       if (event.key !== "Tab") return;
@@ -99,7 +107,7 @@ export function CustomerMergeDialog({
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus();
     };
-  }, [dismiss, locked, open]);
+  }, [open]);
 
   const availability = (candidate: Customer) => {
     const result = getMergeSurvivorAvailability(source.customerId, candidate);
