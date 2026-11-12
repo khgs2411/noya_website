@@ -17,19 +17,19 @@ const pricingPlans: Record<PricingCategory, PricingPlan[]> = {
     { labelKey: "pricing.plans.single", price: 100, pricePerClass: 100 },
     { labelKey: "pricing.plans.tenClassCard", price: 890, pricePerClass: 89 },
     {
-      labelKey: "pricing.plans.fiveClassMembership",
-      price: 400,
+      labelKey: "pricing.plans.onceWeeklyMembership",
+      price: 340,
+      pricePerClass: 85,
+    },
+    {
+      labelKey: "pricing.plans.twiceWeeklyMembership",
+      price: 640,
       pricePerClass: 80,
     },
     {
-      labelKey: "pricing.plans.nineClassMembership",
-      price: 640,
-      pricePerClass: 71,
-    },
-    {
-      labelKey: "pricing.plans.thirteenClassMembership",
+      labelKey: "pricing.plans.threeTimesWeeklyMembership",
       price: 820,
-      pricePerClass: 63,
+      pricePerClass: 68,
     },
   ],
   dance: [
