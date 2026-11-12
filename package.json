@@ -13,7 +13,7 @@
     "version:major": "npm version major --no-git-tag-version"
   },
   "dependencies": {
-    "@class-kit/react": "git+ssh://git@github.com/khgs2411/class-kit-sdk.git#1eafee51507b56d453934ce17eae9eec2ff62942",
+    "@class-kit/react": "git+ssh://git@github.com/khgs2411/class-kit-sdk.git#d30dd09e4b9662d7911fd41b76381c9330366060",
     "@fontsource/allura": "^5.2.8",
     "@fontsource/cormorant-garamond": "^5.2.11",
     "@fontsource/montserrat": "^5.2.8",
