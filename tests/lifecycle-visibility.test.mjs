@@ -1,11 +1,29 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  isDeletableRecord,
   getVisibleLessons,
   getVisibleManagedClasses,
   getVisibleSchedules,
   getVisibleTemplates,
 } from "../src/lib/lifecycle-visibility.ts";
+
+test("lessons can be deleted only after cancellation", () => {
+  assert.equal(isDeletableRecord("classes", { lifecycle_status: "created", temporal_status: "upcoming" }), false);
+  assert.equal(isDeletableRecord("classes", { lifecycle_status: "cancelled", temporal_status: "upcoming" }), true);
+  assert.equal(isDeletableRecord("classes", { lifecycle_status: "created", temporal_status: "cancelled" }), true);
+});
+
+test("schedules can be deleted only after archiving", () => {
+  assert.equal(isDeletableRecord("schedules", { status: "active" }), false);
+  assert.equal(isDeletableRecord("schedules", { status: "paused" }), false);
+  assert.equal(isDeletableRecord("schedules", { status: "archived" }), true);
+});
+
+test("customers can be deleted only after deactivation", () => {
+  assert.equal(isDeletableRecord("customers", { status: "active" }), false);
+  assert.equal(isDeletableRecord("customers", { status: "inactive" }), true);
+});
 
 test("retired records stay in history while same-name replacements remain usable", () => {
   const templates = Object.freeze([

@@ -13,8 +13,9 @@ type DeleteTarget = {
   occurrence?: { scheduleId: string; date: string };
 };
 
-export function ManagerDeleteAction({ target, disabled, onDeleted }: {
+export function ManagerDeleteAction({ target, isDeletable, disabled, onDeleted }: {
   target: DeleteTarget;
+  isDeletable: boolean;
   disabled?: boolean;
   onDeleted: () => void;
 }) {
@@ -27,7 +28,7 @@ export function ManagerDeleteAction({ target, disabled, onDeleted }: {
   const [deleted, setDeleted] = useState(false);
   const [skip, setSkip] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const allowed = capabilities.permissions.includes(`${target.kind}.delete`);
+  const allowed = isDeletable && capabilities.permissions.includes(`${target.kind}.delete`);
 
   function close() {
     if (busyRef.current) return;

@@ -4,6 +4,7 @@ import { Ban, Edit3, Link2, Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { ManagerDeleteAction } from "@/features/manager/manager-delete-action";
+import { isDeletableRecord } from "@/lib/lifecycle-visibility";
 import { Button } from "@/components/ui/button";
 import { ClassAttendanceForm } from "@/features/manager/attendance/class-attendance-form";
 import { ClassRegistrationRoster } from "@/features/manager/registrations/class-registration-roster";
@@ -239,7 +240,7 @@ export function ClassDetailPanel({
           </div>
         )}
         <div className="mt-5">
-          <ManagerDeleteAction key={managedClass.id} target={{
+          <ManagerDeleteAction key={managedClass.id} isDeletable={isDeletableRecord("classes", managedClass)} target={{
             kind: "classes", id: managedClass.id, name: managedClass.name,
             occurrence: managedClass.schedule_id && managedClass.generated_for_date
               ? { scheduleId: managedClass.schedule_id, date: managedClass.generated_for_date }

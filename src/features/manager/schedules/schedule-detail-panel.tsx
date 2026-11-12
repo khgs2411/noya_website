@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ManagerDeleteAction } from "@/features/manager/manager-delete-action";
+import { isDeletableRecord } from "@/lib/lifecycle-visibility";
 import { Button } from "@/components/ui/button";
 import {
   getTemplateName,
@@ -221,7 +222,7 @@ export function ScheduleDetailPanel({
               <Archive className="size-4" aria-hidden="true" />
               {t("manager.scheduleActions.archive")}
             </Button>
-            <ManagerDeleteAction key={schedule.id} target={{ kind: "schedules", id: schedule.id, name: schedule.name }} disabled={submitting} onDeleted={onDeleted} />
+            <ManagerDeleteAction key={schedule.id} isDeletable={isDeletableRecord("schedules", schedule)} target={{ kind: "schedules", id: schedule.id, name: schedule.name }} disabled={submitting} onDeleted={onDeleted} />
           </div>
         </section>
 

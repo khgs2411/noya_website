@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ManagerDeleteAction } from "@/features/manager/manager-delete-action";
+import { isDeletableRecord } from "@/lib/lifecycle-visibility";
 import { Button } from "@/components/ui/button";
 import { getCustomerContact, getCustomerLabel } from "@/features/customers/customer-labels";
 import { summarizePermissionGroups } from "@/features/manager/access/role-permission-presentation";
@@ -167,7 +168,7 @@ export function CustomerDetailPanel({
               <Button size="sm" variant="outline" disabled={mutationState !== "idle" || !canMutateCustomers} onClick={() => onLifecycle(customer.status === "active" ? "deactivate" : "reactivate")}>
                 {t(customer.status === "active" ? "manager.customerActions.deactivate" : "manager.customerActions.reactivate")}
               </Button>
-              <ManagerDeleteAction key={customer.customerId} target={{ kind: "customers", id: customer.customerId, name: getCustomerLabel(customer, t("manager.customers.unnamed")) }} disabled={mutationState !== "idle"} onDeleted={onDeleted} />
+              <ManagerDeleteAction key={customer.customerId} isDeletable={isDeletableRecord("customers", customer)} target={{ kind: "customers", id: customer.customerId, name: getCustomerLabel(customer, t("manager.customers.unnamed")) }} disabled={mutationState !== "idle"} onDeleted={onDeleted} />
               {canMerge && <Button size="sm" variant="outline" className="border-blush-strong/45" onClick={onMerge}>{t("manager.customerMerge.action")}</Button>}
             </div>
           </section>

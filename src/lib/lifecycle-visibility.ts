@@ -8,6 +8,20 @@ export function isCancelledClass(managedClass: {
     managedClass.temporal_status === "cancelled";
 }
 
+function isArchivedSchedule(schedule: { status: string }) {
+  return schedule.status === "archived";
+}
+
+export function isDeletableRecord(...[kind, record]:
+  | [kind: "classes", record: { lifecycle_status?: string; temporal_status: string }]
+  | [kind: "schedules", record: { status: string }]
+  | [kind: "customers", record: { status: string }]
+) {
+  if (kind === "classes") return isCancelledClass(record);
+  if (kind === "schedules") return isArchivedSchedule(record);
+  return record.status === "inactive";
+}
+
 export function getVisibleTemplates<T extends { status: string }>(
   templates: readonly T[],
   showInactive: boolean,
@@ -19,7 +33,7 @@ export function getVisibleSchedules<T extends { status: string }>(
   schedules: readonly T[],
   showArchived: boolean,
 ) {
-  return schedules.filter((schedule) => showArchived || schedule.status !== "archived");
+  return schedules.filter((schedule) => showArchived || !isArchivedSchedule(schedule));
 }
 
 export function getVisibleManagedClasses<T extends {
