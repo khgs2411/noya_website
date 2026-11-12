@@ -3,6 +3,7 @@ import { useCallback, useState, type ReactNode } from "react";
 import { Ban, Edit3, Link2, Loader2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { ManagerDeleteAction } from "@/features/manager/manager-delete-action";
 import { Button } from "@/components/ui/button";
 import { ClassAttendanceForm } from "@/features/manager/attendance/class-attendance-form";
 import { ClassRegistrationRoster } from "@/features/manager/registrations/class-registration-roster";
@@ -17,6 +18,7 @@ type ClassDetailPanelProps = {
   canManageAttendance: boolean;
   canReadCustomers: boolean;
   canReadUsers: boolean;
+  onDeleted: () => void;
   onClose: () => void;
   onEdit: () => void;
   onCancel: () => void;
@@ -46,6 +48,7 @@ export function ClassDetailPanel({
   canManageAttendance,
   canReadCustomers,
   canReadUsers,
+  onDeleted,
   onClose,
   onEdit,
   onCancel,
@@ -235,6 +238,14 @@ export function ClassDetailPanel({
             </Button>
           </div>
         )}
+        <div className="mt-5">
+          <ManagerDeleteAction key={managedClass.id} target={{
+            kind: "classes", id: managedClass.id, name: managedClass.name,
+            occurrence: managedClass.schedule_id && managedClass.generated_for_date
+              ? { scheduleId: managedClass.schedule_id, date: managedClass.generated_for_date }
+              : undefined,
+          }} onDeleted={onDeleted} />
+        </div>
       </aside>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ClassKitClient,
   CreateScheduleInput,
@@ -41,6 +41,7 @@ export function useManagedSchedules({
 }: UseManagedSchedulesInput) {
   const { t } = useTranslation();
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const listRequestRef = useRef(0);
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -70,6 +71,7 @@ export function useManagedSchedules({
   }, []);
 
   const refreshSchedules = useCallback(async (options?: { silent?: boolean }) => {
+    const requestId = ++listRequestRef.current;
     if (!client || !canManageSchedules) {
       setSchedules([]);
       setLoadStatus("idle");
@@ -84,9 +86,11 @@ export function useManagedSchedules({
 
     try {
       const result = await client.management.schedules.list();
+      if (requestId !== listRequestRef.current) return;
       setSchedules(result.schedules);
       setLoadStatus("loaded");
     } catch (error) {
+      if (requestId !== listRequestRef.current) return;
       if (options?.silent) return;
 
       setErrorMessage(
@@ -320,6 +324,11 @@ export function useManagedSchedules({
       canManageSchedules,
     },
     actions: {
+      removeSchedule: (scheduleId: string) => {
+        listRequestRef.current += 1;
+        setLoadStatus("loaded");
+        setSchedules((current) => current.filter((item) => item.id !== scheduleId));
+      },
       refreshSchedules,
       selectSchedule,
       clearSelection: () => setSelectedScheduleId(null),

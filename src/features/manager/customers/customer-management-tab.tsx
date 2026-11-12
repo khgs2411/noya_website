@@ -632,6 +632,10 @@ export function CustomerManagementTab({
           canMutateCustomers={!mutationAccessDenied}
           canMerge={isEligibleMergeSource(selectedCustomer) && mutationState === "idle" && !mutationAccessDenied}
           onAssign={(roleId) => void mutateRole(roleId, "assign")}
+          onDeleted={() => {
+            directory.remove(selectedCustomer.customerId);
+            closeDetail();
+          }}
           onClose={closeDetail}
           onEdit={() => openForm("edit")}
           onLifecycle={openLifecycle}

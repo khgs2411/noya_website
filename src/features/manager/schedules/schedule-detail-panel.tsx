@@ -8,6 +8,7 @@ import { Archive, CalendarOff, CalendarSearch, Edit3, Pause, Play, RotateCcw, X 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { ManagerDeleteAction } from "@/features/manager/manager-delete-action";
 import { Button } from "@/components/ui/button";
 import {
   getTemplateName,
@@ -21,6 +22,7 @@ type ScheduleDetailPanelProps = {
   preview: { scheduleId: string; occurrences: SchedulePreviewOccurrence[] } | null;
   generationResult: ScheduleGenerationResult | null;
   submitting: boolean;
+  onDeleted: () => void;
   onClose: () => void;
   onEdit: () => void;
   onPreview: (scheduleId: string, from: string, through: string) => void;
@@ -66,6 +68,7 @@ export function ScheduleDetailPanel({
   preview,
   generationResult,
   submitting,
+  onDeleted,
   onClose,
   onEdit,
   onPreview,
@@ -218,6 +221,7 @@ export function ScheduleDetailPanel({
               <Archive className="size-4" aria-hidden="true" />
               {t("manager.scheduleActions.archive")}
             </Button>
+            <ManagerDeleteAction key={schedule.id} target={{ kind: "schedules", id: schedule.id, name: schedule.name }} disabled={submitting} onDeleted={onDeleted} />
           </div>
         </section>
 

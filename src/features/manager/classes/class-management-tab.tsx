@@ -609,6 +609,10 @@ export function ClassManagementTab({
             canManageAttendance={canManageAttendance}
             canReadCustomers={canReadCustomers}
             canReadUsers={canReadUsers}
+            onDeleted={() => {
+              if (state.selectedClass) actions.removeClass(state.selectedClass.id);
+              closeManagedClassDetail();
+            }}
             onClose={closeManagedClassDetail}
             onEdit={() => {
               if (!state.selectedClass) return;

@@ -105,6 +105,26 @@ const resources = {
         back: 'Go back',
       },
       manager: {
+        delete: {
+          "classes": {
+            "action": "Delete lesson",
+            "body": "This permanently deletes the lesson. Unused credits are restored."
+          },
+          "schedules": {
+            "action": "Delete recurring lesson",
+            "body": "This permanently deletes the recurring lesson and every lesson it created, past and future. Unused credits are restored."
+          },
+          "customers": {
+            "action": "Delete customer",
+            "body": "The customer will be removed from the directory. Upcoming bookings are cancelled, unused credits are restored, and login access is removed. This cannot be undone."
+          },
+          "alsoSkip": "Also skip this date",
+          "regeneration": "Without a skip, the recurring lesson may generate this date again.",
+          "skipFailed": "The lesson was deleted, but the date was not skipped. Retry the skip or close; the lesson will stay deleted.",
+          "retrySkip": "Retry skipping this date",
+          "saving": "Saving…",
+          "failed": "The change could not be completed. Please try again."
+        },
         menu: 'Management',
         eyebrow: 'Management',
         title: 'Studio management',
@@ -1170,6 +1190,26 @@ const resources = {
         back: 'Назад',
       },
       manager: {
+        delete: {
+          "classes": {
+            "action": "Удалить занятие",
+            "body": "Занятие будет удалено навсегда. Неиспользованные посещения будут восстановлены."
+          },
+          "schedules": {
+            "action": "Удалить регулярное занятие",
+            "body": "Регулярное занятие и все созданные им занятия, прошлые и будущие, будут удалены навсегда. Неиспользованные посещения будут восстановлены."
+          },
+          "customers": {
+            "action": "Удалить клиента",
+            "body": "Клиент исчезнет из списка. Предстоящие записи будут отменены, неиспользованные посещения восстановлены, а доступ к входу закрыт. Это нельзя отменить."
+          },
+          "alsoSkip": "Также пропустить эту дату",
+          "regeneration": "Без пропуска регулярное занятие может создать эту дату снова.",
+          "skipFailed": "Занятие удалено, но дата не пропущена. Повторите пропуск или закройте окно; занятие останется удалённым.",
+          "retrySkip": "Повторить пропуск даты",
+          "saving": "Сохраняем…",
+          "failed": "Не удалось завершить изменение. Попробуйте ещё раз."
+        },
         menu: 'Управление',
         eyebrow: 'Управление',
         title: 'Управление студией',
@@ -2235,6 +2275,26 @@ const resources = {
         back: 'חזרה',
       },
       manager: {
+        delete: {
+          "classes": {
+            "action": "מחיקת שיעור",
+            "body": "השיעור יימחק לצמיתות. כניסות שלא נוצלו יוחזרו."
+          },
+          "schedules": {
+            "action": "מחיקת שיעור קבוע",
+            "body": "השיעור הקבוע וכל השיעורים שנוצרו ממנו, בעבר ובעתיד, יימחקו לצמיתות. כניסות שלא נוצלו יוחזרו."
+          },
+          "customers": {
+            "action": "מחיקת לקוחה",
+            "body": "הלקוחה תוסר מרשימת הלקוחות. ההרשמות העתידיות יבוטלו, כניסות שלא נוצלו יוחזרו וגישת הכניסה תוסר. לא ניתן לבטל פעולה זו."
+          },
+          "alsoSkip": "דילוג גם על התאריך הזה",
+          "regeneration": "ללא דילוג, השיעור הקבוע עשוי ליצור שוב שיעור בתאריך הזה.",
+          "skipFailed": "השיעור נמחק, אך התאריך לא דולג. אפשר לנסות שוב את הדילוג או לסגור; השיעור יישאר מחוק.",
+          "retrySkip": "ניסיון נוסף לדילוג על התאריך",
+          "saving": "שומרים…",
+          "failed": "לא ניתן להשלים את השינוי. אפשר לנסות שוב."
+        },
         menu: 'ניהול',
         eyebrow: 'ניהול',
         title: 'ניהול סטודיו',

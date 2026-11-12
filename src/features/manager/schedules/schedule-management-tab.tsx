@@ -215,6 +215,12 @@ export function ScheduleManagementTab({
               state.mutationStatus === "skipping" ||
               state.mutationStatus === "unskipping"
             }
+            onDeleted={() => {
+              if (selectedSchedule) actions.removeSchedule(selectedSchedule.id);
+              actions.clearSelection();
+              actions.clearPreview();
+              actions.clearGenerationResult();
+            }}
             onClose={() => {
               actions.clearSelection();
               actions.clearPreview();

@@ -535,6 +535,11 @@ export function useManagedClasses({
       canManageClasses,
     },
     actions: {
+      removeClass: (classId: string) => {
+        requestIdRef.current += 1;
+        setClasses((current) => current.filter((item) => item.id !== classId));
+        setLoadStatus("loaded");
+      },
       setShowCancelled: (checked: boolean) => {
         setShowCancelled(checked);
         setSelectedClassId(null);

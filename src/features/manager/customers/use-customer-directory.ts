@@ -231,6 +231,8 @@ export function useCustomerDirectory({
   }, [filter]);
 
   const remove = useCallback((customerId: string) => {
+    requestRef.current += 1;
+    setLoadStatus("loaded");
     setPages((current) => current.map((page) => ({
       ...page,
       records: page.records.filter((customer) => customer.customerId !== customerId),
