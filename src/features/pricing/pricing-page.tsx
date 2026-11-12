@@ -15,7 +15,6 @@ type PricingPlan = {
 const pricingPlans: Record<PricingCategory, PricingPlan[]> = {
   pilates: [
     { labelKey: "pricing.plans.single", price: 100, pricePerClass: 100 },
-    { labelKey: "pricing.plans.tenClassCard", price: 890, pricePerClass: 89 },
     {
       labelKey: "pricing.plans.onceWeeklyMembership",
       price: 340,
@@ -34,22 +33,22 @@ const pricingPlans: Record<PricingCategory, PricingPlan[]> = {
   ],
   dance: [
     { labelKey: "pricing.plans.single", price: 85, pricePerClass: 85 },
-    { labelKey: "pricing.plans.threeClassCard", price: 247, pricePerClass: 82 },
+    { labelKey: "pricing.plans.threeClassCard", price: 249, pricePerClass: 83 },
     { labelKey: "pricing.plans.tenClassCard", price: 750, pricePerClass: 75 },
     {
       labelKey: "pricing.plans.fourEntryMembership",
       price: 290,
-      pricePerClass: 73,
+      pricePerClass: 72.5,
     },
     {
       labelKey: "pricing.plans.fiveEntryMembership",
-      price: 350,
-      pricePerClass: 70,
+      price: 355,
+      pricePerClass: 71,
     },
     {
       labelKey: "pricing.plans.eightEntryMembership",
-      price: 575,
-      pricePerClass: 72,
+      price: 560,
+      pricePerClass: 70,
     },
     {
       labelKey: "pricing.plans.twelveEntryMembership",
@@ -74,7 +73,8 @@ function formatPrice(amount: number, locale: string) {
   return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "ILS",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
   }).format(amount);
 }
 
