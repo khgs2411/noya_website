@@ -31,20 +31,12 @@ with the existing brand.
 
 ## Verification
 
-- Do not use `npm run build` as default verification.
-- Do not run `npm run build` after routine UI edits, copy changes, focused
-  component changes, or every small change.
-- Prefer focused inspection, `rg`, and browser smoke checks on the existing dev
-  server for narrow UI fixes.
-- Never start or host a dev server without explicit user approval.
-- Before browser smoke checks, first check whether a localhost dev server
-  already exists and use it when available; otherwise ask the user to provide or
-  approve a server.
-- Run heavier checks only when TypeScript risk, dependency changes, or broader
-  behavior changes justify it, or when explicitly requested.
-- If a plan includes `npm run build`, apply judgment before running it. Treat it
-  as optional unless the current change actually warrants a full build or the
-  user explicitly asks for it.
+- Verify narrow UI fixes by focused inspection, `rg` and a browser smoke check
+  on a dev server that is already running. Ask before starting or hosting a
+  dev server.
+- Run `npm run build` when TypeScript risk, dependency changes or broader
+  behavior changes justify it, or when the user asks. A plan that lists it
+  leaves that judgment with you.
 - Report exactly what was checked and what was skipped.
 
 ## Optional Frontend Preview
@@ -61,6 +53,4 @@ with the existing brand.
 
 ## Git
 
-- Do not commit, push, rebase, reset, or stage files unless explicitly asked.
-- Preserve unrelated worktree changes.
-- Avoid broad staging commands such as `git add .`.
+- Stage and commit only when asked, naming the files you stage.
